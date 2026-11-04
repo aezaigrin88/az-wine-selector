@@ -1,0 +1,34 @@
+name: Sync Vivino Wine Atlas
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Run Vivino sync
+        run: python sync_vivino.py || true
+
+      - name: Commit updated wines_data.json if changed
+        run: |
+          git config user.name "AZ Wine Selector Bot"
+          git config user.email "ae.zaigrin@gmail.com"
+          git add wines_data.json index.html
+          git diff --staged --quiet || (git commit -m "chore: sync Vivino cellar #6491870" && git push)

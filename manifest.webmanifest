@@ -1,0 +1,26 @@
+{
+  "name": "AZ Wine Diary · Дневник дегустаций и карта вкусов Артёма и Ани",
+  "short_name": "AZ Wine Diary",
+  "description": "Совместный винный дневник Артёма и Ани: оценки, заметки, любимые терруары и кадастр парцелей (1:25 000)",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#EFE6D0",
+  "theme_color": "#A82420",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "img/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
