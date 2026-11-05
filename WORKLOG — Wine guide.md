@@ -814,3 +814,12 @@
   > 3. **Бутылка № 20 добавлена в коллекцию и на карту терруаров Мендосы**:
   > - **Bodega Toro (Fecovita) · Centenario · Malbec (2025)** (`Аргентина · Мендоса · Maipú & Luján de Cuyo`, `-33.0320° S, -68.9680° W`, высота `850 м`, аллювиальные предгорья Анд, `12.5% alc.`, [`bottle_20.jpg`](file:///G:/My%20Drive/az-AI/Wine/img/labels/bottle_20.jpg)) + 4 терруарных субзоны Мендосы (`Maipú & Luján de Cuyo`, `Las Compuertas & Agrelo DOC`, `IG Gualtallary · Tupungato`, `IG Paraje Altamira · San Carlos`).
 
+#### #82 [✓] `2026-11-05 16:06` — «Не добавляй - я сам проверю»
+
+- **Точный запрос пользователя**: «Не добавляй - я сам проверю»
+- **Статус черновика / промоушена**: `promoted` (synced to GitHub Pages `aezaigrin88/az-wine-selector` and Google Drive `G:\My Drive\az-AI\Wine`)
+- **Замеры и проверки (`checks run`)**: `Remove pre-added bottle #20 from wines_data.json, index.html, and img/labels/bottle_20.jpg`, `Push to GitHub Pages and sync Google Drive` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html), [`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json), [`terroir_atlas_geojson.js`](file:///G:/My%20Drive/az-AI/Wine/terroir_atlas_geojson.js)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > Убрал предзаполненную бутылку № 20 из [`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json) и [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html) (оставлены 18 исходных бутылок в дневнике и терруарные зоны Мендосы на карте), чтобы вы могли самостоятельно протестировать прикрепление нескольких фото и распознавание бутылки с телефона.
+
