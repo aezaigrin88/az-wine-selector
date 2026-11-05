@@ -1,11 +1,11 @@
-﻿# WORKLOG: Wine guide
+# WORKLOG: Wine guide
 
 > **Anti-Compaction Ledger**: этот журнал защищает контекст диалога от потери при `/compact`. Записи только дописываются (`append-only`), никогда не удаляются. При продолжении работы или после `/compact` агент обязан сначала прочитать разделы 1–3 и последние записи раздела 5.
 
 - **Диалог в Antigravity**: **[Wine guide](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f)** (`ed23f531-6679-4a98-b5fa-3646b89b5a5f`)
 - **Проект**: **[`Wine`](file:///G:/My%20Drive/az-AI/Wine)** ([Сводный WORKLOG проекта](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md))
-- **Период**: `2026-10-30 18:25` → `2026-11-03 10:18` · **Зафиксировано запросов в реестре**: `78`
-- **Рабочая область**: `["file:///G:/My%20Drive/az-AI/Wine"]`
+- **Период**: `2026-10-30 18:25` → `2026-11-05 15:42` · **Зафиксировано запросов в реестре**: `81`
+- **Рабочая область**: `["file:///G:/My%20Drive/az-AI/Wine", "file:///home/antigravity/aezaigrin88/az-wine-selector"]`
 - **Артефакты диалога (ПК + iOS `_artifacts/`)**: [`implementation_plan.md`](./_artifacts/Wine guide/implementation_plan.md) ([ПК](file:///C:/Users/timza/.gemini/antigravity/brain/ed23f531-6679-4a98-b5fa-3646b89b5a5f/implementation_plan.md))
 
 ## 1. Standing Requirements & Decisions Kept on Purpose (Не откатывать после `/compact`)
@@ -25,6 +25,7 @@
 - **[#73 · `2026-11-03`]** 1. **Единый шрифт без засечек (`SB Sans Interface`)**: убраны все остаточные правила `Georgia / Times New Roman / serif` в шапке (`AZ Wine Diary`), заголовках карточек, паспорте вина и всплывающих плашках — теперь весь интерфейс работает на
 - **[#75 · `2026-11-03`]** - **Почему «QR-код» на этой бутылке не срабатывал**: розовый квадрат с подписью «ЛИСИЦА ОБЫКНОВЕННАЯ» на контрэтикетке «Скалистого берега» — это **не цифровой QR-код**, а художественная гравюра лисицы из Красной книги заповедника Утриш, сти
 - **[#78 · `2026-11-03`]** 1. **Точное совпадение с рельефом и береговой линией (Крым, Кубань, Бордо)**: полностью удалил синтетические прямые полосы и сетки `5×4`, которые срезали береговую дугу ЮБК от Ялты до Судака прямо по Чёрному морю и шли по линейке от Анапы д
+- **[#81 · `2026-11-05`]** - **Почему `Bodega Toro · Centenario Malbec 2025` определялся как `Saint-Estèphe (Haut-Médoc) «German»` (`2022`)**: (1) `runAutomaticLabelOcr` растягивал 1-й проход по горизонтали в `2.6x` с `rus+eng`, превращая латиницу в шум; (2) `matchWorldTerroirSynchronously` проверял 9 582 микро-парцеля Франции (`cadastralSearchIndex`, где под №4489 был однословный парцель `German` в `Saint-Estèphe`) через `norm.includes(cn)` раньше регионов мира (`Mendoza / Argentina`); (3) регулярка винтажа `\b(201[5-9]|202[0-4])\b` отсекала урожай `2025` Южного полушария.
 
 ## 3. Open Items & Draft Promotion Status (`draft, not promoted` vs `promoted`)
 
@@ -780,4 +781,36 @@
   > 3. **Как работает цветовая градация (розовый / жёлтый / зелёный) для России**:
   > - **Розовый (`Grand Cru · ЗНМП / Топ-терруары`)** — официальные **ЗНМП** (высшая ступень по ФЗ-468: *Дивноморское*, *Абрау-Дюрсо*, *Долина Лефкадия*, *Сенной*, *Голубицкая Стрелка*, *Солнечная Долина*) и знаковые моно-склоны (*Скалистый берег · Семисам*, *Имение Сикоры · Семигорье*, *Криница*, *UPPA Winery · с. Родное*, *Массандра и Ай-Даниль · ЮБК*);
   > - **Жёлтый (`1er Cru · Субрегионы ЗГУ`)** — субрегиональные **ЗГУ** (*Кубань. Анапа / Гай-Кодзор*, *Новороссийск / Мысхако*, *Геленджик / Château de Talu*, *Севастополь — Бельбек / Кара-Тау и Балаклава*, *Алушта, Морское, Судак, Коктебель*);
+
+### 📅 2026-11-05
+
+#### #79 [✓] `2026-11-05 14:51` — «Продолжи про приложение AZ Wine Diary»
+
+- **Точный запрос пользователя**: «Продолжи про приложение AZ Wine Diary»
+- **Статус черновика / промоушена**: `decision / analysis` (no draft file pending promotion)
+- **Замеры и проверки (`checks run`)**: `Read WORKLOG.md and WORKLOG — Wine guide.md`, `Check git status and Google Drive Wine folder sync` → `✓`
+
+#### #80 [✓] `2026-11-05 14:53` — «Пока ничего, завтра попробуем новые бутылки»
+
+- **Точный запрос пользователя**: «Пока ничего, завтра попробуем новые бутылки»
+- **Статус черновика / промоушена**: `decision / analysis` (no draft file pending promotion)
+
+#### #81 [✓] `2026-11-05 15:42` — «Нельзя прикрепить несколько фоток / опрелеление неправильное»
+
+- **Точный запрос пользователя**: «Нельзя прикрепить несколько фоток\nопрелеление неправильное»
+- **Статус черновика / промоушена**: `promoted` (synced to GitHub Pages `aezaigrin88/az-wine-selector` and Google Drive `G:\My Drive\az-AI\Wine`)
+- **Замеры и проверки (`checks run`)**: `Inspect IMG_0760.png and IMG_0757.jpeg`, `Test Tesseract OCR and ZXing rotated barcode decoding on IMG_0757.jpeg`, `Add Mendoza sub-zones and Bodega Toro Centenario Malbec 2025 (#20) to terroir_atlas_geojson.js and wines_data.json`, `Update index.html with multi-photo upload/gallery and fixed OCR/terroir matching`, `Verify boot state, OCR recognition, and multi-photo gallery in headless Chromium` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html), [`terroir_atlas_geojson.js`](file:///G:/My%20Drive/az-AI/Wine/terroir_atlas_geojson.js), [`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json), [`img/labels/bottle_20.jpg`](file:///G:/My%20Drive/az-AI/Wine/img/labels/bottle_20.jpg)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > Исправлены обе проблемы в [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html), [`terroir_atlas_geojson.js`](file:///G:/My%20Drive/az-AI/Wine/terroir_atlas_geojson.js) и [`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json) и опубликовано на GitHub Pages (`https://aezaigrin88.github.io/az-wine-selector/`):
+  > 1. **Прикрепление нескольких фотографий (`Этикетка + Контрэтикетка + Бокал`)**:
+  > - В форме **«+ Добавить бутылку»** (`#smartCameraInput` и `#inPhoto`) включён мультивыбор (`multiple`), добавлена кнопка **`+ Ещё фото`** (добавляет снимки в очередь без затирания предыдущих) и лента миниатюр (`#smartPhotoThumbsRow`) с выбором главного кадра и удалением отдельных фото (`×`). Все снимки автоматически сжимаются до `~1100px JPEG`, чтобы не переполнять память браузера на iPhone.
+  > - При выборе нескольких фото сканер последовательно проверяет **все прикреплённые кадры** (сначала ищет штрих-код / QR на каждом фото, включая вертикальные штрих-коды с поворотом `90° / 270°`, затем объединяет текст с лицевой этикетки и контрэтикетки).
+  > - В **«Паспорте вина»** (`#specimenShowcase`) и в полноэкранном просмотре (`#specimenLightboxModal`) добавлена галерея миниатюр всех фото бутылки и кнопка **`+ Фото`** для дозагрузки снимков к уже сохранённым винам.
+  > 2. **Почему возникло неправильное определение (`Вино Saint-Estèphe (Haut-Médoc) «German»`, `2022`) и как оно исправлено**:
+  > - **Причина 1 (искажение OCR)**: 1-й проход `runAutomaticLabelOcr` принудительно растягивал картинку по горизонтали в `2.6x` с `rus+eng`, из-за чего латинский текст `BODEGA TORO · CENTENARIO · MALBEC · MENDOZA ARGENTINA` превращался в шум, а 2-й (нерастянутый) проход даже не запускался. Теперь 1-й и 2-й проходы читают верхнюю и нижнюю части этикетки на чистом `eng` без искажения пропорций (`stretchX = 1.0` и `1.65`), а 3-й проход дочитывает `rus+eng`.
+  > - **Причина 2 (ложное срабатывание микро-парцелей Франции)**: `matchWorldTerroirSynchronously` раньше проверял все `9 582` кадастровых микро-парцеля Франции (`cadastralSearchIndex`, где под `id: 4489` есть короткое слово `German` в коммуне `Saint-Estèphe`) простым `norm.includes(cn)` **до** проверки стран и регионов мира (`Argentina`, `Mendoza`), а `applyClimatMatchToForm` перезаписывал название вина в `Saint-Estèphe (Haut-Médoc) «German»` и регион в `france · Бордо...`. Теперь сначала проверяются `iconicWineIndex`, бренды/производители и регионы мира (`WORLD_WINE_REGIONS`), а однословные кадастровые клима проверяются только по точным границам слов и только если на этикетке нет другой страны.
+  > - **Причина 3 (год урожая `2025` и вертикальный штрих-код `779`)**: регулярное выражение года расширено до `1990–2026` (включая свежий урожай `2025` Южного полушария), добавлено чтение вертикально развёрнутых штрих-кодов (`90° / 270°`, префикс `779` = Аргентина), а ложная запись `Saint-Estèphe «German»` автоматически вычищается из `localStorage`.
+  > 3. **Бутылка № 20 добавлена в коллекцию и на карту терруаров Мендосы**:
+  > - **Bodega Toro (Fecovita) · Centenario · Malbec (2025)** (`Аргентина · Мендоса · Maipú & Luján de Cuyo`, `-33.0320° S, -68.9680° W`, высота `850 м`, аллювиальные предгорья Анд, `12.5% alc.`, [`bottle_20.jpg`](file:///G:/My%20Drive/az-AI/Wine/img/labels/bottle_20.jpg)) + 4 терруарных субзоны Мендосы (`Maipú & Luján de Cuyo`, `Las Compuertas & Agrelo DOC`, `IG Gualtallary · Tupungato`, `IG Paraje Altamira · San Carlos`).
 

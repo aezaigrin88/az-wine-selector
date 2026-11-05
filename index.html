@@ -1387,7 +1387,8 @@
     .smart-photo-preview-bar {
       display: none;
       align-items: center;
-      gap: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
       padding: 8px 12px;
       border: 1px solid var(--color-foxing);
       border-radius: var(--radius-sm);
@@ -1400,11 +1401,88 @@
     .smart-photo-thumb {
       width: 44px;
       height: 58px;
-      object-fit: contain;
+      object-fit: cover;
       border: 1px solid var(--color-ink);
       border-radius: var(--radius-sm);
       background: #FAF6EB;
     }
+    .smart-photo-thumbs-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .smart-photo-thumb-item {
+      position: relative;
+      width: 48px;
+      height: 62px;
+      border: 1.5px solid var(--color-ink);
+      border-radius: var(--radius-sm);
+      background: #FAF6EB;
+      overflow: hidden;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .smart-photo-thumb-item.active-primary {
+      border-color: var(--color-crimson);
+      box-shadow: 0 0 0 1.5px var(--color-crimson);
+    }
+    .smart-photo-thumb-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .smart-photo-thumb-remove {
+      position: absolute;
+      top: 1px;
+      right: 1px;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      border: 1px solid #fff;
+      background: rgba(31, 26, 23, 0.84);
+      color: #fff;
+      font-size: 0.70rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+    }
+    .specimen-photos-strip {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 6px 4px 2px;
+    }
+    .specimen-photos-strip.visible {
+      display: flex;
+    }
+    .specimen-photo-thumb-btn {
+      position: relative;
+      width: 42px;
+      height: 54px;
+      padding: 0;
+      border: 1.5px solid var(--color-foxing);
+      border-radius: var(--radius-sm);
+      background: #FDEDD0;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .specimen-photo-thumb-btn.active {
+      border-color: var(--color-crimson);
+      box-shadow: 0 0 0 1px var(--color-crimson);
+    }
+    .specimen-photo-thumb-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
 
 
     /* Dual Ratings (Artem & Anya) & Taste Compass Styles */
@@ -2786,9 +2864,9 @@
       <div class="smart-add-strip">
         <div class="smart-add-actions">
           <label class="btn btn-primary" for="smartCameraInput" style="cursor:pointer;">
-            Фото этикетки / контрэтикетки
+            Фото этикетки / контрэтикетки (можно несколько)
           </label>
-          <input id="smartCameraInput" type="file" accept="image/*" style="display:none;" />
+          <input id="smartCameraInput" type="file" accept="image/*" multiple style="display:none;" />
 
           <button type="button" class="btn" id="startBarcodeScanBtn">
             Штрих-код / QR / Камера
@@ -2798,12 +2876,12 @@
             Ключ Gemini API
           </button>
           <span id="smartStatusText" style="font-size:0.80rem;color:var(--color-ink-secondary);">
-            Сфотографируйте этикетку или контрэтикетку, отсканируйте QR / штрих-код или вставьте ссылку на магазин
+            Прикрепите одно или сразу несколько фото (этикетка + контрэтикетка), отсканируйте код или вставьте ссылку
           </span>
         </div>
 
         <div class="smart-search-row">
-          <input id="smartQuickSearchInput" type="search" class="smart-search-input" placeholder="Ссылка на винный магазин / Vivino, штрих-код EAN-13 или название парцеля / вина (напр. Скалистый берег, SimpleWine, Chambertin...)" />
+          <input id="smartQuickSearchInput" type="search" class="smart-search-input" placeholder="Ссылка на винный магазин / Vivino, штрих-код EAN-13 или название парцеля / вина (напр. Bodega Toro, Скалистый берег, Chambertin...)" />
           <button type="button" class="btn" id="smartParseBtn">Найти / заполнить</button>
         </div>
 
@@ -2819,10 +2897,15 @@
         </div>
 
         <div class="smart-photo-preview-bar" id="smartPhotoPreviewBar">
-          <img id="smartPhotoThumb" class="smart-photo-thumb" src="img/labels/bottle_17.png?v=20261101d" alt="Превью фото этикетки" />
-          <div style="flex:1;min-width:0;">
+          <img id="smartPhotoThumb" class="smart-photo-thumb" src="img/labels/bottle_17.png?v=20261101d" alt="Превью фото этикетки" style="display:none;" />
+          <div id="smartPhotoThumbsContainer" class="smart-photo-thumbs-row"></div>
+          <div style="flex:1;min-width:160px;">
             <div style="font-weight:700;" id="smartPhotoStatusTitle">Фото этикетки прикреплено к записи</div>
             <div style="color:var(--color-ink-secondary);" id="smartPhotoStatusSub">Готово к сохранению в атлас и дневник</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <label for="smartCameraInput" class="btn" style="padding:4px 9px;font-size:0.76rem;cursor:pointer;">+ Ещё фото</label>
+            <button type="button" class="btn" id="clearSmartPhotosBtn" style="padding:4px 9px;font-size:0.76rem;">Сбросить</button>
           </div>
         </div>
       </div>
@@ -2839,7 +2922,7 @@
           </div>
           <div class="form-field">
             <label for="inVintage">Год урожая (миллезим)</label>
-            <input id="inVintage" class="form-input num" type="text" placeholder="2022 или N.V." value="2022" />
+            <input id="inVintage" class="form-input num" type="text" placeholder="2025, 2022 или N.V." value="2023" />
           </div>
           <div class="form-field">
             <label for="inStyle">Стиль вина</label>
@@ -2936,7 +3019,7 @@
 
           <div class="form-field">
             <label for="inTastedDate">Дата (когда пили)</label>
-            <input id="inTastedDate" class="form-input num" type="date" value="2026-11-01" />
+            <input id="inTastedDate" class="form-input num" type="date" value="2026-11-05" />
           </div>
           <div class="form-field">
             <label for="inPurchasedAt">Где куплено (опционально)</label>
@@ -2947,8 +3030,8 @@
             <input id="inNotes" class="form-input" type="text" placeholder="Впечатления, аромат, гастропара..." />
           </div>
           <div class="form-field">
-            <label for="inPhoto">Изображение бутылки (опционально)</label>
-            <input id="inPhoto" class="form-input" type="file" accept="image/*" />
+            <label for="inPhoto">Изображения бутылки (можно выбрать несколько)</label>
+            <input id="inPhoto" class="form-input" type="file" accept="image/*" multiple />
           </div>
         </div>
         <div class="form-footer">
@@ -3054,13 +3137,17 @@
         </div>
 
         <div class="dossier-body">
-          <!-- Single Official Bottle Image Showcase -->
+          <!-- Bottle Image & Multi-Photo Showcase -->
           <div class="specimen-showcase" id="specimenShowcase">
             <div class="specimen-mode-bar">
               <span class="num" style="font-size:0.80rem;font-weight:700;color:var(--color-prussian-deep);" id="specimenOfficialCaption">
                 Vivino 3.9
               </span>
               <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <label for="appendWinePhotoInput" class="pill-btn" style="cursor:pointer;" title="Прикрепить ещё фото (этикетку, контрэтикетку, бокал) к этой бутылке">
+                  + Фото
+                </label>
+                <input id="appendWinePhotoInput" type="file" accept="image/*" multiple style="display:none;" />
                 <button type="button" class="pill-btn" id="zoomToParcelBtn" title="Приблизить кадастровый парцель этого вина на карте OpenStreetMap (1:25 000)">
                   На карте
                 </button>
@@ -3071,8 +3158,9 @@
             </div>
 
             <div class="specimen-stage" id="specimenStage">
-              <img id="dossierMainBottleImg" class="specimen-main-img" src="img/labels/bottle_17.png?v=20261101d" alt="Официальное изображение бутылки Château de Laborde Bourgogne Hautes-Côtes de Beaune En Cuillery" />
+              <img id="dossierMainBottleImg" class="specimen-main-img" src="img/labels/bottle_20.jpg?v=20261105a" alt="Официальное изображение бутылки" />
             </div>
+            <div id="specimenPhotosStrip" class="specimen-photos-strip"></div>
           </div>
 
           <div class="dossier-producer" id="dossierProducer">Château de Laborde (Hervé Kerlann)</div>
@@ -3351,7 +3439,7 @@
 
   </main>
 
-  <!-- High-Resolution Single-Image Lightbox Modal -->
+  <!-- High-Resolution Multi-Image Lightbox Modal -->
   <div class="lightbox-backdrop" id="specimenLightboxModal" role="dialog" aria-modal="true" aria-labelledby="lightboxTitle">
     <div class="lightbox-panel">
       <div class="qcard-header qcard-header-crimson">
@@ -3359,7 +3447,8 @@
         <button type="button" class="btn" id="closeLightboxBtn" style="padding:4px 10px;font-size:0.80rem;">Закрыть (Esc)</button>
       </div>
       <div class="lightbox-body">
-        <img id="lightboxBottleImg" class="lightbox-img" src="img/labels/bottle_17.png?v=20261101d" alt="Крупное официальное изображение бутылки" />
+        <img id="lightboxBottleImg" class="lightbox-img" src="img/labels/bottle_20.jpg?v=20261105a" alt="Крупное официальное изображение бутылки" />
+        <div id="lightboxPhotosStrip" class="specimen-photos-strip" style="justify-content:center;margin-top:8px;"></div>
         <div class="lightbox-caption" id="lightboxBottleCaption">Официальное изображение бутылки (Vivino)</div>
       </div>
       <div class="lightbox-footer">
@@ -3405,12 +3494,12 @@
   <div class="status-toast" id="statusToast" role="status" aria-live="polite"></div>
 
   <script src="vendor/leaflet/leaflet.js"></script>
-  <script src="terroir_atlas_geojson.js?v=20261103d"></script>
+  <script src="terroir_atlas_geojson.js?v=20261105a"></script>
   <script src="vendor/jsQR.min.js"></script>
   <script src="vendor/zxing.min.js"></script>
   <script src="vendor/tesseract.min.js"></script>
   <script>
-    const INITIAL_DATA = {"account":{"user_id":77968357,"cellar_id":6491870,"name":"Artem Zaigrin","handle":"@artem_zaigrin","last_synced":"2026-10-31"},"wines":[{"id":19,"wine_id":11520420,"vintage_id":182049100,"user_vintage_id":3601900019,"producer":"Скалистый берег (Côte Rocheuse)","name":"Каберне Фран · ЗГУ «Кубань»","vintage":"2023","style":"red","style_label":"Красное сухое","grapes":"Каберне Фран 100%","abv":"14.3%","country":"Россия","macro_region":"Кубань","sub_region":"Анапа · Хребет Семисам (ЗГУ «Кубань»)","commune":"Анапа · с. Варваровка","lieu_dit":"Хребет Семисам · с. Варваровка (44.83°N, 37.37°E)","lat":44.83212,"lon":37.37714,"elevation":"195 м","soil":"Известняково-мергелевый хребет Семисам с белым карбонатным щебнем среди реликтовых лесов Утриша","vine_age":"11 лет (ручной сбор, тираж 9 200 бут.)","aging":"12 мес. во французских дубовых барриках (225 л), розлив 07.2025","rating":null,"vivino_avg":4.1,"notes":"Гравитационная винодельня «Скалистый берег» (Варваровка, 44.83°N 37.37°E): спелая чёрная смородина, вишня, лист смородины, графит и бархатистые танины. На контрэтикетке — иллюстрация «Лисица обыкновенная» из серии Красной книги Утриша.","vivino_url":"https://www.vivino.com/search/wines?q=%D0%A1%D0%BA%D0%B0%D0%BB%D0%B8%D1%81%D1%82%D1%8B%D0%B9+%D0%B1%D0%B5%D1%80%D0%B5%D0%B3+%D0%9A%D0%B0%D0%B1%D0%B5%D1%80%D0%BD%D0%B5+%D0%A4%D1%80%D0%B0%D0%BD+2023","elevation_m":195,"slope_pct":"12–18%","aspect":"ЮЮЗ (юго-юго-западный склон хребта Семисам к Чёрному морю)","geology_stage":"Верхний мел и палеоген: белый карбонатный мергель, известняк и флиш хребта Семисам","microclimate":"Средиземноморско-черноморский: морской бриз с Чёрного моря и прохладные потоки из реликтового можжевелово-фисташкового леса заповедника «Утриш».","domain_history":"Гравитационная винодельня АО «Скалистый берег» (Côte Rocheuse) в с. Варваровка под Анапой спроектирована в форме морской гальки, вписанной в склон хребта Семисам (150–250 м). Виноградники (30 га) заложены в 2011–2012 гг. саженцами из питомника Гийома.","climat_dossier":"Парцель Каберне Фран (44.83°N, 37.37°E, лозы 11 лет) на известняково-мергелевом склоне между Чёрным морем и заповедником Утриш: ручной сбор, гравитационная винификация без насосов, 12 месяцев во французском дубе, лимитированный тираж 9 200 бутылок.","drinking_window":"2025–2032","serving_temp":"16–18 °C","glassware":"Бордоский бокал (Riedel Vinum Bordeaux / Zalto Bordeaux)","food_pairing":"Каре ягнёнка на углях с пряными травами, утиная грудка, говяжий стейк рибай, выдержанные твёрдые сыры.","guide_source":"Контрэтикетка бутылки (44,83°; 37,37° · Урожай 2023 · 9 200 бут.) · Реестр ЗГУ «Кубань»","bottle_studio":"img/labels/bottle_19.jpg","appellation_rank":"Grand Cru · ЗГУ «Кубань» (Варваровка · Семисам)","geo_order":19,"terroir_tier":"grand_cru_cru","terroir_tier_label":"Grand Cru · Хребет Семисам (44.83°N · 37.37°E)","aspect_deg":205,"aspect_code":"ЮЮЗ 205°","slope_pos_pct":42,"slope_zone_label":"Средний склон хребта Семисам над морем (150–250 м)","atlas_spread":"Кадастр терруаров Кубани (1:25 000) · Анапа · с. Варваровка (Скалистый берег)","tasted_date":"2026-11-03","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":4.1,"tannins":3.8,"acidity":3.8,"minerality":4.1,"sweetness":1.2}},{"id":17,"wine_id":3326645,"vintage_id":176701510,"user_vintage_id":3601255420,"producer":"Château de Laborde (Hervé Kerlann)","name":"Bourgogne Hautes-Côtes de Beaune «En Cuillery»","vintage":"2022","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"От-Кот-де-Бон (Hautes-Côtes de Beaune)","commune":"Монтели (Monthélie)","lieu_dit":"En Cuillery («Ан Кюлли»)","lat":47.00738,"lon":4.76387,"elevation":"310–350 м","soil":"Бурый известняк и мергель на крутом верхнем склоне над Монтели","vine_age":"35 лет (низкая урожайность ~35 гл/га)","aging":"12 мес. во французском дубе (10–15% новый дуб), розлив 04.12.2023","rating":null,"vivino_avg":3.9,"notes":"Отдельный парцель «En Cuillery» у верхней границы Монтели: лесная малина, вишня, пион и сухая известняковая свежесть.","vivino_url":"https://www.vivino.com/wines/176701510","elevation_m":330,"slope_pct":"14–18%","aspect":"ЮЮВ (юго-юго-восток, верхняя бровка над Монтели)","geology_stage":"Верхний юрский отдел (оксфордский ярус): бурый плитчатый известняк и белый мергель","microclimate":"Континентальный горно-долинный; прохладный вечерний бриз с плато От-Кот сохраняет кислотность в тёплом 2022 году.","domain_history":"Поместье Château de Laborde в Мерсанже (основано в XVII в.) восстановлено Эрве Керланом в 1999 году; специализируется на отдельных парцелях Кот-де-Бон и От-Кот.","climat_dossier":"Парцель «En Cuillery» примыкает к верхней границе коммунального апелласьона Monthélie на высоте 310–350 м: тонкий каменистый слой на известняковой плите даёт лёгкое, цветочное красное вино с высокой кислотностью.","drinking_window":"2024–2029","serving_temp":"14–15 °C","glassware":"Бургундский бокал (Zalto Burgundy / Spiegelau Definition Burgundy)","food_pairing":"Перепёлка на гриле, паштет из утки с брусникой, телячья вырезка с лисичками, мягкие сыры Эпуас и Брилья-Саварен.","guide_source":"The World Atlas of Wine (9th Ed., p. 62 · Côte de Beaune); BIVB Climats & Lieux-Dits Registry","bottle_studio":"img/labels/bottle_17.png","appellation_rank":"Hautes-Côtes · Парцель у Монтели","geo_order":11,"terroir_tier":"hautes_cotes","terroir_tier_label":"Hautes-Côtes de Beaune · Клима «En Cuillery» (Монтели)","aspect_deg":158,"aspect_code":"ЮЮВ 158°","slope_pos_pct":35,"slope_zone_label":"Верхняя бровка склона над Монтели (310–350 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 54–55 · Côte de Beaune: Monthélie & Meursault (1:25 000)","tasted_date":"2026-10-31","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.2,"tannins":2.9,"acidity":4.2,"minerality":4.1,"sweetness":1.2}},{"id":1,"wine_id":1773665,"vintage_id":159682524,"user_vintage_id":3600428145,"producer":"Domaine Tortochot","name":"Gevrey-Chambertin Vieilles Vignes","vintage":"2018","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"13.5%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Нюи (Côte de Nuits)","commune":"Жевре-Шамбертен (Gevrey-Chambertin)","lieu_dit":"Vieilles Vignes (En Champs · Les Crais · En Motrot)","lat":47.2273,"lon":4.96723,"elevation":"260–300 м","soil":"Известняк батского яруса, железистая глина и мергель","vine_age":"60+ лет (Vieilles Vignes, органический сертификат)","aging":"16–18 мес. во французских барриках (50% новый дуб)","rating":4.5,"vivino_avg":4.1,"notes":"После раскрытия насыщенный аромат сухофруктов и грибов, тона подлеска, чёрной черешни и зрелые танины.","vivino_url":"https://www.vivino.com/wines/159682524","elevation_m":280,"slope_pct":"8–12%","aspect":"ВЮВ (восточно-юго-восточный конус выноса Лаво)","geology_stage":"Средняя юра (батский и байосский ярусы): криноидный известняк (calcaire à entroques) с железистым красным мергелем","microclimate":"Умеренно-континентальный, защищённый с запада уступом Кот-д’Ор; солнечный и тёплый винтаж 2018 дал мощную концентрацию.","domain_history":"Семейный домен в Жевре-Шамбертен с конца XIX века под управлением Брижит Тортошо (4-е поколение). Органический сертификат с 2013 года, классическая выдержка в дубе без фильтрации.","climat_dossier":"Кюве Vieilles Vignes со старых парцелей (лозы старше 60 лет, посадки 1950–1960-х) в центральной и южной части Gevrey-Chambertin на батском известняке: сушёная вишня, лесные грибы, подлесок и плотный танин.","drinking_window":"2023–2033","serving_temp":"15–16 °C (декантация 45 мин.)","glassware":"Большой бургундский шар (Riedel Sommeliers Bourgogne Grand Cru)","food_pairing":"Утиная грудка магре с вишнёвым демиглясом, каре ягнёнка с розмарином, беф-бургиньон, выдержанный Конте и Сито.","guide_source":"Jasper Morris MW · Inside Burgundy (2nd Ed., Gevrey-Chambertin & Domaine Tortochot)","bottle_studio":"img/labels/bottle_01.png","appellation_rank":"Village (Кот-де-Нюи)","geo_order":3,"terroir_tier":"village_cotedor","terroir_tier_label":"Village · Кот-де-Нюи (Vieilles Vignes)","aspect_deg":112,"aspect_code":"ВЮВ 112°","slope_pos_pct":52,"slope_zone_label":"Средний склон Кот-де-Нюи (260–300 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 60–61 · Côte de Nuits: Gevrey-Chambertin (1:25 000)","tasted_date":"2026-10-30","purchased_at":"","rating_az":4.5,"rating_anya":null,"taste_profile":{"body":4.2,"tannins":4.1,"acidity":3.7,"minerality":4.3,"sweetness":1.3}},{"id":16,"wine_id":10025650,"vintage_id":176160105,"user_vintage_id":3600779217,"producer":"Rossignol-Cornu & Fils","name":"Bourgogne Hautes-Côtes de Beaune","vintage":"2022","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"12.5%","country":"Франция","macro_region":"Бургундия","sub_region":"От-Кот-де-Бон (Hautes-Côtes de Beaune)","commune":"Нанту / Вольне (Nantoux)","lieu_dit":"Высокогорные склоны долины Нанту","lat":47.02697,"lon":4.75725,"elevation":"360–400 м","soil":"Известняковый щебень и белая мергелевая глина","vine_age":"30–40 лет","aging":"12 мес. в дубовых бочках и стальных чанах","rating":null,"vivino_avg":3.8,"notes":"Семейный домен из Вольне (Жюльен Россиньоль): прохладный профиль От-Кот-де-Бон с нотами красной смородины, брусники и трав.","vivino_url":"https://www.vivino.com/wines/176160105","elevation_m":380,"slope_pct":"15–20%","aspect":"ЮЗ / ЮЮВ (высокогорный амфитеатр долины Нанту)","geology_stage":"Верхняя юра (оксфордский ярус): белые мергели Арговьена и плитчатый известняк","microclimate":"Прохладный высокогорный: цветение и сбор урожая на 7–10 дней позже классического Кот-де-Бон.","domain_history":"Семейный домен в Вольне (основан в 1923 г.), 6 га виноградников в Вольне, Поммаре и От-Кот-де-Бон. Ручной сбор и мягкая экстракция.","climat_dossier":"Высокогорные склоны вокруг деревни Нанту (360–400 м) позади Поммара и Вольне на белом известняковом мергеле: высокая кислотность, земляника и красная смородина.","drinking_window":"2024–2028","serving_temp":"14–15 °C","glassware":"Бургундский бокал среднего объёма","food_pairing":"Запечённая цесарка, телячья печень с шалотом, тартар из говядины, козьи сыры Шolay и Сен-Марселен.","guide_source":"The World Atlas of Wine (9th Ed., p. 60); BIVB Hautes-Côtes de Beaune Profile","bottle_studio":"img/labels/bottle_16.png","appellation_rank":"Hautes-Côtes de Beaune AOC","geo_order":10,"terroir_tier":"hautes_cotes","terroir_tier_label":"Hautes-Côtes de Beaune · Долина Нанту (380 м)","aspect_deg":155,"aspect_code":"ЮЮВ 155°","slope_pos_pct":16,"slope_zone_label":"Амфитеатр От-Кот-де-Бон позади Поммара (360–400 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 50–51 и 54–57 · Hautes-Côtes de Beaune (Nantoux)","tasted_date":"2026-10-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.0,"tannins":2.8,"acidity":4.3,"minerality":3.9,"sweetness":1.1}},{"id":2,"wine_id":2046055,"vintage_id":3764458,"user_vintage_id":3600453903,"producer":"Camille Bonville","name":"Blanc de Blancs Brut Champagne Grand Cru","vintage":"N.V.","style":"sparkling","style_label":"Шампанское белое брют","grapes":"Шардоне 100%","abv":"12.5%","country":"Франция","macro_region":"Шампань","sub_region":"Кот-де-Блан (Côte des Blancs)","commune":"Авиз Гран Крю (Avize Grand Cru)","lieu_dit":"Парцели Гран Крю коммун Avize и Oger","lat":48.97873,"lon":4.01439,"elevation":"140–180 м","soil":"Чистый белемнитовый мел кампанского яруса","vine_age":"40 лет","aging":"36+ мес. на осадке в бутылке, дозаж ~7 г/л","rating":null,"vivino_avg":4.1,"notes":"Blanc de Blancs Grand Cru из Авиза: меловая кислотность, печёное яблоко, бриошь, белые цветы и тонкий мусс.","vivino_url":"https://www.vivino.com/wines/3764458","elevation_m":160,"slope_pct":"10–14%","aspect":"В / ВЮВ (средняя часть мелового склона Авиза)","geology_stage":"Верхний мел (кампанский ярус): чистый белемнитовый мел (craie à bélemnites) мощностью до 200 м","microclimate":"Океаническо-континентальный; восточный склон Кот-де-Блан получает мягкое утреннее солнце, а мел работает как природный терморегулятор и водный резервуар.","domain_history":"Дом Camille Bonville в Авизе основан в начале XX века; Оливье и Фердинанда Бонвиль работают с 15 га собственных виноградников Grand Cru в Avize, Oger и Le Mesnil-sur-Oger.","climat_dossier":"Ассамбляж 25 парцелей Grand Cru коммун Avize и Oger (100% Шардоне) на кампанском белемнитовом мелу: лимонный курд, белые цветы, миндальная бриошь и солоноватый финиш.","drinking_window":"2024–2030","serving_temp":"9–11 °C","glassware":"Тюльпановидный бокал для винтажной Шампани (Lehmann Jamesse Grand Champagne)","food_pairing":"Устрицы Жилардо, гребешки крудо с цитрусовым маслом, тюрбо в сливочном соусе, выдержанный Пармиджано.","guide_source":"Peter Liem · Champagne: The Essential Guide (Côte des Blancs: Avize Grand Cru)","bottle_studio":"img/labels/bottle_02.png","appellation_rank":"Grand Cru (Шампань 100%)","geo_order":1,"terroir_tier":"grand_cru_cru","terroir_tier_label":"Grand Cru · Кот-де-Блан (100%)","aspect_deg":92,"aspect_code":"В 92°","slope_pos_pct":56,"slope_zone_label":"Меловой склон Гран Крю (140–180 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 75 · The Heart of Champagne: Côte des Blancs (Avize Grand Cru)","tasted_date":"2026-10-19","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.3,"tannins":4.4,"acidity":4.7,"minerality":4.9,"sweetness":1.3}},{"id":3,"wine_id":1420436,"vintage_id":172969636,"user_vintage_id":3600453931,"producer":"Moillard","name":"Gevrey-Chambertin «Beau Versant»","vintage":"2021","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Нюи (Côte de Nuits)","commune":"Жевре-Шамбертен (Gevrey-Chambertin)","lieu_dit":"Кюве «Beau Versant» (восточный склон Жевре)","lat":47.22239,"lon":4.97303,"elevation":"250–290 м","soil":"Известняковый гравий и бурый мергель","vine_age":"35–45 лет","aging":"14–16 мес. во французском дубе","rating":null,"vivino_avg":3.9,"notes":"Прохладный винтаж 2021: светлый рубиновый цвет, кислая вишня, клюква, белый перец и минеральная свежесть.","vivino_url":"https://www.vivino.com/wines/172969636","elevation_m":270,"slope_pct":"7–11%","aspect":"В (восточный склон Жевре-Шамбертен)","geology_stage":"Средняя юра (байосский известняк и мергелево-гравийный конус выноса)","microclimate":"Прохладный и морозный 2021 винтаж с невысокой урожайностью: классический «северный» профиль Пино Нуар с высокой естественной кислотностью.","domain_history":"Дом и негоциант Moillard основан в Нюи-Сен-Жорж в 1850 году Симфориеном Муайяром.","climat_dossier":"Кюве «Beau Versant» с участков восточной экспозиции коммуны Gevrey-Chambertin (250–290 м): красная вишня, клюква, фиалка и умеренный танин.","drinking_window":"2024–2030","serving_temp":"15 °C","glassware":"Бургундский бокал (Zalto Burgundy)","food_pairing":"Ростбиф из говядины травяного откорма, ризотто с белыми грибами, перепёлка с тимьяном.","guide_source":"The World Atlas of Wine (9th Ed., p. 56 · Gevrey-Chambertin); BIVB AOC Registry","bottle_studio":"img/labels/bottle_03.png","appellation_rank":"Village (Кот-де-Нюи)","geo_order":4,"terroir_tier":"village_cotedor","terroir_tier_label":"Village · Кот-де-Нюи («Beau Versant»)","aspect_deg":94,"aspect_code":"В 94°","slope_pos_pct":60,"slope_zone_label":"Восточный склон Жевре-Шамбертен (250–290 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 60–61 · Côte de Nuits: Gevrey-Chambertin (1:25 000)","tasted_date":"2026-10-10","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.6,"tannins":3.7,"acidity":4.1,"minerality":4.2,"sweetness":1.2}},{"id":4,"wine_id":1435042,"vintage_id":176735631,"user_vintage_id":3600453956,"producer":"Domaine de la Vougeraie","name":"Crémant de Bourgogne «Fête de Famille» Brut","vintage":"2020","style":"sparkling","style_label":"Игристое белое брют","grapes":"Шардоне, Пино Нуар","abv":"12.5%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Нюи / От-Кот-де-Нюи","commune":"Вужо / Кюртий-Вержи (Vougeot / Curtil-Vergy)","lieu_dit":"Биодинамические участки домена в От-Кот-де-Нюи","lat":47.17482,"lon":4.94018,"elevation":"320–370 м","soil":"Оолитовый известняк и светлый мергель","vine_age":"30+ лет (биодинамика Demeter)","aging":"36 мес. на осадке в бутылке","rating":null,"vivino_avg":4,"notes":"Выдержанный Crémant (36 мес. на осадке): белые цветы, груша, зелёное яблоко и сухой меловой финиш.","vivino_url":"https://www.vivino.com/wines/176735631","elevation_m":345,"slope_pct":"12–16%","aspect":"ВЮВ (верхние террасы От-Кот-де-Нюи над Вужо)","geology_stage":"Верхнеюрский оолитовый известняк и светлый мергель","microclimate":"Прохладное плато на высоте 320–370 м обеспечивает идеальный баланс сахара и яблочной кислотности для базового вина под вторичную ферментацию.","domain_history":"Domaine de la Vougeraie основан семьёй Буассе в 1999 году в Премо-Приссе и Вужо; с 2001 года переведён на биодинамику (сертификат Demeter).","climat_dossier":"Crémant de Bourgogne «Fête de Famille» с биодинамических участков домена в От-Кот-де-Нюи (320–370 м), выдержка 36 месяцев на осадке в бутылке.","drinking_window":"2024–2028","serving_temp":"8–10 °C","glassware":"Тюльпан для выдержанных игристых вин","food_pairing":"Гужеры с грюйером, тартар из дорадо, террин из кролика.","guide_source":"Jasper Morris MW · Inside Burgundy (Domaine de la Vougeraie)","bottle_studio":"img/labels/bottle_04.png","appellation_rank":"Crémant AOC (Биодинамика)","geo_order":6,"terroir_tier":"hautes_cotes","terroir_tier_label":"Верхний склон над Вужо · Биодинамика Demeter","aspect_deg":115,"aspect_code":"ВЮВ 115°","slope_pos_pct":26,"slope_zone_label":"Верхние террасы над Вужо (320–370 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 58–61 · Vougeot & Hautes-Côtes de Nuits (1:25 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.2,"tannins":4.1,"acidity":4.4,"minerality":4.3,"sweetness":1.3}},{"id":5,"wine_id":13153379,"vintage_id":181060621,"user_vintage_id":3600453976,"producer":"Pierre Boisson","name":"Coteaux Bourguignons «En Buzigny» Blanc","vintage":"2023","style":"white","style_label":"Белое сухое","grapes":"Шардоне (с долей Алиготе)","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Бон (Côte de Beaune)","commune":"Мерсо (Meursault)","lieu_dit":"En Buzigny («Ан Бюзиньи»)","lat":46.9626,"lon":4.77681,"elevation":"230 м","soil":"Аллювиально-известняковые почвы у подножия Мерсо","vine_age":"35 лет","aging":"Длительная выдержка на тонком осадке в дубе (стиль семьи Boisson-Vadot)","rating":null,"vivino_avg":4.2,"notes":"Характерная кремневая редукция Пьера Буассона, цедра лимона, жареный фундук и высокая кислотность.","vivino_url":"https://www.vivino.com/wines/181060621","elevation_m":230,"slope_pct":"4–6%","aspect":"ВЮВ (подножие склона Мерсо)","geology_stage":"Четвертичный известняковый аллювий на подстилающем мергеле Мерсо","microclimate":"Защищённая ложбина у южной границы коммуны Meursault с долгим дневным прогревом и утренними туманами.","domain_history":"Пьер Буассон (сын Бернара Буассона-Вадо из Мерсо) практикует длительную выдержку белых вин на тонком осадке без батонажа с поздним розливом.","climat_dossier":"Парцель «En Buzigny» расположен в границах коммуны Meursault (230 м): в профиле спичечная редукция, фундук, лимонная цедра и солоноватое послевкусие.","drinking_window":"2025–2032","serving_temp":"11–13 °C","glassware":"Бокал для белого бургундского (Riedel Montrachet / Zalto Universal)","food_pairing":"Лангустины на гриле, палтус в соусе бер-блан, курица по-брессски со сморчками.","guide_source":"Jasper Morris MW · Inside Burgundy (2nd Ed., Meursault: Domaine Boisson-Vadot / Pierre Boisson)","bottle_studio":"img/labels/bottle_05.png","appellation_rank":"Парцель коммуны Meursault","geo_order":12,"terroir_tier":"lieu_dit_regional","terroir_tier_label":"Парцель «En Buzigny» · Коммуна Meursault","aspect_deg":110,"aspect_code":"ВЮВ 110°","slope_pos_pct":85,"slope_zone_label":"Подножие известнякового склона Мерсо (230 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 54–55 · Côte de Beaune: Meursault (1:25 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.9,"tannins":4.3,"acidity":4.5,"minerality":4.8,"sweetness":1.1}},{"id":6,"wine_id":12148433,"vintage_id":176372112,"user_vintage_id":3600453995,"producer":"Domaine Dujardin","name":"Bourgogne Aligoté «Chasne»","vintage":"2022","style":"white","style_label":"Белое сухое","grapes":"Алиготе 100%","abv":"12.5%","country":"Франция","macro_region":"Бургундия","sub_region":"От-Кот-де-Бон (Hautes-Côtes de Beaune)","commune":"Нанту (Nantoux)","lieu_dit":"Chasne («Шан»)","lat":47.03558,"lon":4.7569,"elevation":"370 м","soil":"Белый мергель и плиточный известняк","vine_age":"45 лет (Алиготе Доре)","aging":"Выдержка в старых бургундских пьесах (228 л)","rating":null,"vivino_avg":4,"notes":"Парцельное Алиготе с высокогорного участка «Chasne» в Нанту: зелёное яблоко, цитрус и солоноватая минеральность.","vivino_url":"https://www.vivino.com/wines/176372112","elevation_m":375,"slope_pct":"14–18%","aspect":"ЮВ (склон над деревней Нанту, От-Кот-де-Бон)","geology_stage":"Верхняя юра (оксфордский белый мергель и плитчатый известняк laves)","microclimate":"Прохладный ветреный склон на высоте 370 м, где старый клон Aligoté Doré набирает золотистую спелость при сохранении хрустящей кислотности.","domain_history":"Микро-домен Поля и Этьенна Дюжарден в Монтели, работающий со старыми участками в Монтели, Оксе-Дюресс и Нанту.","climat_dossier":"Парцель «Chasne» в коммуне Нанту (370 м) со старыми лозами клона Aligoté Doré (45 лет), выдержка в старых 228-литровых бургундских бочках.","drinking_window":"2024–2029","serving_temp":"10–12 °C","glassware":"Универсальный бокал (Zalto Universal)","food_pairing":"Улитки по-бургундски, ветчина персилле (jambon persillé), козий сыр Шароле.","guide_source":"Bourgogne Maps (Sylvain Pitiot · Nantoux / Hautes-Côtes de Beaune)","bottle_studio":"img/labels/bottle_06.png","appellation_rank":"Парцель Aligoté Doré (Нанту)","geo_order":9,"terroir_tier":"lieu_dit_regional","terroir_tier_label":"Парцель «Chasne» · Нанту (Aligoté Doré)","aspect_deg":132,"aspect_code":"ЮВ 132°","slope_pos_pct":21,"slope_zone_label":"Высокогорный склон долины Нанту (370 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 50–51 и 54–57 · Hautes-Côtes de Beaune: Nantoux","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.1,"tannins":3.6,"acidity":4.6,"minerality":4.5,"sweetness":1.1}},{"id":7,"wine_id":2180477,"vintage_id":176898809,"user_vintage_id":3600454018,"producer":"Domaine Jean-Pierre Guyon","name":"Nuits-Saint-Georges «Les Argillats» Pinot Blanc","vintage":"2022","style":"white","style_label":"Белое сухое","grapes":"Пино Блан 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Нюи (Côte de Nuits)","commune":"Нюи-Сен-Жорж (Nuits-Saint-Georges)","lieu_dit":"Les Argillats («Лез Аржилья»)","lat":47.14836,"lon":4.93866,"elevation":"275–310 м","soil":"Известняк с белой глиной на границе с Вольне-Романе","vine_age":"50+ лет (органический/биодинамический уход)","aging":"12 мес. во французских бочках специальной обжарки","rating":null,"vivino_avg":4.2,"notes":"Редкий белый Нюи-Сен-Жорж из 100% Пино Блан с клима «Les Argillats»: белый персик, груша, миндаль и плотная текстура.","vivino_url":"https://www.vivino.com/wines/176898809","elevation_m":290,"slope_pct":"10–15%","aspect":"ВЮВ (северная граница Нюи-Сен-Жорж на стыке с Вольне-Романе)","geology_stage":"Средняя и верхняя юра: белая мергелевая глина (argiles blanches) на твёрдом известняке Комбланшского яруса","microclimate":"Тёплый, хорошо дренируемый верхний склон у границы Vosne-Romanée.","domain_history":"Domaine Jean-Pierre Guyon в Вольне-Романе работает на биодинамике (сертификат с 2012 г.) с собственным отбором и обжаркой дуба; белые вина составляют менее 2% выпуска Nuits-Saint-Georges.","climat_dossier":"Клима «Les Argillats» на севере Nuits-Saint-Georges у границы с Vosne-Romanée (275–310 м): старые лозы Пино Блан на белой мергелевой глине и известняке.","drinking_window":"2025–2034","serving_temp":"12–13 °C","glassware":"Бокал для великих белых вин Бургундии","food_pairing":"Омар на гриле, зобная железа телёнка (ris de veau) со сморчками, ризотто с белым трюфелем.","guide_source":"Jasper Morris MW · Inside Burgundy (2nd Ed., Nuits-Saint-Georges: Les Argillats & Domaine J.-P. Guyon)","bottle_studio":"img/labels/bottle_07.png","appellation_rank":"Village · Клима (Пино Блан)","geo_order":8,"terroir_tier":"village_cotedor","terroir_tier_label":"Village Клима · Nuits-St-Georges «les Argillats»","aspect_deg":116,"aspect_code":"ВЮВ 116°","slope_pos_pct":40,"slope_zone_label":"Верхний склон Нюи-Сен-Жорж у Вольне-Романе (275–310 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 58–59 · Nuits-St-Georges: клима les Argillats (1:25 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":4.3,"tannins":4.5,"acidity":3.9,"minerality":4.4,"sweetness":1.3}},{"id":8,"wine_id":1137836,"vintage_id":178951213,"user_vintage_id":3600454041,"producer":"Domaine Anne Gros","name":"Bourgogne Hautes-Côtes de Nuits Rouge","vintage":"2023","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"От-Кот-де-Нюи (Hautes-Côtes de Nuits)","commune":"Кюртий-Вержи (Curtil-Vergy / L'Étang-Vergy)","lieu_dit":"Curtil-Vergy · La Taupe («Ле Топ»)","lat":47.17699,"lon":4.89983,"elevation":"380–410 м","soil":"Известняк с кремнистыми включениями и суглинок","vine_age":"35 лет","aging":"12 мес. в дубовых барриках (20% новый дуб)","rating":null,"vivino_avg":4.1,"notes":"Тонкий Пино Нуар с высокогорного плато Вержи: садовая земляника, фиалка, розовый перец и мягкие танины.","vivino_url":"https://www.vivino.com/wines/178951213","elevation_m":395,"slope_pct":"12–17%","aspect":"Ю / ЮВ (высокое плато Вержи над Вужо и Шамболь-Мюзиньи)","geology_stage":"Верхняя юра (оксфордский известняк с кремнистыми конкрециями chailles и мергелем)","microclimate":"Высокогорный оазис прохлады (380–410 м) над гран крю Кот-де-Нюи.","domain_history":"Domaine Anne Gros в Вольне-Романе (семейная линия Gros) владеет участками в Richebourg, Clos Vougeot, Échezeaux и на плато От-Кот-де-Нюи.","climat_dossier":"Виноградник на известняковом плато Кюртий-Вержи и Л’Этан-Вержи (380–410 м) с кремнистыми включениями: лесная земляника, пион и свежая кислотность.","drinking_window":"2025–2031","serving_temp":"14–15 °C","glassware":"Бургундский шар (Zalto Burgundy)","food_pairing":"Филе утки с инжиром, перепёлка, тунец татаки с кунжутом.","guide_source":"Jasper Morris MW · Inside Burgundy (2nd Ed., Vosne-Romanée: Domaine Anne Gros)","bottle_studio":"img/labels/bottle_08.png","appellation_rank":"Hautes-Côtes de Nuits AOC","geo_order":7,"terroir_tier":"hautes_cotes","terroir_tier_label":"Hautes-Côtes de Nuits · Плато Вержи (395 м)","aspect_deg":135,"aspect_code":"ЮВ 135°","slope_pos_pct":11,"slope_zone_label":"Высокое известняковое плато От-Кот-де-Нюи (380–410 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 50–51 и 60–61 · Curtil-Vergy / Combe d'Orveaux (la Taupe)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.1,"tannins":2.7,"acidity":4.3,"minerality":4.2,"sweetness":1.2}},{"id":9,"wine_id":10999742,"vintage_id":177194358,"user_vintage_id":3600454061,"producer":"Domaine Jean-Marc Millot","name":"Bourgogne Passetoutgrain «Les Autrots»","vintage":"2022","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар, Гаме","abv":"12.5%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Нюи (Côte de Nuits)","commune":"Шамболь-Мюзиньи / Нюи-Сен-Жорж","lieu_dit":"Les Autrots («Лез Отро»)","lat":47.16604,"lon":4.96697,"elevation":"245 м","soil":"Известняково-глинистый аллювий у подножия Шамболь-Мюзиньи","vine_age":"55 лет (совместная посадка Пино Нуар и Гаме)","aging":"12 мес. в старых дубовых бочках","rating":null,"vivino_avg":4,"notes":"Парцельный Passetoutgrain от Аликс и Жан-Марка Мийо: гранат, красная слива, вишня и лёгкая пряность.","vivino_url":"https://www.vivino.com/wines/177194358","elevation_m":245,"slope_pct":"4–7%","aspect":"В (подножие склона на границе Шамболь-Мюзиньи и Вужо)","geology_stage":"Известняково-глинистый аллювий и мелкий гравий конуса выноса Шамболь","microclimate":"Тёплый и защищённый участок у подножия знаменитого склона Chambolle-Musigny.","domain_history":"Семейный домен Жан-Марка Мийо в Нюи-Сен-Жорж под руководством его дочери Аликс Мийо (участки в Кот-де-Нюи, включая Echézeaux и Grands-Échezeaux).","climat_dossier":"Парцель «Les Autrots» у подножия склона Chambolle-Musigny (245 м) со старой совместной посадкой Пино Нуар и Гаме (лозы 55 лет).","drinking_window":"2024–2029","serving_temp":"14–15 °C","glassware":"Бургундский бокал","food_pairing":"Террин по-деревенски, запечённая свиная корейка с травами, сыр Сен-Нектер.","guide_source":"Jasper Morris MW · Inside Burgundy (Domaine Jean-Marc Millot)","bottle_studio":"img/labels/bottle_09.png","appellation_rank":"Парцель Co-Plantation (Шамболь)","geo_order":5,"terroir_tier":"lieu_dit_regional","terroir_tier_label":"Парцель Les Autrots · Шамболь-Мюзиньи","aspect_deg":96,"aspect_code":"В 96°","slope_pos_pct":78,"slope_zone_label":"Подножие склона Шамболь-Мюзиньи (245 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 60–61 · Chambolle-Musigny & Vougeot (1:25 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.3,"tannins":3.0,"acidity":4.1,"minerality":3.8,"sweetness":1.3}},{"id":10,"wine_id":5342977,"vintage_id":170414428,"user_vintage_id":3600454078,"producer":"Domaine Jean-Baptiste Ponsot","name":"Rully Rouge","vintage":"2022","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-Шалоннез (Côte Chalonnaise)","commune":"Рюйи (Rully)","lieu_dit":"Склоны Rully (парцели у Премье Крю Molesme и Préaux)","lat":46.87118,"lon":4.73442,"elevation":"270–300 м","soil":"Бурый известняк с красной железистой глиной","vine_age":"40 лет","aging":"12 мес. в дубовых барриках (20% новый дуб)","rating":null,"vivino_avg":3.9,"notes":"Классический красный Рюйи: спелая черешня, лакрица, фиалка и сбалансированная кислотность.","vivino_url":"https://www.vivino.com/wines/170414428","elevation_m":285,"slope_pct":"10–14%","aspect":"ЮВ (амфитеатр Рюйи, Кот-Шалоннез)","geology_stage":"Верхняя юра (оксфордский бурый известняк с красной железистой глиной)","microclimate":"Сухой и солнечный склон Кот-Шалоннез, защищённый от западных ветров холмом Montagne de la Folie.","domain_history":"Жан-Батист Понсо руководит семейным доменом в Рюйи с 2000 года (сертификат Terra Vitis, раздельная винификация по парцелям).","climat_dossier":"Ассамбляж 40-летних лоз Пино Нуар с известняково-железистых склонов Rully (270–300 м) рядом с Премье Крю Molesme и Préaux.","drinking_window":"2024–2030","serving_temp":"15 °C","glassware":"Бургундский бокал","food_pairing":"Голубиная грудка с лесными ягодами, телятина на кости, выдержанный камамбер.","guide_source":"The World Atlas of Wine (9th Ed., p. 64 · Côte Chalonnaise: Rully)","bottle_studio":"img/labels/bottle_10.png","appellation_rank":"Village (Кот-Шалоннез)","geo_order":14,"terroir_tier":"village_cotedor","terroir_tier_label":"Village · Rully (Кот-Шалоннез)","aspect_deg":128,"aspect_code":"ЮВ 128°","slope_pos_pct":48,"slope_zone_label":"Известняковый склон амфитеатра Рюйи (270–300 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 62 · Côte Chalonnaise: Rully (1:100 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.6,"tannins":3.4,"acidity":3.9,"minerality":4.0,"sweetness":1.3}},{"id":11,"wine_id":6303,"vintage_id":155698631,"user_vintage_id":3600454103,"producer":"Domaine Lucien Muzard & Fils","name":"Chassagne-Montrachet Vieilles Vignes Rouge","vintage":"2016","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Бон (Côte de Beaune)","commune":"Шассань-Монраше (Chassagne-Montrachet)","lieu_dit":"La Goujonne / Старые лозы юга Chassagne-Montrachet","lat":46.92854,"lon":4.73147,"elevation":"240–270 м","soil":"Красная оолитовая глина на известняковой плите","vine_age":"55+ лет (гроздевая ферментация)","aging":"14 мес. в дубовых бочках + 10 лет бутылочной выдержки","rating":null,"vivino_avg":4,"notes":"Выдержанный красный Шассань-Монраше 2016: осенний подлесок, трюфель, вяленая клюква и чайный лист.","vivino_url":"https://www.vivino.com/wines/155698631","elevation_m":255,"slope_pct":"6–10%","aspect":"ВЮВ (южный сектор Шассань-Монраше в сторону Сантене)","geology_stage":"Средняя юра (батский известняк, перекрытый красной железистой оолитовой глиной)","microclimate":"Южная часть Шассань-Монраше исторически славилась именно красным Пино Нуар благодаря тёплым железистым глинам.","domain_history":"Семейный домен Клода и Эрве Мюзар в Шассань-Монраше (основан в XVII в.): органическое виноградарство и ферментация цельными гроздями.","climat_dossier":"Старые лозы Пино Нуар (55+ лет) на красных оолитовых глинах южной части Chassagne-Montrachet (240–270 м) вокруг Morgeot и Clos Saint-Jean.","drinking_window":"2022–2030 (на пике зрелости)","serving_temp":"16 °C","glassware":"Большой бургундский шар","food_pairing":"Жаркое из оленины или кабана, утка с белыми грибами, сыр Эпуас.","guide_source":"Jasper Morris MW · Inside Burgundy (2nd Ed., Chassagne-Montrachet: Domaine Lucien Muzard)","bottle_studio":"img/labels/bottle_11.png","appellation_rank":"Village · Vieilles Vignes","geo_order":13,"terroir_tier":"village_cotedor","terroir_tier_label":"Village · Chassagne-Montrachet Vieilles Vignes","aspect_deg":125,"aspect_code":"ЮВ 125°","slope_pos_pct":70,"slope_zone_label":"Южный склон Шассань-Монраше (240–270 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 54–55 · Côte de Beaune: Chassagne-Montrachet (1:25 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.8,"tannins":3.5,"acidity":3.8,"minerality":4.3,"sweetness":1.2}},{"id":12,"wine_id":6168487,"vintage_id":171286786,"user_vintage_id":3600454119,"producer":"Domaine Pierre-Olivier Garcia","name":"Brouilly «La Folie»","vintage":"2022","style":"red","style_label":"Красное сухое","grapes":"Гаме 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"Божоле: Крю Бруйи (Cru du Beaujolais)","commune":"Сен-Лаже / Оdenas (Brouilly)","lieu_dit":"La Folie («Ла Фоли»)","lat":46.10169,"lon":4.63496,"elevation":"320–360 м","soil":"Разрушенный розовый гранит («gore») и диорит горы Бруйи","vine_age":"60+ лет (подвязка gobelet)","aging":"14 мес. в бургундских пьесах (метод Кот-де-Нюи с цельными гроздями)","rating":null,"vivino_avg":4.1,"notes":"Гаме со старых лоз гранитного клима «La Folie» в Бруйи, винифицированное по бургундскому методу в дубовых пьесах.","vivino_url":"https://www.vivino.com/wines/171286786","elevation_m":340,"slope_pct":"18–25%","aspect":"ЮВ (крутой склон горы Мон-Бруйи)","geology_stage":"Палеозойский кристаллический фундамент: разрушенный розовый порфировидный гранит («gore») и голубой диорит (pierre bleue)","microclimate":"Тёплый южный амфитеатр у подножия горы Мон-Бруйи (484 м) с сильным перепадом дневных и ночных температур.","domain_history":"Проект винодела Пьера-Оливье Гарсия из Нюи-Сен-Жорж: гроздевая ферментация без карбонической мацерации и выдержка в бургундских бочках 228 л.","climat_dossier":"Высокогорное клима «La Folie» (320–360 м) на разрушенном розовом граните и диорите горы Мон-Бруйи (60-летние лозы подвязки gobelet): ежевика, пион и плотный танин.","drinking_window":"2024–2032","serving_temp":"15 °C","glassware":"Бургундский бокал","food_pairing":"Перепёлка на углях, говяжий язык на гриле, лионские колбаски и выдержанный Сен-Марселен.","guide_source":"The World Atlas of Wine (9th Ed., p. 66 · Beaujolais Crus: Brouilly)","bottle_studio":"img/labels/bottle_12.png","appellation_rank":"Cru du Beaujolais · Клима","geo_order":15,"terroir_tier":"grand_cru_cru","terroir_tier_label":"Cru du Beaujolais · Brouilly «La Folie»","aspect_deg":138,"aspect_code":"ЮВ 138°","slope_pos_pct":30,"slope_zone_label":"Гранитный склон горы Мон-Бруйи (320–360 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 68 · The Crus of Beaujolais: Brouilly (1:75 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.5,"tannins":3.3,"acidity":4.2,"minerality":4.6,"sweetness":1.2}},{"id":13,"wine_id":7408388,"vintage_id":161034128,"user_vintage_id":3600779206,"producer":"Nadal","name":"Original Reserva Brut Corpinnat","vintage":"N.V.","style":"sparkling","style_label":"Игристое белое брют","grapes":"Макабео, Парельяда, Шарелло","abv":"11.5%","country":"Испания","macro_region":"Каталония (Пенедес)","sub_region":"Corpinnat (Центральный Пенедес)","commune":"Эль-Пла-дель-Пенедес (Torrelavit / El Pla del Penedès)","lieu_dit":"Поместье Finca Nadal de la Boadella (осн. 1510)","lat":41.42661,"lon":1.70071,"elevation":"220–260 м","soil":"Известняково-глинистые почвы с карбонатным горизонтом","vine_age":"35+ лет (100% органический сбор вручную)","aging":"40+ мес. на осадке в бутылке (стандарт Corpinnat)","rating":null,"vivino_avg":3.9,"notes":"Выдержанный Corpinnat из поместья Nadal (40+ мес. на осадке): средиземноморские травы, фенхель, печёная айва и сухой финиш.","vivino_url":"https://www.vivino.com/wines/161034128","elevation_m":240,"slope_pct":"5–8%","aspect":"ЮВ (межгорная котловина Центрального Пенедеса с видом на массив Монсеррат)","geology_stage":"Миоценовые морские известняково-глинистые отложения с глубоким карбонатным горизонтом (caliche)","microclimate":"Средиземноморский с прохладным горным оттоком с зубчатого массива Монсеррат (1236 м).","domain_history":"Поместье Can Nadal de la Boadella в Торельовите основано в 1510 году; один из домов-основателей ассоциации Corpinnat (органический виноград, ручной сбор, полная винификация в поместье).","climat_dossier":"Ассамбляж автохтонных каталонских сортов Макабео, Парельяда и Шарелло с известняково-глинистой террасы Центрального Пенедеса (240 м).","drinking_window":"2024–2028","serving_temp":"8–10 °C","glassware":"Тюльпан для выдержанных игристых вин","food_pairing":"Хамон иберико бейота, осьминог по-галисийски, паэлья с морепродуктами.","guide_source":"The World Atlas of Wine (9th Ed., p. 194 · Catalonia: Penedès & Corpinnat)","bottle_studio":"img/labels/bottle_13.png","appellation_rank":"Corpinnat (Выдержка 40+ мес.)","geo_order":17,"terroir_tier":"lieu_dit_regional","terroir_tier_label":"Corpinnat · Центральный Пенедес (Finca Nadal)","aspect_deg":135,"aspect_code":"ЮВ 135°","slope_pos_pct":65,"slope_zone_label":"Известняковая терраса Центрального Пенедеса (240 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 195 · Catalunya: Penedès DOP (NADAL · Torrelavit)","tasted_date":"2026-09-11","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.6,"tannins":4.3,"acidity":4.6,"minerality":4.5,"sweetness":1.0}},{"id":14,"wine_id":13895428,"vintage_id":183188245,"user_vintage_id":3600779211,"producer":"Champagne Les Gamins d'Avize","name":"Blanc de Noirs Brut Champagne","vintage":"N.V.","style":"sparkling","style_label":"Шампанское белое брют","grapes":"Пино Нуар, Менье","abv":"12.0%","country":"Франция","macro_region":"Шампань","sub_region":"Кот-де-Блан / Долина Марны","commune":"Авиз (Avize)","lieu_dit":"Микро-негоциантский проект молодых виноделов из Avize","lat":48.97463,"lon":4.00835,"elevation":"150–210 м","soil":"Белемнитовый мел и известняково-мергелевые склоны","vine_age":"30 лет","aging":"24–30 мес. на осадке в бутылке","rating":null,"vivino_avg":4,"notes":"Гастрономичный Blanc de Noirs из Авиза: белая смородина, красное яблоко, ржаная корочка и меловая кислотность.","vivino_url":"https://www.vivino.com/wines/183188245","elevation_m":175,"slope_pct":"10–15%","aspect":"ЮВ / Ю (склоны Авиза и долины Марны)","geology_stage":"Верхний мел (кампанский мел) и известняково-мергелевые глины ипрского яруса","microclimate":"Сочетание прохладной меловой вертикали Авиза и спелых южных склонов для Пино Нуар и Менье.","domain_history":"Микро-проект «Les Gamins d'Avize» молодых виноделов из коммуны Avize, выпускающий малые тиражи шампанского с низким дозажем.","climat_dossier":"Кюве Blanc de Noirs из Пино Нуар и Менье (выдержка 24–30 мес. на осадке) с меловых и известняково-мергелевых склонов вокруг Avize (150–210 м).","drinking_window":"2024–2028","serving_temp":"9–11 °C","glassware":"Бокал для шампанского (Lehmann Jamesse)","food_pairing":"Тартар из лосося, карпаччо из гребешка, суши и сашими.","guide_source":"Peter Liem · Champagne Guide (Avize)","bottle_studio":"img/labels/bottle_14.png","appellation_rank":"Champagne AOC (Рекольтант)","geo_order":2,"terroir_tier":"grand_cru_cru","terroir_tier_label":"Шампань · Авиз (Кот-де-Блан)","aspect_deg":115,"aspect_code":"ВЮВ 115°","slope_pos_pct":44,"slope_zone_label":"Меловой склон Авиза (150–210 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 75 · The Heart of Champagne: Avize","tasted_date":"2026-09-11","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.7,"tannins":4.2,"acidity":4.3,"minerality":4.1,"sweetness":1.4}},{"id":15,"wine_id":12277637,"vintage_id":176812105,"user_vintage_id":3600779215,"producer":"STN Winery («Трио»: Бочкарёв · Долингер · Шамов)","name":"«Трио» Алиготе (Trio Aligoté)","vintage":"2023","style":"white","style_label":"Белое сухое","grapes":"Алиготе 100%","abv":"12.5%","country":"Россия","macro_region":"Крым (Севастополь)","sub_region":"Долина реки Бельбек","commune":"с. Верхнесадовое (Севастополь)","lieu_dit":"Известняковое плато долины Бельбек (Верхнесадовое)","lat":44.68559,"lon":33.70081,"elevation":"180–240 м","soil":"Мшанковый и нуммулитовый известняк с карбонатным суглинком","vine_age":"15–20 лет","aging":"Выдержка на тонком дрожжевом осадке в нейтральном дубе и стали","rating":null,"vivino_avg":4.1,"notes":"Совместный релиз Романа Бочкарёва (STN), Андрея Долингера и Евгения Шамова: лайм, айва, белая смородина и солоноватый известняковый финиш.","vivino_url":"https://www.vivino.com/wines/176812105","elevation_m":210,"slope_pct":"8–12%","aspect":"ЮЗ / З (известняковое плато над каньоном реки Бельбек, с. Верхнесадовое)","geology_stage":"Сарматский и палеогеновый мшанковый и нуммулитовый известняк с карбонатным щебнем","microclimate":"Крымский предгорно-морской: продуваемое черноморским бризом плато Бельбека на широте Бургундии/Пьемонта (44.7° N) с прохладными ночами из горного каньона.","domain_history":"Проект «Трио» (Trio): винодел Роман Бочкарёв (STN Winery, Севастополь), Андрей Долингеp и сомелье Евгений Шамов; крымское Алиготе с выдержкой на тонком осадке.","climat_dossier":"Виноградник в с. Верхнесадовое (долина реки Бельбек, 180–240 м) на белых мшанковых и нуммулитовых известняках куэсты Бельбек.","drinking_window":"2024–2028","serving_temp":"10–12 °C","glassware":"Универсальный бокал / бокал для белого бургундского","food_pairing":"Черноморские мидии и рапаны, барабулька, козий сыр из предгорий Крыма.","guide_source":"Атлас виноделия Севастополя (терруар долины Бельбек / Верхнесадовое)","bottle_studio":"img/labels/bottle_15.png","appellation_rank":"ЗГУ Севастополь · Бельбек","geo_order":16,"terroir_tier":"lieu_dit_regional","terroir_tier_label":"ЗГУ Севастополь · Долина Бельбек (Верхнесадовое)","aspect_deg":215,"aspect_code":"ЮЗ 215°","slope_pos_pct":74,"slope_zone_label":"ЮЗ склон мшанковых известняков куэсты Бельбек (210 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 270 · The Black Sea Region: Crimea & Sevastopol","tasted_date":"2026-09-11","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.9,"tannins":3.6,"acidity":3.5,"minerality":3.6,"sweetness":1.4}}]};
+    const INITIAL_DATA = {"account":{"user_id":77968357,"cellar_id":6491870,"name":"Artem Zaigrin","handle":"@artem_zaigrin","last_synced":"2026-10-31"},"wines":[{"id":20,"wine_id":1689450,"vintage_id":182590020,"user_vintage_id":3601900020,"producer":"Bodega Toro (Fecovita)","name":"Centenario · Malbec","vintage":"2025","style":"red","style_label":"Красное сухое","grapes":"Мальбек 100%","abv":"12.5%","country":"Аргентина","macro_region":"Мендоса","sub_region":"Мендоса · Маипу и Лухан-де-Куйо (Предгорья Анд)","commune":"Мендоса · Маипу / Лухан-де-Куйо","lieu_dit":"Виноградники сообщества Fecovita (Est. INV N° B72134)","lat":-33.032,"lon":-68.968,"elevation":"850 м","soil":"Аллювиальные андийские галечники, речная галька, песок и карбонатно-известковый суглинок","vine_age":"25–35 лет","aging":"Стальные и бетонные чаны для сохранения сочной ягодной свежести Мальбека","rating":null,"vivino_avg":3.7,"notes":"Bodega Toro Centenario Malbec 2025 (Мендоса, Аргентина, 12.5% об., EAN 7790314062001): полнотелый питкий Мальбек с сочным ароматом ежевики, спелой сливы, красной черешни и пряных сушёных трав.","vivino_url":"https://www.vivino.com/search/wines?q=Bodega+Toro+Centenario+Malbec+2025","elevation_m":850,"slope_pct":"5–10%","aspect":"В (восточный предгорный конус выноса Анд)","geology_stage":"Четвертичные аллювиальные конусы выноса рек Мендоса и Тунуян: андийский гранит, порфир и карбонатные суглинки","microclimate":"Высокогорный засушливый континентальный у подножия Анд: более 300 солнечных дней в году, орошение талыми ледниковыми водами и прохладные ночи.","domain_history":"История марки Toro началась в Мендосе в 1896 году, когда два европейских иммигранта основали винодельню под девизом «вино, созданное тружениками для тружеников». Сегодня Bodega Toro (объединение виноградарей FECOVITA Coop., Est. INV N° B72134) — самое популярное вино Аргентины; юбилейная линейка «Centenario» посвящена векового наследию хозяйства.","climat_dossier":"Высокогорные виноградники Мендосы (Маипу и Лухан-де-Куйо, 750–950 м): яркий сортовой профиль аргентинского Мальбека урожая 2025 года — ежевика, слива, красная вишня, сушёные травы и мягкие бархатистые танины.","drinking_window":"2025–2028","serving_temp":"16–18 °C (60–64 °F)","glassware":"Бордоский бокал / бокал для Мальбека","food_pairing":"Говяжий стейк на гриле, паста с томатным соусом, бургеры с голубым сыром, мясные закуски (рекомендация с контрэтикетки).","guide_source":"Этикетка бутылки (Bodega Toro Centenario Malbec 2025 · Est. INV N° B72134 · EAN 7790314062001) · The World Atlas of Wine (9th Ed., Argentina: Mendoza)","bottle_studio":"img/labels/bottle_20.jpg","photos":["img/labels/bottle_20.jpg"],"appellation_rank":"Premier Cru · Mendoza (Maipú / Luján de Cuyo)","geo_order":20,"terroir_tier":"premier_cru","terroir_tier_label":"Mendoza · Maipú & Luján de Cuyo (850 м)","aspect_deg":90,"aspect_code":"В 90°","slope_pos_pct":48,"slope_zone_label":"Высокогорные аллювиальные террасы Мендосы (750–950 м)","atlas_spread":"Атлас терруаров Южной Америки · Аргентина: Мендоса (Маипу и Лухан-де-Куйо)","tasted_date":"2026-11-05","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.9,"tannins":3.4,"acidity":3.5,"minerality":3.6,"sweetness":1.4}},{"id":19,"wine_id":11520420,"vintage_id":182049100,"user_vintage_id":3601900019,"producer":"Скалистый берег (Côte Rocheuse)","name":"Каберне Фран · ЗГУ «Кубань»","vintage":"2023","style":"red","style_label":"Красное сухое","grapes":"Каберне Фран 100%","abv":"14.3%","country":"Россия","macro_region":"Кубань","sub_region":"Анапа · Хребет Семисам (ЗГУ «Кубань»)","commune":"Анапа · с. Варваровка","lieu_dit":"Хребет Семисам · с. Варваровка (44.83°N, 37.37°E)","lat":44.83212,"lon":37.37714,"elevation":"195 м","soil":"Известняково-мергелевый хребет Семисам с белым карбонатным щебнем среди реликтовых лесов Утриша","vine_age":"11 лет (ручной сбор, тираж 9 200 бут.)","aging":"12 мес. во французских дубовых барриках (225 л), розлив 07.2025","rating":null,"vivino_avg":4.1,"notes":"Гравитационная винодельня «Скалистый берег» (Варваровка, 44.83°N 37.37°E): спелая чёрная смородина, вишня, лист смородины, графит и бархатистые танины. На контрэтикетке — иллюстрация «Лисица обыкновенная» из серии Красной книги Утриша.","vivino_url":"https://www.vivino.com/search/wines?q=%D0%A1%D0%BA%D0%B0%D0%BB%D0%B8%D1%81%D1%82%D1%8B%D0%B9+%D0%B1%D0%B5%D1%80%D0%B5%D0%B3+%D0%9A%D0%B0%D0%B1%D0%B5%D1%80%D0%BD%D0%B5+%D0%A4%D1%80%D0%B0%D0%BD+2023","elevation_m":195,"slope_pct":"12–18%","aspect":"ЮЮЗ (юго-юго-западный склон хребта Семисам к Чёрному морю)","geology_stage":"Верхний мел и палеоген: белый карбонатный мергель, известняк и флиш хребта Семисам","microclimate":"Средиземноморско-черноморский: морской бриз с Чёрного моря и прохладные потоки из реликтового можжевелово-фисташкового леса заповедника «Утриш».","domain_history":"Гравитационная винодельня АО «Скалистый берег» (Côte Rocheuse) в с. Варваровка под Анапой спроектирована в форме морской гальки, вписанной в склон хребта Семисам (150–250 м). Виноградники (30 га) заложены в 2011–2012 гг. саженцами из питомника Гийома.","climat_dossier":"Парцель Каберне Фран (44.83°N, 37.37°E, лозы 11 лет) на известняково-мергелевом склоне между Чёрным морем и заповедником Утриш: ручной сбор, гравитационная винификация без насосов, 12 месяцев во французском дубе, лимитированный тираж 9 200 бутылок.","drinking_window":"2025–2032","serving_temp":"16–18 °C","glassware":"Бордоский бокал (Riedel Vinum Bordeaux / Zalto Bordeaux)","food_pairing":"Каре ягнёнка на углях с пряными травами, утиная грудка, говяжий стейк рибай, выдержанные твёрдые сыры.","guide_source":"Контрэтикетка бутылки (44,83°; 37,37° · Урожай 2023 · 9 200 бут.) · Реестр ЗГУ «Кубань»","bottle_studio":"img/labels/bottle_19.jpg","appellation_rank":"Grand Cru · ЗГУ «Кубань» (Варваровка · Семисам)","geo_order":19,"terroir_tier":"grand_cru_cru","terroir_tier_label":"Grand Cru · Хребет Семисам (44.83°N · 37.37°E)","aspect_deg":205,"aspect_code":"ЮЮЗ 205°","slope_pos_pct":42,"slope_zone_label":"Средний склон хребта Семисам над морем (150–250 м)","atlas_spread":"Кадастр терруаров Кубани (1:25 000) · Анапа · с. Варваровка (Скалистый берег)","tasted_date":"2026-11-03","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":4.1,"tannins":3.8,"acidity":3.8,"minerality":4.1,"sweetness":1.2}},{"id":17,"wine_id":3326645,"vintage_id":176701510,"user_vintage_id":3601255420,"producer":"Château de Laborde (Hervé Kerlann)","name":"Bourgogne Hautes-Côtes de Beaune «En Cuillery»","vintage":"2022","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"От-Кот-де-Бон (Hautes-Côtes de Beaune)","commune":"Монтели (Monthélie)","lieu_dit":"En Cuillery («Ан Кюлли»)","lat":47.00738,"lon":4.76387,"elevation":"310–350 м","soil":"Бурый известняк и мергель на крутом верхнем склоне над Монтели","vine_age":"35 лет (низкая урожайность ~35 гл/га)","aging":"12 мес. во французском дубе (10–15% новый дуб), розлив 04.12.2023","rating":null,"vivino_avg":3.9,"notes":"Отдельный парцель «En Cuillery» у верхней границы Монтели: лесная малина, вишня, пион и сухая известняковая свежесть.","vivino_url":"https://www.vivino.com/wines/176701510","elevation_m":330,"slope_pct":"14–18%","aspect":"ЮЮВ (юго-юго-восток, верхняя бровка над Монтели)","geology_stage":"Верхний юрский отдел (оксфордский ярус): бурый плитчатый известняк и белый мергель","microclimate":"Континентальный горно-долинный; прохладный вечерний бриз с плато От-Кот сохраняет кислотность в тёплом 2022 году.","domain_history":"Поместье Château de Laborde в Мерсанже (основано в XVII в.) восстановлено Эрве Керланом в 1999 году; специализируется на отдельных парцелях Кот-де-Бон и От-Кот.","climat_dossier":"Парцель «En Cuillery» примыкает к верхней границе коммунального апелласьона Monthélie на высоте 310–350 м: тонкий каменистый слой на известняковой плите даёт лёгкое, цветочное красное вино с высокой кислотностью.","drinking_window":"2024–2029","serving_temp":"14–15 °C","glassware":"Бургундский бокал (Zalto Burgundy / Spiegelau Definition Burgundy)","food_pairing":"Перепёлка на гриле, паштет из утки с брусникой, телячья вырезка с лисичками, мягкие сыры Эпуас и Брилья-Саварен.","guide_source":"The World Atlas of Wine (9th Ed., p. 62 · Côte de Beaune); BIVB Climats & Lieux-Dits Registry","bottle_studio":"img/labels/bottle_17.png","appellation_rank":"Hautes-Côtes · Парцель у Монтели","geo_order":11,"terroir_tier":"hautes_cotes","terroir_tier_label":"Hautes-Côtes de Beaune · Клима «En Cuillery» (Монтели)","aspect_deg":158,"aspect_code":"ЮЮВ 158°","slope_pos_pct":35,"slope_zone_label":"Верхняя бровка склона над Монтели (310–350 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 54–55 · Côte de Beaune: Monthélie & Meursault (1:25 000)","tasted_date":"2026-10-31","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.2,"tannins":2.9,"acidity":4.2,"minerality":4.1,"sweetness":1.2}},{"id":1,"wine_id":1773665,"vintage_id":159682524,"user_vintage_id":3600428145,"producer":"Domaine Tortochot","name":"Gevrey-Chambertin Vieilles Vignes","vintage":"2018","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"13.5%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Нюи (Côte de Nuits)","commune":"Жевре-Шамбертен (Gevrey-Chambertin)","lieu_dit":"Vieilles Vignes (En Champs · Les Crais · En Motrot)","lat":47.2273,"lon":4.96723,"elevation":"260–300 м","soil":"Известняк батского яруса, железистая глина и мергель","vine_age":"60+ лет (Vieilles Vignes, органический сертификат)","aging":"16–18 мес. во французских барриках (50% новый дуб)","rating":4.5,"vivino_avg":4.1,"notes":"После раскрытия насыщенный аромат сухофруктов и грибов, тона подлеска, чёрной черешни и зрелые танины.","vivino_url":"https://www.vivino.com/wines/159682524","elevation_m":280,"slope_pct":"8–12%","aspect":"ВЮВ (восточно-юго-восточный конус выноса Лаво)","geology_stage":"Средняя юра (батский и байосский ярусы): криноидный известняк (calcaire à entroques) с железистым красным мергелем","microclimate":"Умеренно-континентальный, защищённый с запада уступом Кот-д’Ор; солнечный и тёплый винтаж 2018 дал мощную концентрацию.","domain_history":"Семейный домен в Жевре-Шамбертен с конца XIX века под управлением Брижит Тортошо (4-е поколение). Органический сертификат с 2013 года, классическая выдержка в дубе без фильтрации.","climat_dossier":"Кюве Vieilles Vignes со старых парцелей (лозы старше 60 лет, посадки 1950–1960-х) в центральной и южной части Gevrey-Chambertin на батском известняке: сушёная вишня, лесные грибы, подлесок и плотный танин.","drinking_window":"2023–2033","serving_temp":"15–16 °C (декантация 45 мин.)","glassware":"Большой бургундский шар (Riedel Sommeliers Bourgogne Grand Cru)","food_pairing":"Утиная грудка магре с вишнёвым демиглясом, каре ягнёнка с розмарином, беф-бургиньон, выдержанный Конте и Сито.","guide_source":"Jasper Morris MW · Inside Burgundy (2nd Ed., Gevrey-Chambertin & Domaine Tortochot)","bottle_studio":"img/labels/bottle_01.png","appellation_rank":"Village (Кот-де-Нюи)","geo_order":3,"terroir_tier":"village_cotedor","terroir_tier_label":"Village · Кот-де-Нюи (Vieilles Vignes)","aspect_deg":112,"aspect_code":"ВЮВ 112°","slope_pos_pct":52,"slope_zone_label":"Средний склон Кот-де-Нюи (260–300 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 60–61 · Côte de Nuits: Gevrey-Chambertin (1:25 000)","tasted_date":"2026-10-30","purchased_at":"","rating_az":4.5,"rating_anya":null,"taste_profile":{"body":4.2,"tannins":4.1,"acidity":3.7,"minerality":4.3,"sweetness":1.3}},{"id":16,"wine_id":10025650,"vintage_id":176160105,"user_vintage_id":3600779217,"producer":"Rossignol-Cornu & Fils","name":"Bourgogne Hautes-Côtes de Beaune","vintage":"2022","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"12.5%","country":"Франция","macro_region":"Бургундия","sub_region":"От-Кот-де-Бон (Hautes-Côtes de Beaune)","commune":"Нанту / Вольне (Nantoux)","lieu_dit":"Высокогорные склоны долины Нанту","lat":47.02697,"lon":4.75725,"elevation":"360–400 м","soil":"Известняковый щебень и белая мергелевая глина","vine_age":"30–40 лет","aging":"12 мес. в дубовых бочках и стальных чанах","rating":null,"vivino_avg":3.8,"notes":"Семейный домен из Вольне (Жюльен Россиньоль): прохладный профиль От-Кот-де-Бон с нотами красной смородины, брусники и трав.","vivino_url":"https://www.vivino.com/wines/176160105","elevation_m":380,"slope_pct":"15–20%","aspect":"ЮЗ / ЮЮВ (высокогорный амфитеатр долины Нанту)","geology_stage":"Верхняя юра (оксфордский ярус): белые мергели Арговьена и плитчатый известняк","microclimate":"Прохладный высокогорный: цветение и сбор урожая на 7–10 дней позже классического Кот-де-Бон.","domain_history":"Семейный домен в Вольне (основан в 1923 г.), 6 га виноградников в Вольне, Поммаре и От-Кот-де-Бон. Ручной сбор и мягкая экстракция.","climat_dossier":"Высокогорные склоны вокруг деревни Нанту (360–400 м) позади Поммара и Вольне на белом известняковом мергеле: высокая кислотность, земляника и красная смородина.","drinking_window":"2024–2028","serving_temp":"14–15 °C","glassware":"Бургундский бокал среднего объёма","food_pairing":"Запечённая цесарка, телячья печень с шалотом, тартар из говядины, козьи сыры Шolay и Сен-Марселен.","guide_source":"The World Atlas of Wine (9th Ed., p. 60); BIVB Hautes-Côtes de Beaune Profile","bottle_studio":"img/labels/bottle_16.png","appellation_rank":"Hautes-Côtes de Beaune AOC","geo_order":10,"terroir_tier":"hautes_cotes","terroir_tier_label":"Hautes-Côtes de Beaune · Долина Нанту (380 м)","aspect_deg":155,"aspect_code":"ЮЮВ 155°","slope_pos_pct":16,"slope_zone_label":"Амфитеатр От-Кот-де-Бон позади Поммара (360–400 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 50–51 и 54–57 · Hautes-Côtes de Beaune (Nantoux)","tasted_date":"2026-10-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.0,"tannins":2.8,"acidity":4.3,"minerality":3.9,"sweetness":1.1}},{"id":2,"wine_id":2046055,"vintage_id":3764458,"user_vintage_id":3600453903,"producer":"Camille Bonville","name":"Blanc de Blancs Brut Champagne Grand Cru","vintage":"N.V.","style":"sparkling","style_label":"Шампанское белое брют","grapes":"Шардоне 100%","abv":"12.5%","country":"Франция","macro_region":"Шампань","sub_region":"Кот-де-Блан (Côte des Blancs)","commune":"Авиз Гран Крю (Avize Grand Cru)","lieu_dit":"Парцели Гран Крю коммун Avize и Oger","lat":48.97873,"lon":4.01439,"elevation":"140–180 м","soil":"Чистый белемнитовый мел кампанского яруса","vine_age":"40 лет","aging":"36+ мес. на осадке в бутылке, дозаж ~7 г/л","rating":null,"vivino_avg":4.1,"notes":"Blanc de Blancs Grand Cru из Авиза: меловая кислотность, печёное яблоко, бриошь, белые цветы и тонкий мусс.","vivino_url":"https://www.vivino.com/wines/3764458","elevation_m":160,"slope_pct":"10–14%","aspect":"В / ВЮВ (средняя часть мелового склона Авиза)","geology_stage":"Верхний мел (кампанский ярус): чистый белемнитовый мел (craie à bélemnites) мощностью до 200 м","microclimate":"Океаническо-континентальный; восточный склон Кот-де-Блан получает мягкое утреннее солнце, а мел работает как природный терморегулятор и водный резервуар.","domain_history":"Дом Camille Bonville в Авизе основан в начале XX века; Оливье и Фердинанда Бонвиль работают с 15 га собственных виноградников Grand Cru в Avize, Oger и Le Mesnil-sur-Oger.","climat_dossier":"Ассамбляж 25 парцелей Grand Cru коммун Avize и Oger (100% Шардоне) на кампанском белемнитовом мелу: лимонный курд, белые цветы, миндальная бриошь и солоноватый финиш.","drinking_window":"2024–2030","serving_temp":"9–11 °C","glassware":"Тюльпановидный бокал для винтажной Шампани (Lehmann Jamesse Grand Champagne)","food_pairing":"Устрицы Жилардо, гребешки крудо с цитрусовым маслом, тюрбо в сливочном соусе, выдержанный Пармиджано.","guide_source":"Peter Liem · Champagne: The Essential Guide (Côte des Blancs: Avize Grand Cru)","bottle_studio":"img/labels/bottle_02.png","appellation_rank":"Grand Cru (Шампань 100%)","geo_order":1,"terroir_tier":"grand_cru_cru","terroir_tier_label":"Grand Cru · Кот-де-Блан (100%)","aspect_deg":92,"aspect_code":"В 92°","slope_pos_pct":56,"slope_zone_label":"Меловой склон Гран Крю (140–180 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 75 · The Heart of Champagne: Côte des Blancs (Avize Grand Cru)","tasted_date":"2026-10-19","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.3,"tannins":4.4,"acidity":4.7,"minerality":4.9,"sweetness":1.3}},{"id":3,"wine_id":1420436,"vintage_id":172969636,"user_vintage_id":3600453931,"producer":"Moillard","name":"Gevrey-Chambertin «Beau Versant»","vintage":"2021","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Нюи (Côte de Nuits)","commune":"Жевре-Шамбертен (Gevrey-Chambertin)","lieu_dit":"Кюве «Beau Versant» (восточный склон Жевре)","lat":47.22239,"lon":4.97303,"elevation":"250–290 м","soil":"Известняковый гравий и бурый мергель","vine_age":"35–45 лет","aging":"14–16 мес. во французском дубе","rating":null,"vivino_avg":3.9,"notes":"Прохладный винтаж 2021: светлый рубиновый цвет, кислая вишня, клюква, белый перец и минеральная свежесть.","vivino_url":"https://www.vivino.com/wines/172969636","elevation_m":270,"slope_pct":"7–11%","aspect":"В (восточный склон Жевре-Шамбертен)","geology_stage":"Средняя юра (байосский известняк и мергелево-гравийный конус выноса)","microclimate":"Прохладный и морозный 2021 винтаж с невысокой урожайностью: классический «северный» профиль Пино Нуар с высокой естественной кислотностью.","domain_history":"Дом и негоциант Moillard основан в Нюи-Сен-Жорж в 1850 году Симфориеном Муайяром.","climat_dossier":"Кюве «Beau Versant» с участков восточной экспозиции коммуны Gevrey-Chambertin (250–290 м): красная вишня, клюква, фиалка и умеренный танин.","drinking_window":"2024–2030","serving_temp":"15 °C","glassware":"Бургундский бокал (Zalto Burgundy)","food_pairing":"Ростбиф из говядины травяного откорма, ризотто с белыми грибами, перепёлка с тимьяном.","guide_source":"The World Atlas of Wine (9th Ed., p. 56 · Gevrey-Chambertin); BIVB AOC Registry","bottle_studio":"img/labels/bottle_03.png","appellation_rank":"Village (Кот-де-Нюи)","geo_order":4,"terroir_tier":"village_cotedor","terroir_tier_label":"Village · Кот-де-Нюи («Beau Versant»)","aspect_deg":94,"aspect_code":"В 94°","slope_pos_pct":60,"slope_zone_label":"Восточный склон Жевре-Шамбертен (250–290 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 60–61 · Côte de Nuits: Gevrey-Chambertin (1:25 000)","tasted_date":"2026-10-10","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.6,"tannins":3.7,"acidity":4.1,"minerality":4.2,"sweetness":1.2}},{"id":4,"wine_id":1435042,"vintage_id":176735631,"user_vintage_id":3600453956,"producer":"Domaine de la Vougeraie","name":"Crémant de Bourgogne «Fête de Famille» Brut","vintage":"2020","style":"sparkling","style_label":"Игристое белое брют","grapes":"Шардоне, Пино Нуар","abv":"12.5%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Нюи / От-Кот-де-Нюи","commune":"Вужо / Кюртий-Вержи (Vougeot / Curtil-Vergy)","lieu_dit":"Биодинамические участки домена в От-Кот-де-Нюи","lat":47.17482,"lon":4.94018,"elevation":"320–370 м","soil":"Оолитовый известняк и светлый мергель","vine_age":"30+ лет (биодинамика Demeter)","aging":"36 мес. на осадке в бутылке","rating":null,"vivino_avg":4,"notes":"Выдержанный Crémant (36 мес. на осадке): белые цветы, груша, зелёное яблоко и сухой меловой финиш.","vivino_url":"https://www.vivino.com/wines/176735631","elevation_m":345,"slope_pct":"12–16%","aspect":"ВЮВ (верхние террасы От-Кот-де-Нюи над Вужо)","geology_stage":"Верхнеюрский оолитовый известняк и светлый мергель","microclimate":"Прохладное плато на высоте 320–370 м обеспечивает идеальный баланс сахара и яблочной кислотности для базового вина под вторичную ферментацию.","domain_history":"Domaine de la Vougeraie основан семьёй Буассе в 1999 году в Премо-Приссе и Вужо; с 2001 года переведён на биодинамику (сертификат Demeter).","climat_dossier":"Crémant de Bourgogne «Fête de Famille» с биодинамических участков домена в От-Кот-де-Нюи (320–370 м), выдержка 36 месяцев на осадке в бутылке.","drinking_window":"2024–2028","serving_temp":"8–10 °C","glassware":"Тюльпан для выдержанных игристых вин","food_pairing":"Гужеры с грюйером, тартар из дорадо, террин из кролика.","guide_source":"Jasper Morris MW · Inside Burgundy (Domaine de la Vougeraie)","bottle_studio":"img/labels/bottle_04.png","appellation_rank":"Crémant AOC (Биодинамика)","geo_order":6,"terroir_tier":"hautes_cotes","terroir_tier_label":"Верхний склон над Вужо · Биодинамика Demeter","aspect_deg":115,"aspect_code":"ВЮВ 115°","slope_pos_pct":26,"slope_zone_label":"Верхние террасы над Вужо (320–370 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 58–61 · Vougeot & Hautes-Côtes de Nuits (1:25 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.2,"tannins":4.1,"acidity":4.4,"minerality":4.3,"sweetness":1.3}},{"id":5,"wine_id":13153379,"vintage_id":181060621,"user_vintage_id":3600453976,"producer":"Pierre Boisson","name":"Coteaux Bourguignons «En Buzigny» Blanc","vintage":"2023","style":"white","style_label":"Белое сухое","grapes":"Шардоне (с долей Алиготе)","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Бон (Côte de Beaune)","commune":"Мерсо (Meursault)","lieu_dit":"En Buzigny («Ан Бюзиньи»)","lat":46.9626,"lon":4.77681,"elevation":"230 м","soil":"Аллювиально-известняковые почвы у подножия Мерсо","vine_age":"35 лет","aging":"Длительная выдержка на тонком осадке в дубе (стиль семьи Boisson-Vadot)","rating":null,"vivino_avg":4.2,"notes":"Характерная кремневая редукция Пьера Буассона, цедра лимона, жареный фундук и высокая кислотность.","vivino_url":"https://www.vivino.com/wines/181060621","elevation_m":230,"slope_pct":"4–6%","aspect":"ВЮВ (подножие склона Мерсо)","geology_stage":"Четвертичный известняковый аллювий на подстилающем мергеле Мерсо","microclimate":"Защищённая ложбина у южной границы коммуны Meursault с долгим дневным прогревом и утренними туманами.","domain_history":"Пьер Буассон (сын Бернара Буассона-Вадо из Мерсо) практикует длительную выдержку белых вин на тонком осадке без батонажа с поздним розливом.","climat_dossier":"Парцель «En Buzigny» расположен в границах коммуны Meursault (230 м): в профиле спичечная редукция, фундук, лимонная цедра и солоноватое послевкусие.","drinking_window":"2025–2032","serving_temp":"11–13 °C","glassware":"Бокал для белого бургундского (Riedel Montrachet / Zalto Universal)","food_pairing":"Лангустины на гриле, палтус в соусе бер-блан, курица по-брессски со сморчками.","guide_source":"Jasper Morris MW · Inside Burgundy (2nd Ed., Meursault: Domaine Boisson-Vadot / Pierre Boisson)","bottle_studio":"img/labels/bottle_05.png","appellation_rank":"Парцель коммуны Meursault","geo_order":12,"terroir_tier":"lieu_dit_regional","terroir_tier_label":"Парцель «En Buzigny» · Коммуна Meursault","aspect_deg":110,"aspect_code":"ВЮВ 110°","slope_pos_pct":85,"slope_zone_label":"Подножие известнякового склона Мерсо (230 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 54–55 · Côte de Beaune: Meursault (1:25 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.9,"tannins":4.3,"acidity":4.5,"minerality":4.8,"sweetness":1.1}},{"id":6,"wine_id":12148433,"vintage_id":176372112,"user_vintage_id":3600453995,"producer":"Domaine Dujardin","name":"Bourgogne Aligoté «Chasne»","vintage":"2022","style":"white","style_label":"Белое сухое","grapes":"Алиготе 100%","abv":"12.5%","country":"Франция","macro_region":"Бургундия","sub_region":"От-Кот-де-Бон (Hautes-Côtes de Beaune)","commune":"Нанту (Nantoux)","lieu_dit":"Chasne («Шан»)","lat":47.03558,"lon":4.7569,"elevation":"370 м","soil":"Белый мергель и плиточный известняк","vine_age":"45 лет (Алиготе Доре)","aging":"Выдержка в старых бургундских пьесах (228 л)","rating":null,"vivino_avg":4,"notes":"Парцельное Алиготе с высокогорного участка «Chasne» в Нанту: зелёное яблоко, цитрус и солоноватая минеральность.","vivino_url":"https://www.vivino.com/wines/176372112","elevation_m":375,"slope_pct":"14–18%","aspect":"ЮВ (склон над деревней Нанту, От-Кот-де-Бон)","geology_stage":"Верхняя юра (оксфордский белый мергель и плитчатый известняк laves)","microclimate":"Прохладный ветреный склон на высоте 370 м, где старый клон Aligoté Doré набирает золотистую спелость при сохранении хрустящей кислотности.","domain_history":"Микро-домен Поля и Этьенна Дюжарден в Монтели, работающий со старыми участками в Монтели, Оксе-Дюресс и Нанту.","climat_dossier":"Парцель «Chasne» в коммуне Нанту (370 м) со старыми лозами клона Aligoté Doré (45 лет), выдержка в старых 228-литровых бургундских бочках.","drinking_window":"2024–2029","serving_temp":"10–12 °C","glassware":"Универсальный бокал (Zalto Universal)","food_pairing":"Улитки по-бургундски, ветчина персилле (jambon persillé), козий сыр Шароле.","guide_source":"Bourgogne Maps (Sylvain Pitiot · Nantoux / Hautes-Côtes de Beaune)","bottle_studio":"img/labels/bottle_06.png","appellation_rank":"Парцель Aligoté Doré (Нанту)","geo_order":9,"terroir_tier":"lieu_dit_regional","terroir_tier_label":"Парцель «Chasne» · Нанту (Aligoté Doré)","aspect_deg":132,"aspect_code":"ЮВ 132°","slope_pos_pct":21,"slope_zone_label":"Высокогорный склон долины Нанту (370 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 50–51 и 54–57 · Hautes-Côtes de Beaune: Nantoux","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.1,"tannins":3.6,"acidity":4.6,"minerality":4.5,"sweetness":1.1}},{"id":7,"wine_id":2180477,"vintage_id":176898809,"user_vintage_id":3600454018,"producer":"Domaine Jean-Pierre Guyon","name":"Nuits-Saint-Georges «Les Argillats» Pinot Blanc","vintage":"2022","style":"white","style_label":"Белое сухое","grapes":"Пино Блан 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Нюи (Côte de Nuits)","commune":"Нюи-Сен-Жорж (Nuits-Saint-Georges)","lieu_dit":"Les Argillats («Лез Аржилья»)","lat":47.14836,"lon":4.93866,"elevation":"275–310 м","soil":"Известняк с белой глиной на границе с Вольне-Романе","vine_age":"50+ лет (органический/биодинамический уход)","aging":"12 мес. во французских бочках специальной обжарки","rating":null,"vivino_avg":4.2,"notes":"Редкий белый Нюи-Сен-Жорж из 100% Пино Блан с клима «Les Argillats»: белый персик, груша, миндаль и плотная текстура.","vivino_url":"https://www.vivino.com/wines/176898809","elevation_m":290,"slope_pct":"10–15%","aspect":"ВЮВ (северная граница Нюи-Сен-Жорж на стыке с Вольне-Романе)","geology_stage":"Средняя и верхняя юра: белая мергелевая глина (argiles blanches) на твёрдом известняке Комбланшского яруса","microclimate":"Тёплый, хорошо дренируемый верхний склон у границы Vosne-Romanée.","domain_history":"Domaine Jean-Pierre Guyon в Вольне-Романе работает на биодинамике (сертификат с 2012 г.) с собственным отбором и обжаркой дуба; белые вина составляют менее 2% выпуска Nuits-Saint-Georges.","climat_dossier":"Клима «Les Argillats» на севере Nuits-Saint-Georges у границы с Vosne-Romanée (275–310 м): старые лозы Пино Блан на белой мергелевой глине и известняке.","drinking_window":"2025–2034","serving_temp":"12–13 °C","glassware":"Бокал для великих белых вин Бургундии","food_pairing":"Омар на гриле, зобная железа телёнка (ris de veau) со сморчками, ризотто с белым трюфелем.","guide_source":"Jasper Morris MW · Inside Burgundy (2nd Ed., Nuits-Saint-Georges: Les Argillats & Domaine J.-P. Guyon)","bottle_studio":"img/labels/bottle_07.png","appellation_rank":"Village · Клима (Пино Блан)","geo_order":8,"terroir_tier":"village_cotedor","terroir_tier_label":"Village Клима · Nuits-St-Georges «les Argillats»","aspect_deg":116,"aspect_code":"ВЮВ 116°","slope_pos_pct":40,"slope_zone_label":"Верхний склон Нюи-Сен-Жорж у Вольне-Романе (275–310 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 58–59 · Nuits-St-Georges: клима les Argillats (1:25 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":4.3,"tannins":4.5,"acidity":3.9,"minerality":4.4,"sweetness":1.3}},{"id":8,"wine_id":1137836,"vintage_id":178951213,"user_vintage_id":3600454041,"producer":"Domaine Anne Gros","name":"Bourgogne Hautes-Côtes de Nuits Rouge","vintage":"2023","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"От-Кот-де-Нюи (Hautes-Côtes de Nuits)","commune":"Кюртий-Вержи (Curtil-Vergy / L'Étang-Vergy)","lieu_dit":"Curtil-Vergy · La Taupe («Ле Топ»)","lat":47.17699,"lon":4.89983,"elevation":"380–410 м","soil":"Известняк с кремнистыми включениями и суглинок","vine_age":"35 лет","aging":"12 мес. в дубовых барриках (20% новый дуб)","rating":null,"vivino_avg":4.1,"notes":"Тонкий Пино Нуар с высокогорного плато Вержи: садовая земляника, фиалка, розовый перец и мягкие танины.","vivino_url":"https://www.vivino.com/wines/178951213","elevation_m":395,"slope_pct":"12–17%","aspect":"Ю / ЮВ (высокое плато Вержи над Вужо и Шамболь-Мюзиньи)","geology_stage":"Верхняя юра (оксфордский известняк с кремнистыми конкрециями chailles и мергелем)","microclimate":"Высокогорный оазис прохлады (380–410 м) над гран крю Кот-де-Нюи.","domain_history":"Domaine Anne Gros в Вольне-Романе (семейная линия Gros) владеет участками в Richebourg, Clos Vougeot, Échezeaux и на плато От-Кот-де-Нюи.","climat_dossier":"Виноградник на известняковом плато Кюртий-Вержи и Л’Этан-Вержи (380–410 м) с кремнистыми включениями: лесная земляника, пион и свежая кислотность.","drinking_window":"2025–2031","serving_temp":"14–15 °C","glassware":"Бургундский шар (Zalto Burgundy)","food_pairing":"Филе утки с инжиром, перепёлка, тунец татаки с кунжутом.","guide_source":"Jasper Morris MW · Inside Burgundy (2nd Ed., Vosne-Romanée: Domaine Anne Gros)","bottle_studio":"img/labels/bottle_08.png","appellation_rank":"Hautes-Côtes de Nuits AOC","geo_order":7,"terroir_tier":"hautes_cotes","terroir_tier_label":"Hautes-Côtes de Nuits · Плато Вержи (395 м)","aspect_deg":135,"aspect_code":"ЮВ 135°","slope_pos_pct":11,"slope_zone_label":"Высокое известняковое плато От-Кот-де-Нюи (380–410 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 50–51 и 60–61 · Curtil-Vergy / Combe d'Orveaux (la Taupe)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.1,"tannins":2.7,"acidity":4.3,"minerality":4.2,"sweetness":1.2}},{"id":9,"wine_id":10999742,"vintage_id":177194358,"user_vintage_id":3600454061,"producer":"Domaine Jean-Marc Millot","name":"Bourgogne Passetoutgrain «Les Autrots»","vintage":"2022","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар, Гаме","abv":"12.5%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Нюи (Côte de Nuits)","commune":"Шамболь-Мюзиньи / Нюи-Сен-Жорж","lieu_dit":"Les Autrots («Лез Отро»)","lat":47.16604,"lon":4.96697,"elevation":"245 м","soil":"Известняково-глинистый аллювий у подножия Шамболь-Мюзиньи","vine_age":"55 лет (совместная посадка Пино Нуар и Гаме)","aging":"12 мес. в старых дубовых бочках","rating":null,"vivino_avg":4,"notes":"Парцельный Passetoutgrain от Аликс и Жан-Марка Мийо: гранат, красная слива, вишня и лёгкая пряность.","vivino_url":"https://www.vivino.com/wines/177194358","elevation_m":245,"slope_pct":"4–7%","aspect":"В (подножие склона на границе Шамболь-Мюзиньи и Вужо)","geology_stage":"Известняково-глинистый аллювий и мелкий гравий конуса выноса Шамболь","microclimate":"Тёплый и защищённый участок у подножия знаменитого склона Chambolle-Musigny.","domain_history":"Семейный домен Жан-Марка Мийо в Нюи-Сен-Жорж под руководством его дочери Аликс Мийо (участки в Кот-де-Нюи, включая Echézeaux и Grands-Échezeaux).","climat_dossier":"Парцель «Les Autrots» у подножия склона Chambolle-Musigny (245 м) со старой совместной посадкой Пино Нуар и Гаме (лозы 55 лет).","drinking_window":"2024–2029","serving_temp":"14–15 °C","glassware":"Бургундский бокал","food_pairing":"Террин по-деревенски, запечённая свиная корейка с травами, сыр Сен-Нектер.","guide_source":"Jasper Morris MW · Inside Burgundy (Domaine Jean-Marc Millot)","bottle_studio":"img/labels/bottle_09.png","appellation_rank":"Парцель Co-Plantation (Шамболь)","geo_order":5,"terroir_tier":"lieu_dit_regional","terroir_tier_label":"Парцель Les Autrots · Шамболь-Мюзиньи","aspect_deg":96,"aspect_code":"В 96°","slope_pos_pct":78,"slope_zone_label":"Подножие склона Шамболь-Мюзиньи (245 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 60–61 · Chambolle-Musigny & Vougeot (1:25 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.3,"tannins":3.0,"acidity":4.1,"minerality":3.8,"sweetness":1.3}},{"id":10,"wine_id":5342977,"vintage_id":170414428,"user_vintage_id":3600454078,"producer":"Domaine Jean-Baptiste Ponsot","name":"Rully Rouge","vintage":"2022","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-Шалоннез (Côte Chalonnaise)","commune":"Рюйи (Rully)","lieu_dit":"Склоны Rully (парцели у Премье Крю Molesme и Préaux)","lat":46.87118,"lon":4.73442,"elevation":"270–300 м","soil":"Бурый известняк с красной железистой глиной","vine_age":"40 лет","aging":"12 мес. в дубовых барриках (20% новый дуб)","rating":null,"vivino_avg":3.9,"notes":"Классический красный Рюйи: спелая черешня, лакрица, фиалка и сбалансированная кислотность.","vivino_url":"https://www.vivino.com/wines/170414428","elevation_m":285,"slope_pct":"10–14%","aspect":"ЮВ (амфитеатр Рюйи, Кот-Шалоннез)","geology_stage":"Верхняя юра (оксфордский бурый известняк с красной железистой глиной)","microclimate":"Сухой и солнечный склон Кот-Шалоннез, защищённый от западных ветров холмом Montagne de la Folie.","domain_history":"Жан-Батист Понсо руководит семейным доменом в Рюйи с 2000 года (сертификат Terra Vitis, раздельная винификация по парцелям).","climat_dossier":"Ассамбляж 40-летних лоз Пино Нуар с известняково-железистых склонов Rully (270–300 м) рядом с Премье Крю Molesme и Préaux.","drinking_window":"2024–2030","serving_temp":"15 °C","glassware":"Бургундский бокал","food_pairing":"Голубиная грудка с лесными ягодами, телятина на кости, выдержанный камамбер.","guide_source":"The World Atlas of Wine (9th Ed., p. 64 · Côte Chalonnaise: Rully)","bottle_studio":"img/labels/bottle_10.png","appellation_rank":"Village (Кот-Шалоннез)","geo_order":14,"terroir_tier":"village_cotedor","terroir_tier_label":"Village · Rully (Кот-Шалоннез)","aspect_deg":128,"aspect_code":"ЮВ 128°","slope_pos_pct":48,"slope_zone_label":"Известняковый склон амфитеатра Рюйи (270–300 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 62 · Côte Chalonnaise: Rully (1:100 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.6,"tannins":3.4,"acidity":3.9,"minerality":4.0,"sweetness":1.3}},{"id":11,"wine_id":6303,"vintage_id":155698631,"user_vintage_id":3600454103,"producer":"Domaine Lucien Muzard & Fils","name":"Chassagne-Montrachet Vieilles Vignes Rouge","vintage":"2016","style":"red","style_label":"Красное сухое","grapes":"Пино Нуар 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"Кот-де-Бон (Côte de Beaune)","commune":"Шассань-Монраше (Chassagne-Montrachet)","lieu_dit":"La Goujonne / Старые лозы юга Chassagne-Montrachet","lat":46.92854,"lon":4.73147,"elevation":"240–270 м","soil":"Красная оолитовая глина на известняковой плите","vine_age":"55+ лет (гроздевая ферментация)","aging":"14 мес. в дубовых бочках + 10 лет бутылочной выдержки","rating":null,"vivino_avg":4,"notes":"Выдержанный красный Шассань-Монраше 2016: осенний подлесок, трюфель, вяленая клюква и чайный лист.","vivino_url":"https://www.vivino.com/wines/155698631","elevation_m":255,"slope_pct":"6–10%","aspect":"ВЮВ (южный сектор Шассань-Монраше в сторону Сантене)","geology_stage":"Средняя юра (батский известняк, перекрытый красной железистой оолитовой глиной)","microclimate":"Южная часть Шассань-Монраше исторически славилась именно красным Пино Нуар благодаря тёплым железистым глинам.","domain_history":"Семейный домен Клода и Эрве Мюзар в Шассань-Монраше (основан в XVII в.): органическое виноградарство и ферментация цельными гроздями.","climat_dossier":"Старые лозы Пино Нуар (55+ лет) на красных оолитовых глинах южной части Chassagne-Montrachet (240–270 м) вокруг Morgeot и Clos Saint-Jean.","drinking_window":"2022–2030 (на пике зрелости)","serving_temp":"16 °C","glassware":"Большой бургундский шар","food_pairing":"Жаркое из оленины или кабана, утка с белыми грибами, сыр Эпуас.","guide_source":"Jasper Morris MW · Inside Burgundy (2nd Ed., Chassagne-Montrachet: Domaine Lucien Muzard)","bottle_studio":"img/labels/bottle_11.png","appellation_rank":"Village · Vieilles Vignes","geo_order":13,"terroir_tier":"village_cotedor","terroir_tier_label":"Village · Chassagne-Montrachet Vieilles Vignes","aspect_deg":125,"aspect_code":"ЮВ 125°","slope_pos_pct":70,"slope_zone_label":"Южный склон Шассань-Монраше (240–270 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 54–55 · Côte de Beaune: Chassagne-Montrachet (1:25 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.8,"tannins":3.5,"acidity":3.8,"minerality":4.3,"sweetness":1.2}},{"id":12,"wine_id":6168487,"vintage_id":171286786,"user_vintage_id":3600454119,"producer":"Domaine Pierre-Olivier Garcia","name":"Brouilly «La Folie»","vintage":"2022","style":"red","style_label":"Красное сухое","grapes":"Гаме 100%","abv":"13.0%","country":"Франция","macro_region":"Бургундия","sub_region":"Божоле: Крю Бруйи (Cru du Beaujolais)","commune":"Сен-Лаже / Оdenas (Brouilly)","lieu_dit":"La Folie («Ла Фоли»)","lat":46.10169,"lon":4.63496,"elevation":"320–360 м","soil":"Разрушенный розовый гранит («gore») и диорит горы Бруйи","vine_age":"60+ лет (подвязка gobelet)","aging":"14 мес. в бургундских пьесах (метод Кот-де-Нюи с цельными гроздями)","rating":null,"vivino_avg":4.1,"notes":"Гаме со старых лоз гранитного клима «La Folie» в Бруйи, винифицированное по бургундскому методу в дубовых пьесах.","vivino_url":"https://www.vivino.com/wines/171286786","elevation_m":340,"slope_pct":"18–25%","aspect":"ЮВ (крутой склон горы Мон-Бруйи)","geology_stage":"Палеозойский кристаллический фундамент: разрушенный розовый порфировидный гранит («gore») и голубой диорит (pierre bleue)","microclimate":"Тёплый южный амфитеатр у подножия горы Мон-Бруйи (484 м) с сильным перепадом дневных и ночных температур.","domain_history":"Проект винодела Пьера-Оливье Гарсия из Нюи-Сен-Жорж: гроздевая ферментация без карбонической мацерации и выдержка в бургундских бочках 228 л.","climat_dossier":"Высокогорное клима «La Folie» (320–360 м) на разрушенном розовом граните и диорите горы Мон-Бруйи (60-летние лозы подвязки gobelet): ежевика, пион и плотный танин.","drinking_window":"2024–2032","serving_temp":"15 °C","glassware":"Бургундский бокал","food_pairing":"Перепёлка на углях, говяжий язык на гриле, лионские колбаски и выдержанный Сен-Марселен.","guide_source":"The World Atlas of Wine (9th Ed., p. 66 · Beaujolais Crus: Brouilly)","bottle_studio":"img/labels/bottle_12.png","appellation_rank":"Cru du Beaujolais · Клима","geo_order":15,"terroir_tier":"grand_cru_cru","terroir_tier_label":"Cru du Beaujolais · Brouilly «La Folie»","aspect_deg":138,"aspect_code":"ЮВ 138°","slope_pos_pct":30,"slope_zone_label":"Гранитный склон горы Мон-Бруйи (320–360 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 68 · The Crus of Beaujolais: Brouilly (1:75 000)","tasted_date":"2026-09-24","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.5,"tannins":3.3,"acidity":4.2,"minerality":4.6,"sweetness":1.2}},{"id":13,"wine_id":7408388,"vintage_id":161034128,"user_vintage_id":3600779206,"producer":"Nadal","name":"Original Reserva Brut Corpinnat","vintage":"N.V.","style":"sparkling","style_label":"Игристое белое брют","grapes":"Макабео, Парельяда, Шарелло","abv":"11.5%","country":"Испания","macro_region":"Каталония (Пенедес)","sub_region":"Corpinnat (Центральный Пенедес)","commune":"Эль-Пла-дель-Пенедес (Torrelavit / El Pla del Penedès)","lieu_dit":"Поместье Finca Nadal de la Boadella (осн. 1510)","lat":41.42661,"lon":1.70071,"elevation":"220–260 м","soil":"Известняково-глинистые почвы с карбонатным горизонтом","vine_age":"35+ лет (100% органический сбор вручную)","aging":"40+ мес. на осадке в бутылке (стандарт Corpinnat)","rating":null,"vivino_avg":3.9,"notes":"Выдержанный Corpinnat из поместья Nadal (40+ мес. на осадке): средиземноморские травы, фенхель, печёная айва и сухой финиш.","vivino_url":"https://www.vivino.com/wines/161034128","elevation_m":240,"slope_pct":"5–8%","aspect":"ЮВ (межгорная котловина Центрального Пенедеса с видом на массив Монсеррат)","geology_stage":"Миоценовые морские известняково-глинистые отложения с глубоким карбонатным горизонтом (caliche)","microclimate":"Средиземноморский с прохладным горным оттоком с зубчатого массива Монсеррат (1236 м).","domain_history":"Поместье Can Nadal de la Boadella в Торельовите основано в 1510 году; один из домов-основателей ассоциации Corpinnat (органический виноград, ручной сбор, полная винификация в поместье).","climat_dossier":"Ассамбляж автохтонных каталонских сортов Макабео, Парельяда и Шарелло с известняково-глинистой террасы Центрального Пенедеса (240 м).","drinking_window":"2024–2028","serving_temp":"8–10 °C","glassware":"Тюльпан для выдержанных игристых вин","food_pairing":"Хамон иберико бейота, осьминог по-галисийски, паэлья с морепродуктами.","guide_source":"The World Atlas of Wine (9th Ed., p. 194 · Catalonia: Penedès & Corpinnat)","bottle_studio":"img/labels/bottle_13.png","appellation_rank":"Corpinnat (Выдержка 40+ мес.)","geo_order":17,"terroir_tier":"lieu_dit_regional","terroir_tier_label":"Corpinnat · Центральный Пенедес (Finca Nadal)","aspect_deg":135,"aspect_code":"ЮВ 135°","slope_pos_pct":65,"slope_zone_label":"Известняковая терраса Центрального Пенедеса (240 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 195 · Catalunya: Penedès DOP (NADAL · Torrelavit)","tasted_date":"2026-09-11","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.6,"tannins":4.3,"acidity":4.6,"minerality":4.5,"sweetness":1.0}},{"id":14,"wine_id":13895428,"vintage_id":183188245,"user_vintage_id":3600779211,"producer":"Champagne Les Gamins d'Avize","name":"Blanc de Noirs Brut Champagne","vintage":"N.V.","style":"sparkling","style_label":"Шампанское белое брют","grapes":"Пино Нуар, Менье","abv":"12.0%","country":"Франция","macro_region":"Шампань","sub_region":"Кот-де-Блан / Долина Марны","commune":"Авиз (Avize)","lieu_dit":"Микро-негоциантский проект молодых виноделов из Avize","lat":48.97463,"lon":4.00835,"elevation":"150–210 м","soil":"Белемнитовый мел и известняково-мергелевые склоны","vine_age":"30 лет","aging":"24–30 мес. на осадке в бутылке","rating":null,"vivino_avg":4,"notes":"Гастрономичный Blanc de Noirs из Авиза: белая смородина, красное яблоко, ржаная корочка и меловая кислотность.","vivino_url":"https://www.vivino.com/wines/183188245","elevation_m":175,"slope_pct":"10–15%","aspect":"ЮВ / Ю (склоны Авиза и долины Марны)","geology_stage":"Верхний мел (кампанский мел) и известняково-мергелевые глины ипрского яруса","microclimate":"Сочетание прохладной меловой вертикали Авиза и спелых южных склонов для Пино Нуар и Менье.","domain_history":"Микро-проект «Les Gamins d'Avize» молодых виноделов из коммуны Avize, выпускающий малые тиражи шампанского с низким дозажем.","climat_dossier":"Кюве Blanc de Noirs из Пино Нуар и Менье (выдержка 24–30 мес. на осадке) с меловых и известняково-мергелевых склонов вокруг Avize (150–210 м).","drinking_window":"2024–2028","serving_temp":"9–11 °C","glassware":"Бокал для шампанского (Lehmann Jamesse)","food_pairing":"Тартар из лосося, карпаччо из гребешка, суши и сашими.","guide_source":"Peter Liem · Champagne Guide (Avize)","bottle_studio":"img/labels/bottle_14.png","appellation_rank":"Champagne AOC (Рекольтант)","geo_order":2,"terroir_tier":"grand_cru_cru","terroir_tier_label":"Шампань · Авиз (Кот-де-Блан)","aspect_deg":115,"aspect_code":"ВЮВ 115°","slope_pos_pct":44,"slope_zone_label":"Меловой склон Авиза (150–210 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 75 · The Heart of Champagne: Avize","tasted_date":"2026-09-11","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.7,"tannins":4.2,"acidity":4.3,"minerality":4.1,"sweetness":1.4}},{"id":15,"wine_id":12277637,"vintage_id":176812105,"user_vintage_id":3600779215,"producer":"STN Winery («Трио»: Бочкарёв · Долингер · Шамов)","name":"«Трио» Алиготе (Trio Aligoté)","vintage":"2023","style":"white","style_label":"Белое сухое","grapes":"Алиготе 100%","abv":"12.5%","country":"Россия","macro_region":"Крым (Севастополь)","sub_region":"Долина реки Бельбек","commune":"с. Верхнесадовое (Севастополь)","lieu_dit":"Известняковое плато долины Бельбек (Верхнесадовое)","lat":44.68559,"lon":33.70081,"elevation":"180–240 м","soil":"Мшанковый и нуммулитовый известняк с карбонатным суглинком","vine_age":"15–20 лет","aging":"Выдержка на тонком дрожжевом осадке в нейтральном дубе и стали","rating":null,"vivino_avg":4.1,"notes":"Совместный релиз Романа Бочкарёва (STN), Андрея Долингера и Евгения Шамова: лайм, айва, белая смородина и солоноватый известняковый финиш.","vivino_url":"https://www.vivino.com/wines/176812105","elevation_m":210,"slope_pct":"8–12%","aspect":"ЮЗ / З (известняковое плато над каньоном реки Бельбек, с. Верхнесадовое)","geology_stage":"Сарматский и палеогеновый мшанковый и нуммулитовый известняк с карбонатным щебнем","microclimate":"Крымский предгорно-морской: продуваемое черноморским бризом плато Бельбека на широте Бургундии/Пьемонта (44.7° N) с прохладными ночами из горного каньона.","domain_history":"Проект «Трио» (Trio): винодел Роман Бочкарёв (STN Winery, Севастополь), Андрей Долингеp и сомелье Евгений Шамов; крымское Алиготе с выдержкой на тонком осадке.","climat_dossier":"Виноградник в с. Верхнесадовое (долина реки Бельбек, 180–240 м) на белых мшанковых и нуммулитовых известняках куэсты Бельбек.","drinking_window":"2024–2028","serving_temp":"10–12 °C","glassware":"Универсальный бокал / бокал для белого бургундского","food_pairing":"Черноморские мидии и рапаны, барабулька, козий сыр из предгорий Крыма.","guide_source":"Атлас виноделия Севастополя (терруар долины Бельбек / Верхнесадовое)","bottle_studio":"img/labels/bottle_15.png","appellation_rank":"ЗГУ Севастополь · Бельбек","geo_order":16,"terroir_tier":"lieu_dit_regional","terroir_tier_label":"ЗГУ Севастополь · Долина Бельбек (Верхнесадовое)","aspect_deg":215,"aspect_code":"ЮЗ 215°","slope_pos_pct":74,"slope_zone_label":"ЮЗ склон мшанковых известняков куэсты Бельбек (210 м)","atlas_spread":"Кадастр INAO / OpenStreetMap (1:25 000) · стр. 270 · The Black Sea Region: Crimea & Sevastopol","tasted_date":"2026-09-11","purchased_at":"","rating_az":null,"rating_anya":null,"taste_profile":{"body":3.9,"tannins":3.6,"acidity":3.5,"minerality":3.6,"sweetness":1.4}}]};
     const STORAGE_KEY = "wine_terroir_atlas_leaflet_v12";
 
     function computePairScore(w) {
@@ -3451,10 +3540,19 @@
                 if (saved.tasted_date) w.tasted_date = saved.tasted_date;
                 if (saved.purchased_at) w.purchased_at = saved.purchased_at;
                 if (saved.taste_profile) w.taste_profile = saved.taste_profile;
+                if (saved.notes && !w.notes) w.notes = saved.notes;
+                if (Array.isArray(saved.photos) && saved.photos.length > 0) {
+                  w.photos = saved.photos;
+                  if (saved.bottle_studio) w.bottle_studio = saved.bottle_studio;
+                }
               }
             });
             parsed.wines.forEach(saved => {
               const sText = ((saved.producer || '') + ' ' + (saved.name || '') + ' ' + (saved.commune || '')).toLowerCase();
+              // Skip accidental false-positive OCR entry "Saint-Estèphe (Haut-Médoc) «German»"
+              if (sText.includes('saint-estèphe') && sText.includes('german')) {
+                return;
+              }
               if (sText.includes('carruades') || sText.includes('lafite') || sText.includes('pauillac') || sText.includes('пойяк')) {
                 saved.lat = 45.22558;
                 saved.lon = -0.77734;
@@ -3475,7 +3573,7 @@
     }
 
     let atlasData = loadAtlasState();
-    let selectedWineId = 19;
+    let selectedWineId = 20;
     let activeTierFilter = "all";
     let activeStyleFilter = "all";
     let searchQuery = "";
@@ -4560,6 +4658,123 @@
       });
     }
 
+    function formatPhotoSrc(rawBot) {
+      const s = rawBot || "img/labels/bottle_17.png";
+      return s.startsWith("data:") || s.startsWith("http") || s.includes("?v=") ? s : (s + "?v=20261105a");
+    }
+
+    function getWinePhotosList(w) {
+      if (!w) return ["img/labels/bottle_17.png"];
+      if (Array.isArray(w.photos) && w.photos.length > 0) {
+        return w.photos.filter(Boolean);
+      }
+      const primary = w.bottle_studio || "img/labels/bottle_17.png";
+      w.photos = [primary];
+      return w.photos;
+    }
+
+    function downscaleImageFileToDataUrl(file, maxDim = 1100, quality = 0.86) {
+      return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const rawUrl = ev.target.result;
+          const img = new Image();
+          img.onload = () => {
+            const w = img.naturalWidth || img.width || 800;
+            const h = img.naturalHeight || img.height || 1000;
+            const scale = Math.min(1, maxDim / Math.max(w, h));
+            if (scale >= 0.98 && rawUrl.length < 380000) {
+              resolve({ dataUrl: rawUrl, imgEl: img, name: file.name || "Фото" });
+              return;
+            }
+            const c = document.createElement("canvas");
+            c.width = Math.max(1, Math.round(w * scale));
+            c.height = Math.max(1, Math.round(h * scale));
+            c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+            const compressed = c.toDataURL("image/jpeg", quality);
+            resolve({ dataUrl: compressed, imgEl: img, name: file.name || "Фото" });
+          };
+          img.onerror = () => resolve({ dataUrl: rawUrl, imgEl: null, name: file.name || "Фото" });
+          img.src = rawUrl;
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    let currentActivePhotoIndex = 0;
+
+    function renderWinePhotoStrips(w, activeIdx = 0) {
+      const photos = getWinePhotosList(w);
+      const safeIdx = Math.max(0, Math.min(photos.length - 1, activeIdx));
+      currentActivePhotoIndex = safeIdx;
+      const chosenSrc = formatPhotoSrc(photos[safeIdx]);
+
+      const mainImgEl = document.getElementById("dossierMainBottleImg");
+      if (mainImgEl) {
+        mainImgEl.src = chosenSrc;
+        mainImgEl.alt = `Фото ${safeIdx + 1}/${photos.length} бутылки ${w.producer} ${w.name}`;
+      }
+      const lbImgEl = document.getElementById("lightboxBottleImg");
+      if (lbImgEl) {
+        lbImgEl.src = chosenSrc;
+      }
+      const lbCapEl = document.getElementById("lightboxBottleCaption");
+      if (lbCapEl) {
+        lbCapEl.textContent = photos.length > 1
+          ? `Фото ${safeIdx + 1} из ${photos.length} · Vivino ${w.vivino_avg || "4.0"}`
+          : `Vivino ${w.vivino_avg || "4.0"}`;
+      }
+
+      const buildStripHtml = (stripType) => {
+        if (photos.length <= 1) return "";
+        return photos.map((pUrl, idx) => `
+          <div style="position:relative;display:inline-flex;">
+            <button type="button" class="specimen-photo-thumb-btn ${idx === safeIdx ? 'active' : ''}" data-wine-photo-idx="${idx}" title="Показать фото #${idx + 1} (${idx === 0 ? 'основное фото' : 'доп. фото'})">
+              <img src="${escapeAttr(formatPhotoSrc(pUrl))}" alt="Фото ${idx + 1}" />
+            </button>
+            ${photos.length > 1 ? `<button type="button" class="smart-photo-thumb-remove" data-remove-wine-photo-idx="${idx}" title="Удалить фото #${idx + 1}" style="width:16px;height:16px;font-size:0.68rem;">×</button>` : ""}
+          </div>
+        `).join("");
+      };
+
+      ["specimenPhotosStrip", "lightboxPhotosStrip"].forEach(containerId => {
+        const stripEl = document.getElementById(containerId);
+        if (!stripEl) return;
+        if (photos.length <= 1) {
+          stripEl.classList.remove("visible");
+          stripEl.innerHTML = "";
+          return;
+        }
+        stripEl.classList.add("visible");
+        stripEl.innerHTML = buildStripHtml(containerId);
+        stripEl.querySelectorAll("[data-wine-photo-idx]").forEach(btn => {
+          btn.addEventListener("click", e => {
+            e.stopPropagation();
+            const idx = Number(btn.getAttribute("data-wine-photo-idx"));
+            renderWinePhotoStrips(w, idx);
+          });
+        });
+        stripEl.querySelectorAll("[data-remove-wine-photo-idx]").forEach(delBtn => {
+          delBtn.addEventListener("click", e => {
+            e.stopPropagation();
+            const idx = Number(delBtn.getAttribute("data-remove-wine-photo-idx"));
+            const list = getWinePhotosList(w);
+            if (list.length <= 1) return;
+            list.splice(idx, 1);
+            w.photos = list;
+            w.bottle_studio = list[0];
+            saveAtlasState();
+            renderWinePhotoStrips(w, Math.min(safeIdx, list.length - 1));
+            renderLedgerTable();
+            renderTastingDiary();
+            renderSemanticMapLayers();
+            showToast(`Фото удалено (осталось: ${list.length})`);
+          });
+        });
+      });
+    }
+
     function selectWine(wineId, zoomToParcel = false) {
       const w = atlasData.wines.find(item => item.id === wineId) || atlasData.wines[0];
       if (!w) return;
@@ -4572,12 +4787,12 @@
       document.getElementById("dossierProducer").textContent = w.producer;
       document.getElementById("dossierWineName").textContent = `${w.name} ${w.vintage}`;
 
-      const rawBot = w.bottle_studio || "img/labels/bottle_17.png"; const officialImg = rawBot.startsWith("data:") ? rawBot : (rawBot + "?v=20261101d");
-      const mainImgEl = document.getElementById("dossierMainBottleImg");
-      mainImgEl.src = officialImg;
-      mainImgEl.alt = `Официальное изображение бутылки ${w.producer} ${w.name}`;
+      renderWinePhotoStrips(w, 0);
+      const photosCount = getWinePhotosList(w).length;
       document.getElementById("specimenOfficialCaption").textContent =
-        `Vivino ${w.vivino_avg || "4.0"}`;
+        photosCount > 1
+          ? `Vivino ${w.vivino_avg || "4.0"} · ${photosCount} фото`
+          : `Vivino ${w.vivino_avg || "4.0"}`;
 
       const styleClass = w.style === "red" ? "badge-red" : (w.style === "white" ? "badge-white" : "badge-sparkling");
       document.getElementById("dossierBadges").innerHTML = `
@@ -5581,7 +5796,7 @@
       });
     }
 
-    // Single-Image Official Lightbox
+    // Multi-Image Lightbox + Append Photos to Existing Bottle
     const lightboxModal = document.getElementById("specimenLightboxModal");
     let lightboxLastFocusEl = null;
 
@@ -5589,11 +5804,8 @@
       const w = atlasData.wines.find(item => item.id === selectedWineId);
       if (!w) return;
       lightboxLastFocusEl = document.activeElement;
-      const rawBot = w.bottle_studio || "img/labels/bottle_17.png"; const officialSrc = rawBot.startsWith("data:") ? rawBot : (rawBot + "?v=20261101d");
       document.getElementById("lightboxTitle").textContent = `${w.producer} · ${w.name} (${w.vintage})`;
-      document.getElementById("lightboxBottleImg").src = officialSrc;
-      document.getElementById("lightboxBottleCaption").textContent =
-        `Vivino ${w.vivino_avg || "4.0"}`;
+      renderWinePhotoStrips(w, currentActivePhotoIndex || 0);
       document.getElementById("lightboxTerroirSummary").textContent =
         `${w.macro_region} · ${w.commune} · ${w.lieu_dit} · ${w.elevation_m || 280} м · ${w.aspect_code || "ЮВ"}`;
       document.getElementById("lightboxSpreadSummary").textContent =
@@ -5601,6 +5813,30 @@
       lightboxModal.classList.add("open");
       document.getElementById("closeLightboxBtn").focus();
     }
+
+    document.getElementById("appendWinePhotoInput")?.addEventListener("change", async e => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+      const w = atlasData.wines.find(item => item.id === selectedWineId);
+      if (!w) return;
+      const currentList = getWinePhotosList(w).slice();
+      for (const f of files) {
+        const res = await downscaleImageFileToDataUrl(f);
+        if (res && res.dataUrl) {
+          currentList.push(res.dataUrl);
+        }
+      }
+      w.photos = currentList;
+      if (!w.bottle_studio) w.bottle_studio = currentList[0];
+      saveAtlasState();
+      renderWinePhotoStrips(w, currentList.length - 1);
+      document.getElementById("specimenOfficialCaption").textContent =
+        `Vivino ${w.vivino_avg || "4.0"} · ${currentList.length} фото`;
+      renderLedgerTable();
+      renderTastingDiary();
+      showToast(`Добавлено фото (${files.length} шт.) — всего у бутылки: ${currentList.length} фото`);
+      e.target.value = "";
+    });
 
     function closeSpecimenLightbox() {
       lightboxModal.classList.remove("open");
@@ -5706,7 +5942,7 @@
       addDrawer.classList.remove("open");
     });
 
-    document.getElementById("addBottleForm").addEventListener("submit", e => {
+    document.getElementById("addBottleForm").addEventListener("submit", async e => {
       e.preventDefault();
       const styleVal = document.getElementById("inStyle").value;
       const styleMap = { red: "Красное сухое", white: "Белое сухое", sparkling: "Игристое брют" };
@@ -5719,7 +5955,7 @@
 
       // If user pasted a link/query into #smartQuickSearchInput and pressed "Сохранить в атлас" directly without clicking "Найти / заполнить" first:
       if (!document.getElementById("inProducer").value.trim() && !document.getElementById("inName").value.trim() && smartQuickSearchInput.value.trim()) {
-        parseSmartTextOrUrl(smartQuickSearchInput.value.trim());
+        await parseSmartTextOrUrl(smartQuickSearchInput.value.trim());
       }
       if (!document.getElementById("inProducer").value.trim() && document.getElementById("inName").value.trim()) {
         const autoSplit = splitProducerAndCuvee(document.getElementById("inName").value.trim());
@@ -5730,19 +5966,25 @@
         document.getElementById("inName").value = document.getElementById("inProducer").value.trim();
       }
 
-      const finishSave = uploadedPhotoUrl => {
+      const finishSave = uploadedPhotosArray => {
+        const validPhotos = (Array.isArray(uploadedPhotosArray) ? uploadedPhotosArray : (uploadedPhotosArray ? [uploadedPhotosArray] : [])).filter(Boolean);
         const newId = Math.max(0, ...atlasData.wines.map(w => w.id)) + 1;
-        const botUrl = uploadedPhotoUrl || defaultBottleMap[styleVal] || "img/labels/bottle_17.png";
+        const botUrl = validPhotos[0] || defaultBottleMap[styleVal] || "img/labels/bottle_17.png";
+        const allPhotos = validPhotos.length > 0 ? validPhotos : [botUrl];
         const inLatVal = parseFloat(String(document.getElementById("inLat").value).replace(",", ".")) || 46.9935;
         const inLonVal = parseFloat(String(document.getElementById("inLon").value).replace(",", ".")) || 4.7562;
         const regionStr = document.getElementById("inRegion").value.trim() || "Европа";
 
         let inferredCountry = "Франция";
         const rLow = regionStr.toLowerCase();
-        if (rLow.includes("испан") || rLow.includes("катал") || rLow.includes("пенедес") || rLow.includes("риох") || (inLatVal < 43.2 && inLonVal < 3.2 && inLonVal > -10)) {
+        if (rLow.includes("аргент") || rLow.includes("мендос") || rLow.includes("mendoza")) {
+          inferredCountry = "Аргентина";
+        } else if (rLow.includes("чили") || rLow.includes("майпо")) {
+          inferredCountry = "Чили";
+        } else if (rLow.includes("испан") || rLow.includes("катал") || rLow.includes("пенедес") || rLow.includes("риох") || (inLatVal < 43.2 && inLonVal < 3.2 && inLonVal > -10)) {
           inferredCountry = "Испания";
-        } else if (rLow.includes("крым") || rLow.includes("севастоп") || rLow.includes("бельбек") || (inLatVal > 44 && inLatVal < 46 && inLonVal > 32 && inLonVal < 37)) {
-          inferredCountry = "Россия / Крым";
+        } else if (rLow.includes("крым") || rLow.includes("севастоп") || rLow.includes("бельбек") || rLow.includes("кубан") || rLow.includes("росси") || (inLatVal > 44 && inLatVal < 46 && inLonVal > 32 && inLonVal < 39)) {
+          inferredCountry = "Россия";
         } else if (rLow.includes("италия") || rLow.includes("пьемонт") || rLow.includes("тоскан") || (inLatVal < 46.5 && inLonVal > 7.5 && inLonVal < 19)) {
           inferredCountry = "Италия";
         } else if (rLow.includes("герман") || rLow.includes("мозел") || rLow.includes("рейн") || (inLatVal > 47.5 && inLonVal > 6.5 && inLonVal < 15)) {
@@ -5750,7 +5992,7 @@
         } else if (inLonVal < -30 && inLatVal > 0) {
           inferredCountry = "США";
         } else if (inLatVal < 0 && inLonVal < -30) {
-          inferredCountry = "Чили и Аргентина";
+          inferredCountry = "Аргентина / Чили";
         } else if (inLatVal < 0 && inLonVal > 100) {
           inferredCountry = "Австралия и Новая Зеландия";
         } else if (inLatVal < 0 && inLonVal > 10 && inLonVal < 40) {
@@ -5786,7 +6028,7 @@
           vintage: document.getElementById("inVintage").value.trim(),
           style: styleVal,
           style_label: styleMap[styleVal],
-          grapes: styleVal === "red" ? "Пино Нуар" : "Шардоне",
+          grapes: styleVal === "red" ? "Красное кюве" : "Белое кюве",
           abv: "13.0%",
           country: inferredCountry,
           macro_region: regionStr,
@@ -5801,16 +6043,16 @@
           aspect: "ВЮВ (склон)",
           geology_stage: rawSoilStr,
           microclimate: "Континентальный склон",
-          domain_history: "Запись добавлена вручную через форму атласа.",
+          domain_history: "Запись добавлена через форму дневника.",
           climat_dossier: document.getElementById("inNotes").value.trim() || "Индивидуальный парцель.",
-          drinking_window: "2024–2030",
-          serving_temp: "14–15 °C",
-          glassware: "Бургундский бокал",
+          drinking_window: "2025–2030",
+          serving_temp: "15–16 °C",
+          glassware: "Универсальный винный бокал",
           food_pairing: "Гастрономическая пара",
           guide_source: "The World Atlas of Wine (9th Ed.)",
           soil: rawSoilStr,
-          vine_age: "35 лет",
-          aging: "Выдержка в дубе",
+          vine_age: "30 лет",
+          aging: "Выдержка",
           rating_az: parseNumScore("inRatingAz"),
           rating_anya: parseNumScore("inRatingAnya"),
           rating_az_parts: {
@@ -5831,6 +6073,7 @@
           tasted_date: document.getElementById("inTastedDate").value || new Date().toISOString().slice(0, 10),
           purchased_at: document.getElementById("inPurchasedAt").value.trim(),
           bottle_studio: botUrl,
+          photos: allPhotos,
           appellation_rank: "Village / Парцель",
           vivino_url: "https://www.vivino.com/users/artem-zaigrin"
         };
@@ -5845,21 +6088,25 @@
         selectWine(newWine.id, true);
         addDrawer.classList.remove("open");
         e.target.reset();
-        showToast(`Вино добавлено в атлас: ${newWine.producer} · ${newWine.name}`);
-      };
-
-      if (fileInput && fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = ev => finishSave(ev.target.result);
-        reader.readAsDataURL(fileInput.files[0]);
-      } else if (window.pendingSmartPhotoDataUrl) {
-        const savedUrl = window.pendingSmartPhotoDataUrl;
+        window.pendingSmartPhotos = [];
         window.pendingSmartPhotoDataUrl = null;
         document.getElementById("smartPhotoPreviewBar").classList.remove("visible");
-        finishSave(savedUrl);
-      } else {
-        finishSave(null);
+        showToast(`Вино добавлено в дневник: ${newWine.producer} · ${newWine.name} (${allPhotos.length} фото)`);
+      };
+
+      const collectedPhotos = (Array.isArray(window.pendingSmartPhotos) ? window.pendingSmartPhotos.map(p => p.dataUrl) : []).filter(Boolean);
+      if (collectedPhotos.length === 0 && window.pendingSmartPhotoDataUrl) {
+        collectedPhotos.push(window.pendingSmartPhotoDataUrl);
       }
+      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        for (const f of Array.from(fileInput.files)) {
+          const down = await downscaleImageFileToDataUrl(f);
+          if (down && down.dataUrl && !collectedPhotos.includes(down.dataUrl)) {
+            collectedPhotos.push(down.dataUrl);
+          }
+        }
+      }
+      finishSave(collectedPhotos);
     });
 
     document.getElementById("exportJsonBtn").addEventListener("click", () => {
@@ -5985,11 +6232,68 @@
     // 2. SMART 4-IN-1 WINE ADDITION (Camera Photo, Barcode/QR, 4507 Climats, Vivino/Text)
     // =========================================================================
     window.pendingSmartPhotoDataUrl = null;
+    window.pendingSmartPhotos = [];
     const smartStatusText = document.getElementById("smartStatusText");
     const smartSuggestionsBox = document.getElementById("smartSuggestionsBox");
     const smartQuickSearchInput = document.getElementById("smartQuickSearchInput");
 
-    // Pre-index all 4,507 cadastral climats with centroids for instant (<2ms) parcel lookup
+    function renderPendingSmartPhotosUI() {
+      const bar = document.getElementById("smartPhotoPreviewBar");
+      const thumbsContainer = document.getElementById("smartPhotoThumbsContainer");
+      const countBadge = document.getElementById("smartPhotoCountBadge");
+      if (!bar || !thumbsContainer) return;
+
+      const list = window.pendingSmartPhotos || [];
+      if (list.length === 0) {
+        window.pendingSmartPhotoDataUrl = null;
+        bar.classList.remove("visible");
+        thumbsContainer.innerHTML = "";
+        return;
+      }
+      window.pendingSmartPhotoDataUrl = list[0].dataUrl;
+      bar.classList.add("visible");
+      if (countBadge) {
+        countBadge.textContent = `Прикреплено фото: ${list.length} шт. (нажмите на миниатюру, чтобы сделать её главной обложкой бутылки)`;
+      }
+      thumbsContainer.innerHTML = list.map((item, idx) => `
+        <div class="smart-photo-thumb-item ${idx === 0 ? 'is-primary' : ''}" data-smart-thumb-idx="${idx}" title="${idx === 0 ? 'Главное фото бутылки' : 'Нажмите, чтобы сделать главным фото'} (${escapeAttr(item.name || 'Фото')})">
+          <img src="${escapeAttr(item.dataUrl)}" alt="Фото ${idx + 1}" />
+          <span class="smart-photo-thumb-badge num">${idx === 0 ? '1 · Главн.' : (idx + 1)}</span>
+          <button type="button" class="smart-photo-thumb-remove" data-smart-remove-idx="${idx}" title="Удалить это фото">×</button>
+        </div>
+      `).join("");
+
+      thumbsContainer.querySelectorAll("[data-smart-thumb-idx]").forEach(el => {
+        el.addEventListener("click", e => {
+          if (e.target.closest("[data-smart-remove-idx]")) return;
+          const idx = Number(el.getAttribute("data-smart-thumb-idx"));
+          if (idx > 0 && idx < window.pendingSmartPhotos.length) {
+            const [picked] = window.pendingSmartPhotos.splice(idx, 1);
+            window.pendingSmartPhotos.unshift(picked);
+            renderPendingSmartPhotosUI();
+            showToast("Выбрано главное фото бутылки");
+          }
+        });
+      });
+
+      thumbsContainer.querySelectorAll("[data-smart-remove-idx]").forEach(btn => {
+        btn.addEventListener("click", e => {
+          e.stopPropagation();
+          const idx = Number(btn.getAttribute("data-smart-remove-idx"));
+          window.pendingSmartPhotos.splice(idx, 1);
+          renderPendingSmartPhotosUI();
+        });
+      });
+    }
+
+    document.getElementById("clearSmartPhotosBtn")?.addEventListener("click", () => {
+      window.pendingSmartPhotos = [];
+      window.pendingSmartPhotoDataUrl = null;
+      renderPendingSmartPhotosUI();
+      showToast("Прикреплённые фото очищены");
+    });
+
+    // Pre-index all cadastral climats & world sub-zones with centroids for instant (<2ms) parcel lookup
     const cadastralSearchIndex = (() => {
       const features = (geoData && geoData.cadastralClimats && geoData.cadastralClimats.features) || [];
       return features.map(f => {
@@ -6012,11 +6316,13 @@
         const commune = p.commune || "";
         const region = p.region || "Бургундия";
         const tier = p.tier || "village";
+        const soil = p.soil || "";
         return {
           name,
           commune,
           region,
           tier,
+          soil,
           lat,
           lon,
           searchKey: `${name} ${commune} ${region}`.toLowerCase()
@@ -6062,7 +6368,7 @@
       }
     }
 
-    function applyClimatMatchToForm(item) {
+    function applyClimatMatchToForm(item, overwriteName = true) {
       const tierLabelMap = {
         grand_cru: "Grand Cru",
         premier_cru: "Premier Cru",
@@ -6074,14 +6380,14 @@
         Math.hypot(r.lat - item.lat, r.lon - item.lon) < 1.0
       );
       const regionTitle = parentReg
-        ? `${parentReg.country} · ${parentReg.macro_region}`
+        ? `${parentReg.country_label || parentReg.country} · ${parentReg.macro_region}`
         : (item.region === "Champagne" ? "Франция · Шампань"
           : item.region === "Beaujolais" ? "Франция · Бургундия · Божоле"
           : `Франция · ${item.region || "Бургундия"}`);
 
       document.getElementById("inRegion").value = regionTitle;
       document.getElementById("inCommune").value = `${item.commune} · ${item.name}`;
-      if (!document.getElementById("inName").value.trim()) {
+      if (overwriteName && !document.getElementById("inName").value.trim()) {
         document.getElementById("inName").value = `${item.commune} «${item.name}»`;
       }
       document.getElementById("inLat").value = item.lat.toFixed(4);
@@ -6126,12 +6432,11 @@
           if (title) document.getElementById("inName").value = title.trim();
           const yearMatch = (title + " " + (prod.Categories || "")).match(/\b(19\d{2}|20[0-2]\d)\b/);
           if (yearMatch) document.getElementById("inVintage").value = yearMatch[1];
-          if (prod.image_front_url) {
-            window.pendingSmartPhotoDataUrl = prod.image_front_url;
-            document.getElementById("smartPhotoThumb").src = prod.image_front_url;
+          if (prod.image_front_url && (!window.pendingSmartPhotos || window.pendingSmartPhotos.length === 0)) {
+            window.pendingSmartPhotos = [{ dataUrl: prod.image_front_url, name: `EAN ${cleanCode}` }];
+            renderPendingSmartPhotosUI();
             document.getElementById("smartPhotoStatusTitle").textContent = `Найдено по штрих-коду ${cleanCode}`;
             document.getElementById("smartPhotoStatusSub").textContent = `${brand} · ${title}`;
-            document.getElementById("smartPhotoPreviewBar").classList.add("visible");
           }
           await resolveWineTerroirFromText(`${brand} ${title} ${prod.origins || ""}`);
           smartStatusText.textContent = `Штрих-код ${cleanCode} распознан: ${brand} ${title}`;
@@ -6140,7 +6445,7 @@
           return true;
         }
       } catch (err) {}
-      smartStatusText.textContent = `Штрих-код ${cleanCode} записан в заметку (в открытой базе нет карточки · укажите название или парцель)`;
+      smartStatusText.textContent = `Штрих-код ${cleanCode} записан в заметку (в открытой базе нет карточки · читаем текст этикетки...)`;
       const notesEl = document.getElementById("inNotes");
       if (!notesEl.value.includes(cleanCode)) {
         notesEl.value = (notesEl.value ? notesEl.value + " · " : "") + `EAN: ${cleanCode}`;
@@ -6153,70 +6458,104 @@
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[-_.,/()"«»'’]+/g, " ")
+        .replace(/[-_.,/()"«»'’|~]+/g, " ")
         .replace(/\s{2,}/g, " ")
         .trim();
     }
 
-    function matchWorldTerroirSynchronously(rawText) {
+    function hasWholeWord(haystackNorm, needleNorm) {
+      if (!haystackNorm || !needleNorm) return false;
+      return (` ${haystackNorm} `).includes(` ${needleNorm} `);
+    }
+
+    const GENERIC_CLIMAT_STOPWORDS = new Set([
+      "creation", "black", "blanc", "blanche", "rouge", "reserve", "reserva", "grand", "premier",
+      "vieilles", "vignes", "vigne", "chateau", "domaine", "winery", "estate", "german", "germain",
+      "saint", "martin", "roman", "pierre", "champ", "champs", "monts", "croix", "petit", "cotes",
+      "roche", "terre", "terres", "combe", "combes", "clos", "bois", "pres", "haut", "bas", "nord",
+      "sud", "est", "ouest", "soleil", "eglise", " moulin", "moulins", "jardin", "jardins"
+    ]);
+
+    function matchWorldTerroirSynchronously(rawText, options = {}) {
       const norm = normalizeSearchText(rawText);
       if (!norm) return null;
+      const fromOcr = Boolean(options.fromOcr);
 
-      // 1. Check Iconic Wine & Producer Index first (Lafite/Carruades, Lanson Le Black Creation, Burg Ravensburg, Sassicaia, Opus One, Russian wineries, etc.)
+      // 1. Check Iconic Wine & Producer Index first (using whole-word match so short patterns never false-match)
       for (const entry of ICONIC_WINE_INDEX) {
-        if ((entry.patterns || []).some(p => norm.includes(normalizeSearchText(p)))) {
+        if ((entry.patterns || []).some(p => {
+          const np = normalizeSearchText(p);
+          return np.length >= 4 && hasWholeWord(norm, np);
+        })) {
           const reg = WORLD_WINE_REGIONS.find(r => r.id === entry.region_id);
           return { type: "iconic", entry, reg };
         }
       }
 
-      // 2. Check all 4,584 cadastral climats & world cru parcels (only for specific parcel/commune names >= 5 chars)
-      const GENERIC_CLIMAT_STOPWORDS = new Set(["creation", "black", "blanc", "rouge", "reserve", "reserva", "grand", "premier", "vieilles", "vignes", "chateau", "domaine", "winery", "estate"]);
-      const climatHit = cadastralSearchIndex.find(c => {
-        const cn = normalizeSearchText(c.name);
-        return cn.length >= 5 && !GENERIC_CLIMAT_STOPWORDS.has(cn) && norm.includes(cn);
-      }) || cadastralSearchIndex.find(c => {
-        const cm = normalizeSearchText(c.commune.split("(")[0]);
-        return cm.length >= 5 && !GENERIC_CLIMAT_STOPWORDS.has(cm) && norm.includes(cm);
-      });
-      if (climatHit) {
-        return { type: "climat", climat: climatHit };
-      }
-
-      // 3. Check all 29 World Wine Regions by their 500+ appellation/commune/producer keywords
+      // 2. Check all 29 World Wine Regions by their appellation/commune/country/producer keywords (whole-word match)
+      //    Checking World Wine Regions BEFORE micro-parcels prevents OCR noise on an Argentine/New World bottle from matching a random French cadastral parcel like "German" in Saint-Estèphe!
       let bestReg = null;
       let bestKwLen = 0;
       for (const reg of WORLD_WINE_REGIONS) {
         for (const kw of (reg.keywords || [])) {
           const nkw = normalizeSearchText(kw);
-          if (nkw.length >= 4 && norm.includes(nkw) && nkw.length > bestKwLen) {
+          if (nkw.length >= 4 && hasWholeWord(norm, nkw) && nkw.length > bestKwLen) {
             bestReg = reg;
             bestKwLen = nkw.length;
           }
         }
       }
+
+      // 3. Check cadastral climats & world cru parcels with strict whole-word boundary matching
+      const climatHit = cadastralSearchIndex.find(c => {
+        const cn = normalizeSearchText(c.name);
+        if (cn.length < 5 || GENERIC_CLIMAT_STOPWORDS.has(cn)) return false;
+        if (!hasWholeWord(norm, cn)) return false;
+        if (fromOcr) {
+          const cm = normalizeSearchText(c.commune.split("(")[0]);
+          const hasMultiWordName = cn.includes(" ") && cn.length >= 9;
+          const alsoHasCommune = cm.length >= 4 && hasWholeWord(norm, cm);
+          return hasMultiWordName || alsoHasCommune;
+        }
+        return true;
+      }) || (!fromOcr && cadastralSearchIndex.find(c => {
+        const cm = normalizeSearchText(c.commune.split("(")[0]);
+        return cm.length >= 6 && !GENERIC_CLIMAT_STOPWORDS.has(cm) && hasWholeWord(norm, cm);
+      }));
+
+      if (climatHit) {
+        if (bestReg && fromOcr) {
+          const d = Math.hypot((climatHit.lat || 0) - bestReg.lat, (climatHit.lon || 0) - bestReg.lon);
+          if (d > 2.5) {
+            return { type: "region", reg: bestReg };
+          }
+        }
+        return { type: "climat", climat: climatHit };
+      }
+
       if (bestReg) {
         return { type: "region", reg: bestReg };
       }
       return null;
     }
 
-    async function resolveWineTerroirFromText(cleanWineText) {
+    async function resolveWineTerroirFromText(cleanWineText, options = {}) {
       if (!cleanWineText) return false;
+      const fromOcr = Boolean(options.fromOcr);
 
-      // Step 1: Instant local resolution against Iconic Index, 4,584 Climats & 29 World Regions
-      const syncMatch = matchWorldTerroirSynchronously(cleanWineText);
+      // Step 1: Instant local resolution against Iconic Index, World Regions & Cadastral Climats
+      const syncMatch = matchWorldTerroirSynchronously(cleanWineText, options);
       if (syncMatch) {
         if (syncMatch.type === "iconic") {
           const { entry, reg } = syncMatch;
-          const isSpecificDomain = entry.producer && !/[·(]/.test(entry.producer) && !String(entry.name || "").includes("/");
+          const isSpecificDomain = entry.producer && !/[·/]/.test(entry.producer) && !String(entry.name || "").includes("/");
           if (isSpecificDomain) {
             document.getElementById("inProducer").value = entry.producer;
             const currentName = document.getElementById("inName").value.trim();
-            if (!currentName || currentName.length < 4 || /rg|075|black creation/i.test(currentName)) {
+            if (!currentName || currentName.length < 4 || /rg|075|black creation|german/i.test(currentName)) {
               document.getElementById("inName").value = entry.name;
-            } else if (currentName.toLowerCase().startsWith(entry.producer.replace(/^Weingut\s+|^Château\s+|^Champagne\s+/i, "").toLowerCase())) {
-              const stripped = currentName.replace(new RegExp("^" + entry.producer.replace(/^Weingut\s+|^Château\s+|^Champagne\s+/i, ""), "i"), "").trim();
+            } else if (currentName.toLowerCase().startsWith(entry.producer.replace(/^Weingut\s+|^Château\s+|^Champagne\s+|^Bodega\s+/i, "").toLowerCase())) {
+              const stripped = currentName.replace(new RegExp("^" + entry.producer.replace(/^Weingut\s+|^Château\s+|^Champagne\s+|^Bodega\s+/i, ""), "i"), "").trim();
               if (stripped.length >= 3) document.getElementById("inName").value = stripped;
             }
           }
@@ -6236,7 +6575,7 @@
           return true;
         }
         if (syncMatch.type === "climat") {
-          applyClimatMatchToForm(syncMatch.climat);
+          applyClimatMatchToForm(syncMatch.climat, !fromOcr);
           return true;
         }
         if (syncMatch.type === "region") {
@@ -6245,8 +6584,11 @@
         }
       }
 
+      if (fromOcr) {
+        return false;
+      }
+
       // Step 2: Query 6-Language Wikipedia API (en / fr / it / de / es / ru support CORS origin=* natively in every browser)
-      // to identify the winery, appellation, or village from encyclopedic articles for ANY wine from ANY Russian or European store
       const wikiEngines = [
         "https://en.wikipedia.org/w/api.php",
         "https://fr.wikipedia.org/w/api.php",
@@ -6290,9 +6632,9 @@
         } catch (_) {}
       }
 
-      // Step 3: Restricted Nominatim village lookup ONLY within major wine-producing countries (never China/Maine streets!)
+      // Step 3: Restricted Nominatim village lookup ONLY within major wine-producing countries
       const geoQuery = cleanWineText
-        .replace(/\b(chardonnay|шардоне|pinot\s*noir|пино\s*нуар|pinot\s*blanc|пино\s*блан|pinot\s*gris|riesling|рислинг|sp[äa]tburgunder|weissburgunder|grauburgunder|lemberger|blaufr[äa]nkisch|cabernet|каберне|merlot|мерло|syrah|сира|shiraz|sauvignon\s*blanc|совиньон|aligot[ée]|алиготе|gamay|гаме|nebbiolo|неббиоло|sangiovese|tempranillo|темпранильо|brut|брют|extra\s*brut|grand\s*cru|premier\s*cru|1er\s*cru|vieilles\s*vignes|reserve|reserva|trocken|gg|grosses\s*gew[äa]chs|erste\s*lage|ortswein|gutswein|rouge|blanc|rose|ros[ée]|creation|black|carruades|chateau|domaine|weingut|bodegas|tenuta)\b/gi, " ")
+        .replace(/\b(chardonnay|шардоне|pinot\s*noir|пино\s*нуар|pinot\s*blanc|пино\s*блан|pinot\s*gris|riesling|рислинг|sp[äa]tburgunder|weissburgunder|grauburgunder|lemberger|blaufr[äa]nkisch|cabernet|каберне|merlot|мерло|syrah|сира|shiraz|sauvignon\s*blanc|совиньон|aligot[ée]|алиготе|gamay|гаме|nebbiolo|неббиоло|sangiovese|tempranillo|темпранильо|malbec|мальбек|brut|брют|extra\s*brut|grand\s*cru|premier\s*cru|1er\s*cru|vieilles\s*vignes|reserve|reserva|trocken|gg|grosses\s*gew[äa]chs|erste\s*lage|ortswein|gutswein|rouge|blanc|rose|ros[ée]|creation|black|carruades|chateau|domaine|weingut|bodegas|tenuta)\b/gi, " ")
         .replace(/\s{2,}/g, " ")
         .trim();
       if (geoQuery.length >= 4) {
@@ -6334,8 +6676,8 @@
 
       const norm = normalizeSearchText(t);
       for (const entry of ICONIC_WINE_INDEX) {
-        if ((entry.patterns || []).some(p => norm.includes(normalizeSearchText(p)))) {
-          const isSpecificDomain = entry.producer && !/[·(]/.test(entry.producer) && !String(entry.name || "").includes("/");
+        if ((entry.patterns || []).some(p => hasWholeWord(norm, normalizeSearchText(p)))) {
+          const isSpecificDomain = entry.producer && !/[·/]/.test(entry.producer) && !String(entry.name || "").includes("/");
           if (!isSpecificDomain) continue;
           if (norm.includes("burg ravensburg")) {
             const rest = t.replace(/^(Weingut\s+)?Burg\s+Ravensburg\s*/i, "").trim();
@@ -6364,7 +6706,7 @@
       const PARTICLES = new Set(["de", "du", "des", "la", "le", "les", "d", "von", "zu", "van", "di", "del", "della", "da", "do", "dos", "das", "el", "los", "las"]);
       const words = t.split(/\s+/);
       if (words.length >= 3) {
-        const grapeIdx = words.findIndex((w, i) => i >= 1 && /^(chardonnay|шардоне|pinot|пино|riesling|рислинг|sp[äa]tburgunder|weissburgunder|grauburgunder|lemberger|blaufr[äa]nkisch|cabernet|каберне|merlot|мерло|syrah|сира|sauvignon|совиньон|aligot[ée]|алиготе|gamay|гаме|brut|брют|cr[ée]mant|креман|champagne|шампанское)$/i.test(w));
+        const grapeIdx = words.findIndex((w, i) => i >= 1 && /^(chardonnay|шардоне|pinot|пино|riesling|рислинг|sp[äa]tburgunder|weissburgunder|grauburgunder|lemberger|blaufr[äa]nkisch|cabernet|каберне|merlot|мерло|syrah|сира|malbec|мальбек|sauvignon|совиньон|aligot[ée]|алиготе|gamay|гаме|brut|брют|cr[ée]mant|креман|champagne|шампанское)$/i.test(w));
         if (grapeIdx >= 2 && !PARTICLES.has(words[grapeIdx - 1].toLowerCase())) {
           return {
             producer: words.slice(0, grapeIdx).join(" "),
@@ -6463,22 +6805,18 @@
       }
       const host = u.hostname.replace(/^www\./i, "");
 
-      // Extract query parameters (?year=2022, ?vintage=2022, ?millesime=2022) used by Vivino, Wine-Searcher, Millesima, iDealwine
       const queryYear = u.searchParams.get("year") || u.searchParams.get("vintage") || u.searchParams.get("millesime") || "";
 
-      // Extract all URL path segments (including category/country/region breadcrumbs in FortWine, AmWine, Decantalo, Tannico, Wine-Searcher, Vivino)
       const rawSegments = decodeURIComponent(u.pathname)
         .split("/")
         .map(s => s.trim())
         .filter(Boolean);
 
-      // Extract category context from intermediate path segments (e.g. /frantsiya/burgundiya/, /italia/toscana/, /vino-tinto/rioja/)
       const urlCategoryContext = rawSegments
         .slice(0, -1)
         .join(" ")
         .replace(/[-_+]+/g, " ");
 
-      // Identify the product slug segment (handling Wine-Searcher /find/<slug>/<year> and Vivino /<slug>/w/<id>)
       const nonNumericSegments = rawSegments.filter(s =>
         !/^(catalog|product|products|wine|wines|vino|vins|weine|vini|shampanskoe|igristoe|krasnoe|beloe|alkogol|collection|item|find|produits|acheter-vin|p|w|i|ru|en|fr|it|es|de|pt|uk|us)$/i.test(s) &&
         !/^\d+$/.test(s) &&
@@ -6505,7 +6843,6 @@
         );
       }
 
-      // Try fetching live store page via fast CORS proxies (allorigins.win & corsproxy.io) to extract OpenGraph, JSON-LD & Store Spec Table
       const proxyCandidates = [
         `https://api.allorigins.win/get?url=${encodeURIComponent(rawUrl)}`,
         `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`
@@ -6534,7 +6871,6 @@
             || doc.querySelector('meta[name="twitter:image"]')?.getAttribute("content")
             || "";
 
-          // Extract breadcrumbs & spec table text from Russian & European store pages
           const breadcrumbText = Array.from(doc.querySelectorAll('.breadcrumb, .breadcrumbs, [itemprop="breadcrumb"], nav[aria-label*="bread" i]'))
             .map(el => el.textContent.replace(/\s+/g, " ").trim())
             .join(" ");
@@ -6567,11 +6903,12 @@
 
           const bestImg = ldImg || ogImg;
           if (bestImg && /^https?:\/\//i.test(bestImg)) {
-            window.pendingSmartPhotoDataUrl = bestImg;
-            document.getElementById("smartPhotoThumb").src = bestImg;
+            if (!window.pendingSmartPhotos || window.pendingSmartPhotos.length === 0) {
+              window.pendingSmartPhotos = [{ dataUrl: bestImg, name: host }];
+              renderPendingSmartPhotosUI();
+            }
             document.getElementById("smartPhotoStatusTitle").textContent = `Фото бутылки загружено с ${host}`;
             document.getElementById("smartPhotoStatusSub").textContent = bestTitle || rawSlug;
-            document.getElementById("smartPhotoPreviewBar").classList.add("visible");
           }
           showToast(`Карточка вина распознана по ссылке ${host}`);
           return;
@@ -6620,8 +6957,8 @@
       }
       const regHtml = regionMatches.map((r, rIdx) => `
         <div class="smart-suggestion-item" data-world-reg-idx="${rIdx}">
-          <span><strong>${escapeHtml(r.country)} · ${escapeHtml(r.macro_region)}</strong> · ${escapeHtml(r.sub_region)}</span>
-          <span class="num" style="color:#A82024;font-size:0.76rem;">Терруар · ${r.lat.toFixed(2)}° N</span>
+          <span><strong>${escapeHtml(r.country_label || r.country)} · ${escapeHtml(r.macro_region)}</strong> · ${escapeHtml(r.sub_region)}</span>
+          <span class="num" style="color:#A82024;font-size:0.76rem;">Терруар · ${r.lat.toFixed(2)}°</span>
         </div>
       `).join("");
       const climHtml = climatMatches.map((m, idx) => `
@@ -6654,9 +6991,11 @@
     });
 
     // =========================================================================
-    // UNIVERSAL iOS SAFARI / ANDROID / DESKTOP QR + BARCODE + 2-PASS LABEL OCR
+    // UNIVERSAL iOS SAFARI / ANDROID / DESKTOP QR + BARCODE + MULTI-PHOTO OCR
     // =========================================================================
     const KNOWN_WINE_BARCODES = {
+      "7790314062001": { producer: "Bodega Toro (Fecovita)", name: "Centenario · Malbec", vintage: "2025", style: "red", query: "Bodega Toro Centenario Malbec Mendoza Argentina" },
+      "779031406200":  { producer: "Bodega Toro (Fecovita)", name: "Centenario · Malbec", vintage: "2025", style: "red", query: "Bodega Toro Centenario Malbec Mendoza Argentina" },
       "4660116930424": { producer: "Скалистый берег (Côte Rocheuse)", name: "Каберне Фран · ЗГУ «Кубань»", vintage: "2023", style: "red", query: "Скалистый берег Каберне Фран" },
       "4650118930424": { producer: "Скалистый берег (Côte Rocheuse)", name: "Каберне Фран · ЗГУ «Кубань»", vintage: "2023", style: "red", query: "Скалистый берег Каберне Фран" },
       "4660116930011": { producer: "Скалистый берег (Côte Rocheuse)", name: "Красная книга. Глава 1 · ЗГУ «Кубань»", vintage: "2021", style: "white", query: "Скалистый берег" },
@@ -6671,7 +7010,9 @@
       { re: /саперави|saperavi/i, label: "Саперави", style: "red" },
       { re: /мерло|merlot/i, label: "Мерло", style: "red" },
       { re: /сира|шираз|syrah|shiraz/i, label: "Сира", style: "red" },
-      { re: /мальбек|malbec/i, label: "Мальбек", style: "red" },
+      { re: /мальбек|malbec/i, label: "Malbec", style: "red" },
+      { re: /бонарда|bonarda/i, label: "Бонарда", style: "red" },
+      { re: /карменер|carmen[èe]re/i, label: "Карменер", style: "red" },
       { re: /цимлянский\s*ч[её]рный/i, label: "Цимлянский Чёрный", style: "red" },
       { re: /марселан|marselan/i, label: "Марселан", style: "red" },
       { re: /пти\s*вердо|petit\s*verdot/i, label: "Пти Вердо", style: "red" },
@@ -6682,6 +7023,7 @@
       { re: /пинотаж|pinotage/i, label: "Пинотаж", style: "red" },
       { re: /шардоне|chardonnay/i, label: "Шардоне", style: "white" },
       { re: /совиньон\s*блан|sauvignon\s*blanc/i, label: "Совиньон Блан", style: "white" },
+      { re: /торронтес|torront[ée]s/i, label: "Торронтес", style: "white" },
       { re: /рислинг|riesling/i, label: "Рислинг", style: "white" },
       { re: /алиготе|aligot[ée]/i, label: "Алиготе", style: "white" },
       { re: /пино\s*блан|pinot\s*blanc|weissburgunder/i, label: "Пино Блан", style: "white" },
@@ -6695,36 +7037,58 @@
       { re: /красная\s*книга/i, label: "Красная книга", style: "red" }
     ];
 
-    // Universal Cross-Browser Code Decoder (iOS Safari jsQR + ZXing + Chromium BarcodeDetector)
+    // Universal Cross-Browser Code Decoder (iOS Safari jsQR + ZXing + Chromium BarcodeDetector, including 90°/270° rotated vertical barcodes)
     async function decodeCodesFromCanvasOrImage(sourceEl) {
       const results = [];
       const srcW = sourceEl.videoWidth || sourceEl.naturalWidth || sourceEl.width || 640;
       const srcH = sourceEl.videoHeight || sourceEl.naturalHeight || sourceEl.height || 480;
       if (!srcW || !srcH) return results;
 
-      // 1. Native BarcodeDetector if available (Android / Desktop Chrome & Edge)
+      const buildRotatedCanvas = (angleDeg, maxDim = 1000) => {
+        const scale = Math.min(1, maxDim / Math.max(srcW, srcH));
+        const w = Math.max(1, Math.round(srcW * scale));
+        const h = Math.max(1, Math.round(srcH * scale));
+        const c = document.createElement("canvas");
+        if (angleDeg === 90 || angleDeg === 270) {
+          c.width = h;
+          c.height = w;
+        } else {
+          c.width = w;
+          c.height = h;
+        }
+        const ctx = c.getContext("2d", { willReadFrequently: true });
+        ctx.save();
+        if (angleDeg === 90) {
+          ctx.translate(c.width, 0);
+          ctx.rotate(Math.PI / 2);
+        } else if (angleDeg === 270) {
+          ctx.translate(0, c.height);
+          ctx.rotate(-Math.PI / 2);
+        }
+        ctx.drawImage(sourceEl, 0, 0, w, h);
+        ctx.restore();
+        return { c, ctx };
+      };
+
+      const { c, ctx } = buildRotatedCanvas(0, 1050);
+
+      // 1. Native BarcodeDetector if available (0° and 90° for vertical wine label barcodes)
       if ("BarcodeDetector" in window) {
         try {
           const detector = new window.BarcodeDetector({
             formats: ["qr_code", "ean_13", "ean_8", "upc_a", "upc_e", "code_128", "data_matrix", "pdf417"]
           });
-          const found = await detector.detect(sourceEl);
-          if (found && found.length > 0) {
-            found.forEach(c => { if (c.rawValue) results.push(c.rawValue.trim()); });
-            if (results.length > 0) return results;
+          for (const target of [c, buildRotatedCanvas(90, 1050).c]) {
+            const found = await detector.detect(target);
+            if (found && found.length > 0) {
+              found.forEach(item => { if (item.rawValue) results.push(item.rawValue.trim()); });
+              if (results.length > 0) return results;
+            }
           }
         } catch (_) {}
       }
 
-      // Prepare canvas for jsQR & ZXing (works 100% natively on iPhone iOS Safari)
-      const scale = Math.min(1, 1000 / Math.max(srcW, srcH));
-      const c = document.createElement("canvas");
-      c.width = Math.max(1, Math.round(srcW * scale));
-      c.height = Math.max(1, Math.round(srcH * scale));
-      const ctx = c.getContext("2d", { willReadFrequently: true });
-      ctx.drawImage(sourceEl, 0, 0, c.width, c.height);
-
-      // 2. jsQR on full frame + bottom-center QR region + high-contrast pass
+      // 2. jsQR on full frame + bottom-center QR region
       if (typeof window.jsQR === "function") {
         try {
           const fullData = ctx.getImageData(0, 0, c.width, c.height);
@@ -6733,7 +7097,6 @@
             results.push(qr1.data.trim());
             return results;
           }
-          // Bottom-center crop where wine back-label QR codes are placed
           const bx = Math.round(c.width * 0.18), by = Math.round(c.height * 0.38);
           const bw = Math.round(c.width * 0.64), bh = Math.round(c.height * 0.56);
           if (bw > 40 && bh > 40) {
@@ -6747,7 +7110,7 @@
         } catch (_) {}
       }
 
-      // 3. ZXing MultiFormatReader (reads EAN-13, EAN-8, UPC, Code128, DataMatrix, PDF417 & QR on iPhone Safari)
+      // 3. ZXing MultiFormatReader (0° and 90° rotated for vertical EAN-13 barcodes on wine labels)
       if (window.ZXing && window.ZXing.BrowserMultiFormatReader) {
         try {
           const hints = new Map();
@@ -6755,14 +7118,19 @@
             hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
           }
           const reader = new window.ZXing.BrowserMultiFormatReader(hints);
-          const dataUrl = c.toDataURL("image/png");
-          const tmpImg = new Image();
-          tmpImg.src = dataUrl;
-          await new Promise(r => { tmpImg.onload = r; tmpImg.onerror = r; });
-          const zRes = await reader.decodeFromImageElement(tmpImg);
-          if (zRes && zRes.getText()) {
-            results.push(zRes.getText().trim());
-            return results;
+          for (const angle of [0, 90, 270]) {
+            try {
+              const rotC = angle === 0 ? c : buildRotatedCanvas(angle, 1050).c;
+              const dataUrl = rotC.toDataURL("image/png");
+              const tmpImg = new Image();
+              tmpImg.src = dataUrl;
+              await new Promise(r => { tmpImg.onload = r; tmpImg.onerror = r; });
+              const zRes = await reader.decodeFromImageElement(tmpImg);
+              if (zRes && zRes.getText()) {
+                results.push(zRes.getText().trim());
+                return results;
+              }
+            } catch (_) {}
           }
         } catch (_) {}
       }
@@ -6829,7 +7197,12 @@
       let matchedAny = false;
       const norm = normalizeSearchText(text);
 
-      // 1. Check for Skalisty Bereg signature (including condensed-font OCR variants like "берег. Каберне Фран", "Гравитационная винодельня", "Варваровка", "9200 бут")
+      // 1A. Check for Bodega Toro · Centenario (Fecovita, Mendoza Argentina) signature (including OCR variants like "TORO", "CENTENAR", "FECOVITA", "B72134", "RERRRZA ARGENT")
+      const isBodegaToroCentenario =
+        (/\b(bodega\s*toro|fecovita|centenari[o0]?|centenar|b72134|872134)\b/i.test(text)) ||
+        (/\btoro\b/i.test(text) && /\b(malbec|mendoza|argentin|centenar)\b/i.test(text));
+
+      // 1B. Check for Skalisty Bereg signature (including condensed-font OCR variants like "берег. Каберне Фран", "Гравитационная винодельня", "Варваровка", "9200 бут")
       const isSkalistyBereg = /скалист|халист|lkanuctoin|берег[.»"\s]+каберне|берег\s*[»".]|гравитацион|bupaaponra|варваровк|9200\s*бут|skbereg/i.test(text);
 
       // 2. Extract explicit GPS coordinates printed on back-labels (e.g. "44,81°; 37,37°")
@@ -6857,25 +7230,54 @@
       let detectedStyle = detectedGrape ? detectedGrape.style : null;
       if (/игрист|шампанск|брют|экстра\s*брют|cr[ée]mant|champagne|prosecco|cava|corpinnat|spumante|sekt/i.test(text)) {
         detectedStyle = "sparkling";
-      } else if (/сухое\s*белое|белое\s*сухое|полусухое\s*белое|blanc|bianco|weisswein|white\s*wine/i.test(text)) {
+      } else if (/сухое\s*белое|белое\s*сухое|полусухое\s*белое|blanc|bianco|weisswein|white\s*wine|vino\s*blanco/i.test(text)) {
         detectedStyle = "white";
-      } else if (/сухое\s*красное|красное\s*сухое|rouge|rosso|tinto|rotwein|red\s*wine/i.test(text)) {
+      } else if (/сухое\s*красное|красное\s*сухое|rouge|rosso|tinto|rotwein|red\s*wine|vino\s*tinto/i.test(text)) {
         detectedStyle = "red";
       }
 
-      // 5. Extract Harvest Vintage (filtering out Russian GOST 55242-2012, TR TS 021/2011, 022/2011 and bottling dates dd.mm.2025)
+      // 5. Extract Harvest Vintage (supports 1980–2026 including Southern Hemisphere 2025/2026 harvests, while filtering out Russian GOST 55242-2012, TR TS 021/2011 and bottling dates dd.mm.2025)
       const cleanedForYear = text
         .replace(/(?:гост|тр\s*тс|тр\s*еаэс|ту|55242|32030|32061|021|022|029|047)[^.\n]{0,22}\b(19\d{2}|20[0-2]\d)\b/gi, " ")
         .replace(/\b\d{1,2}[./-]\d{1,2}[./-](20[12]\d)\b/g, " ")
-        .replace(/[.,](202[4-9])\b/g, " ");
-      const explicitHarvestMatch = cleanedForYear.match(/(?:урожай|урожая|год\s*урожая|миллезим|vintage|vendange)\s*[:.-]?\s*(19[89]\d|20[0-2]\d)/i)
-        || cleanedForYear.match(/\b(201[5-9]|202[0-4])\b/);
+        .replace(/\b(?:розлив|разлив|bottled|lote?)[^.\n]{0,16}\b(202[4-9])\b/gi, " ");
+      const explicitHarvestMatch = cleanedForYear.match(/(?:урожай|урожая|год\s*урожая|миллезим|vintage|vendange|cosecha)\s*[:.-]?\s*(19[89]\d|20[0-2]\d)/i)
+        || cleanedForYear.match(/\b(201[5-9]|202[0-6])\b/);
       let detectedVintage = explicitHarvestMatch ? explicitHarvestMatch[1] : null;
+      if (detectedVintage) {
+        document.getElementById("inVintage").dataset.hasExplicitYear = "1";
+      }
 
-      // 6. Extract Vine Age ("Возраст лоз: 11 лет"), Lot Size ("9200 бут."), Alcohol ("14,3% об.")
+      // 6. Extract Vine Age ("Возраст лоз: 11 лет"), Lot Size ("9200 бут."), Alcohol ("12.5% V/V" or "14,3% об.")
       const vineAgeMatch = text.match(/(?:возраст\s*лоз|лоз|ст\s*поз|vignes?)[^\d]{0,10}(\d{1,3})\s*лет/i);
       const lotMatch = text.match(/\b(\d{3,6})\s*бут/i);
       const abvMatch = text.match(/\b(1[1-6][.,]\d)\s*%/);
+
+      if (isBodegaToroCentenario) {
+        const grapeTitle = detectedGrape ? detectedGrape.label : "Malbec";
+        document.getElementById("inProducer").value = "Bodega Toro (Fecovita)";
+        document.getElementById("inName").value = `Centenario · ${grapeTitle}`;
+        document.getElementById("inVintage").value = detectedVintage || "2025";
+        document.getElementById("inStyle").value = detectedStyle || "red";
+        document.getElementById("inRegion").value = "Аргентина · Мендоса (Mendoza)";
+        document.getElementById("inCommune").value = "Мендоса · Лухан-де-Куйо и Маипу (Bodega Toro · Est. B72134)";
+        document.getElementById("inLat").value = "-33.0320";
+        document.getElementById("inLon").value = "-68.9680";
+        document.getElementById("inSoil").value =
+          `850–1050 м · В 90° · Предгорья Анд (Мендоса): аллювиальные галечники, песок и известковые отложения · ${abvMatch ? abvMatch[1].replace(",", ".") + "% об." : "12.5% об."}`;
+        if (typeof map !== "undefined" && map) {
+          map.flyTo([-33.0320, -68.9680], 11, { duration: 0.65 });
+        }
+        document.getElementById("smartPhotoStatusTitle").textContent =
+          `Распознано: Bodega Toro · Centenario ${grapeTitle} (${detectedVintage || "2025"})`;
+        document.getElementById("smartPhotoStatusSub").textContent =
+          "Аргентина · Мендоса (Fecovita Coop. Est. B72134 · EAN 7790314062001)";
+        smartStatusText.textContent =
+          `Этикетка распознана: Bodega Toro · Centenario ${grapeTitle} ${detectedVintage || "2025"} (Аргентина · Мендоса, 850–1050 м).`;
+        smartStatusText.style.color = "var(--color-verdigris)";
+        showToast(`Распознано: Bodega Toro · Centenario ${grapeTitle}`);
+        return true;
+      }
 
       if (isSkalistyBereg) {
         const grapeTitle = detectedGrape ? detectedGrape.label : "Каберне Фран";
@@ -6908,8 +7310,15 @@
         return true;
       }
 
-      // General matching against Iconic Index, 5,879 Cadastral Climats & World Wine Regions
-      const resolved = await resolveWineTerroirFromText(text);
+      // Extract explicit Producer patterns on international or Russian labels (e.g., "Bodega ...", "Domaine ...", "Château ...", "Weingut ...", "Tenuta ...", "Винодельня ...")
+      const explicitProducerMatch = text.match(/\b((?:Bodegas?|Domaine|Ch[âa]teau|Maison|Weingut|Tenuta|Cantina|Castello|Quinta|Vi[ñn]a|Винодельня)\s+[A-ZА-ЯЁ][A-Za-zА-Яа-яЁё0-9\-'’]+(?:\s+[A-ZА-ЯЁ][A-Za-zА-Яа-яЁё0-9\-'’]+){0,2})/i);
+      if (explicitProducerMatch && !document.getElementById("inProducer").value.trim()) {
+        document.getElementById("inProducer").value = explicitProducerMatch[1].trim();
+        matchedAny = true;
+      }
+
+      // General matching against Iconic Index, World Wine Regions & Cadastral Climats (with fromOcr: true to prevent single-word French parcel false positives)
+      const resolved = await resolveWineTerroirFromText(text, { fromOcr: true });
       if (resolved) matchedAny = true;
 
       if (detectedGrape && !document.getElementById("inName").value.trim()) {
@@ -6930,7 +7339,11 @@
         }
         matchedAny = true;
       }
-      if (/краснодарский\s*край|кубань/i.test(text) && !document.getElementById("inRegion").value.trim()) {
+      if (/argentin|аргентин|mendoza|мендос/i.test(text) && !document.getElementById("inRegion").value.trim()) {
+        const mendozaReg = WORLD_WINE_REGIONS.find(r => r.id === "mendoza");
+        if (mendozaReg) applyWorldRegionToForm(mendozaReg);
+        matchedAny = true;
+      } else if (/краснодарский\s*край|кубань/i.test(text) && !document.getElementById("inRegion").value.trim()) {
         document.getElementById("inRegion").value = "Россия · Кубань";
         if (/анапа/i.test(text)) document.getElementById("inCommune").value = "Анапа";
         matchedAny = true;
@@ -6942,7 +7355,7 @@
       if (matchedAny) {
         const prod = document.getElementById("inProducer").value || "Вино";
         const nm = document.getElementById("inName").value || "";
-        document.getElementById("smartPhotoStatusTitle").textContent = `Этикетка прочитана: ${prod} ${nm}`.trim();
+        document.getElementById("smartPhotoStatusTitle").textContent = `Этикетка прочитана: ${prod} · ${nm}`.replace(/·\s*$/, "").trim();
         smartStatusText.textContent = `Данные автоматически считаны с текста этикетки: ${prod} ${nm}`.trim();
         smartStatusText.style.color = "var(--color-verdigris)";
         showToast("Текст этикетки распознан");
@@ -6950,7 +7363,7 @@
       return matchedAny;
     }
 
-    // Built-in 2-Pass Browser OCR (Tesseract.js rus+eng + optional Gemini Vision)
+    // Built-in Multi-Crop Browser OCR (Tesseract.js eng + rus+eng + optional Gemini Vision)
     async function runAutomaticLabelOcr(sourceElOrDataUrl) {
       let imgEl = sourceElOrDataUrl;
       let dataUrl = typeof sourceElOrDataUrl === "string" ? sourceElOrDataUrl : null;
@@ -7023,43 +7436,65 @@
         } catch (_) {}
       }
 
-      // 2. Built-in Keyless Browser OCR (Tesseract.js rus+eng with 2-pass cylindrical back-label un-condensing)
+      // 2. Built-in Keyless Browser OCR (Tesseract.js: Pass A unstretched Latin/International crops + Pass B Russian/Cylindrical crops)
       if (window.Tesseract) {
-        smartStatusText.textContent = "Читаем текст этикетки и координаты (OCR rus+eng, ~3 сек.)...";
+        smartStatusText.textContent = "Читаем текст этикетки и контрэтикетки (OCR, ~3 сек.)...";
         try {
           const w = imgEl.naturalWidth || imgEl.width || 768;
           const h = imgEl.naturalHeight || imgEl.height || 1024;
 
-          // Pass 1: Inner horizontal label column stretched 2.6x horizontally (un-condenses narrow back-label fonts and excludes 90° vertical health warning)
-          const cStrip = document.createElement("canvas");
-          const sx1 = Math.round(w * 0.23), sy1 = Math.round(h * 0.20);
-          const sw1 = Math.round(w * 0.33), sh1 = Math.round(h * 0.39);
-          cStrip.width = Math.max(100, Math.round(sw1 * 2.6));
-          cStrip.height = Math.max(100, Math.round(sh1 * 1.8));
-          cStrip.getContext("2d").drawImage(imgEl, sx1, sy1, sw1, sh1, 0, 0, cStrip.width, cStrip.height);
+          const makeCropDataUrl = (rx, ry, rw, rh, stretchX = 1.0, scale = 2.0) => {
+            const c = document.createElement("canvas");
+            const sx = Math.round(w * rx), sy = Math.round(h * ry);
+            const sw = Math.max(40, Math.round(w * rw)), sh = Math.max(40, Math.round(h * rh));
+            c.width = Math.max(80, Math.round(sw * scale * stretchX));
+            c.height = Math.max(80, Math.round(sh * scale));
+            c.getContext("2d").drawImage(imgEl, sx, sy, sw, sh, 0, 0, c.width, c.height);
+            return c.toDataURL("image/png");
+          };
 
-          // Pass 2: Standard center label crop for flat front labels
-          const cCenter = document.createElement("canvas");
-          const sx2 = Math.round(w * 0.14), sy2 = Math.round(h * 0.14);
-          const sw2 = Math.round(w * 0.72), sh2 = Math.round(h * 0.72);
-          const scale2 = Math.min(2.0, 1200 / Math.max(sw2, sh2));
-          cCenter.width = Math.max(100, Math.round(sw2 * scale2));
-          cCenter.height = Math.max(100, Math.round(sh2 * scale2));
-          cCenter.getContext("2d").drawImage(imgEl, sx2, sy2, sw2, sh2, 0, 0, cCenter.width, cCenter.height);
+          // Crop 1: Upper/center main label block unstretched (reads BODEGA TORO / CENTENARIO / MALBEC / 2025 / MENDOZA ARGENTINA and flat front labels)
+          const cropUpperMain = makeCropDataUrl(0.24, 0.23, 0.34, 0.25, 1.0, 2.0);
+          // Crop 2: Lower back-label block mildly un-condensed (reads PRODUCT OF ARGENTINA / FECOVITA / B72134 / ALC 12.5%)
+          const cropLowerBack = makeCropDataUrl(0.20, 0.56, 0.35, 0.28, 1.65, 2.2);
+          // Crop 3: Broad center crop for general front labels
+          const cropBroadCenter = makeCropDataUrl(0.14, 0.14, 0.72, 0.72, 1.0, Math.min(1.8, 1100 / Math.max(w * 0.72, h * 0.72)));
+          // Crop 4: 2.6x un-condensed Russian back-label column (reads narrow Russian back-labels like Скалистый берег)
+          const cropRusStrip = makeCropDataUrl(0.23, 0.20, 0.33, 0.39, 2.6, 1.8);
 
-          const worker = await window.Tesseract.createWorker("rus+eng");
-          await worker.setParameters({ tessedit_pageseg_mode: "6" });
+          let allOcrChunks = [];
 
-          const r1 = await worker.recognize(cStrip.toDataURL("image/png"));
-          let combinedOcr = (r1 && r1.data && r1.data.text) || "";
+          // Pass A: Pure English/Latin OCR on Upper + Lower + Broad Center crops (prevents Cyrillic substitution on Latin wine labels)
+          const engWorker = await window.Tesseract.createWorker("eng");
+          await engWorker.setParameters({ tessedit_pageseg_mode: "6" });
+          const rEng1 = await engWorker.recognize(cropUpperMain);
+          const rEng2 = await engWorker.recognize(cropLowerBack);
+          allOcrChunks.push((rEng1 && rEng1.data && rEng1.data.text) || "");
+          allOcrChunks.push((rEng2 && rEng2.data && rEng2.data.text) || "");
 
-          let ok = await parseOcrLabelTextToForm(combinedOcr);
+          let ok = await parseOcrLabelTextToForm(allOcrChunks.join(" \n "));
           if (!ok) {
-            const r2 = await worker.recognize(cCenter.toDataURL("image/png"));
-            combinedOcr += " \n " + ((r2 && r2.data && r2.data.text) || "");
-            ok = await parseOcrLabelTextToForm(combinedOcr);
+            const rEng3 = await engWorker.recognize(cropBroadCenter);
+            allOcrChunks.push((rEng3 && rEng3.data && rEng3.data.text) || "");
+            ok = await parseOcrLabelTextToForm(allOcrChunks.join(" \n "));
           }
-          await worker.terminate();
+          await engWorker.terminate();
+          if (ok && document.getElementById("inProducer").value.trim()) {
+            return true;
+          }
+
+          // Pass B: Russian + English OCR on condensed back-label strip + broad center (for Russian wineries & Russian distributor back-labels)
+          const rusWorker = await window.Tesseract.createWorker("rus+eng");
+          await rusWorker.setParameters({ tessedit_pageseg_mode: "6" });
+          const rRus1 = await rusWorker.recognize(cropRusStrip);
+          allOcrChunks.push((rRus1 && rRus1.data && rRus1.data.text) || "");
+          ok = await parseOcrLabelTextToForm(allOcrChunks.join(" \n "));
+          if (!ok) {
+            const rRus2 = await rusWorker.recognize(cropBroadCenter);
+            allOcrChunks.push((rRus2 && rRus2.data && rRus2.data.text) || "");
+            ok = await parseOcrLabelTextToForm(allOcrChunks.join(" \n "));
+          }
+          await rusWorker.terminate();
           if (ok) return true;
         } catch (ocrErr) {
           console.warn("Tesseract OCR error:", ocrErr);
@@ -7068,45 +7503,73 @@
       return false;
     }
 
-    // Camera Photo Capture + Multi-Engine Barcode/QR + Built-in 2-Pass Label OCR
-    document.getElementById("smartCameraInput").addEventListener("change", async e => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
+    // Multi-Photo Camera / Gallery Upload Handler (processes 1 or multiple photos sequentially, appending to window.pendingSmartPhotos)
+    async function handleMultipleSmartPhotoFiles(fileList) {
+      const files = Array.from(fileList || []).filter(Boolean);
+      if (files.length === 0) return;
 
-      const reader = new FileReader();
-      reader.onload = async ev => {
-        const dataUrl = ev.target.result;
-        window.pendingSmartPhotoDataUrl = dataUrl;
-        document.getElementById("smartPhotoThumb").src = dataUrl;
-        document.getElementById("smartPhotoStatusTitle").textContent = "Анализируем фото этикетки / контрэтикетки...";
-        document.getElementById("smartPhotoStatusSub").textContent = file.name;
-        document.getElementById("smartPhotoPreviewBar").classList.add("visible");
-        smartStatusText.textContent = "Ищем QR-код, штрих-код и читаем текст этикетки...";
+      document.getElementById("smartPhotoStatusTitle").textContent =
+        files.length > 1
+          ? `Загружаем и анализируем ${files.length} фото (этикетка + контрэтикетка)...`
+          : "Анализируем фото этикетки / контрэтикетки...";
+      document.getElementById("smartPhotoStatusSub").textContent = files.map(f => f.name).join(" · ");
+      smartStatusText.textContent = "Ищем QR-код, штрих-код и читаем текст со всех прикреплённых фото...";
 
-        const imgEl = new Image();
-        imgEl.src = dataUrl;
-        await new Promise(r => { imgEl.onload = r; imgEl.onerror = r; });
+      const newlyAdded = [];
+      for (const file of files) {
+        const down = await downscaleImageFileToDataUrl(file);
+        if (down && down.dataUrl) {
+          window.pendingSmartPhotos.push({ dataUrl: down.dataUrl, name: file.name, imgEl: down.imgEl });
+          newlyAdded.push({ file, ...down });
+        }
+      }
+      renderPendingSmartPhotosUI();
 
-        // 1. Try Cross-Browser QR / DataMatrix / EAN-13 decoding on the photo
-        const codes = await decodeCodesFromCanvasOrImage(imgEl);
+      // 1. Try QR / Barcode decoding across all newly uploaded photos
+      for (const item of newlyAdded) {
+        if (!item.imgEl) continue;
+        const codes = await decodeCodesFromCanvasOrImage(item.imgEl);
         if (codes && codes.length > 0) {
-          const handled = await handleDecodedCodeResult(codes[0], imgEl);
-          if (handled && document.getElementById("inProducer").value.trim()) return;
+          const handled = await handleDecodedCodeResult(codes[0], item.imgEl);
+          if (handled && document.getElementById("inProducer").value.trim()) {
+            return;
+          }
         }
+      }
 
-        // 2. Run Automatic Label & Back-Label OCR (Gemini if key set, otherwise built-in 2-pass Tesseract.js rus+eng)
-        const ocrSuccess = await runAutomaticLabelOcr(imgEl);
-        if (ocrSuccess) return;
+      // 2. Run Automatic Label & Back-Label OCR across newly uploaded photos until producer & region are recognized
+      let anyOcrSuccess = false;
+      for (const item of newlyAdded) {
+        if (!item.imgEl) continue;
+        const ok = await runAutomaticLabelOcr(item.imgEl);
+        if (ok) {
+          anyOcrSuccess = true;
+          if (document.getElementById("inProducer").value.trim() && document.getElementById("inRegion").value.trim()) {
+            break;
+          }
+        }
+      }
+      if (anyOcrSuccess) return;
 
-        // 3. Fallback: check filename
-        const cleanFileName = file.name.replace(/\.[a-z0-9]+$/i, "").replace(/[_-]+/g, " ");
-        if (!/^(img|dsc|photo|image|pxl|whatsapp|media)/i.test(cleanFileName)) {
+      // 3. Fallback: check non-generic filenames
+      for (const item of newlyAdded) {
+        const cleanFileName = (item.file.name || "").replace(/\.[a-z0-9]+$/i, "").replace(/[_-]+/g, " ");
+        if (cleanFileName && !/^(img|dsc|photo|image|pxl|whatsapp|media)/i.test(cleanFileName)) {
           parseSmartTextOrUrl(cleanFileName);
-        } else {
-          smartStatusText.textContent = "Фото прикреплено! Если этикетка снята под сильным углом, введите название вина или ссылку в строку выше.";
+          return;
         }
-      };
-      reader.readAsDataURL(file);
+      }
+      smartStatusText.textContent =
+        `Прикреплено фото: ${window.pendingSmartPhotos.length} шт. Если этикетка снята под сильным углом, укажите название вина в строке выше.`;
+    }
+
+    document.getElementById("smartCameraInput").addEventListener("change", async e => {
+      await handleMultipleSmartPhotoFiles(e.target.files);
+      e.target.value = "";
+    });
+
+    document.getElementById("inPhoto").addEventListener("change", async e => {
+      await handleMultipleSmartPhotoFiles(e.target.files);
     });
 
     document.getElementById("configAiKeyBtn").addEventListener("click", () => {
@@ -7154,14 +7617,13 @@
       c.width = barcodeVideo.videoWidth || 720;
       c.height = barcodeVideo.videoHeight || 960;
       c.getContext("2d").drawImage(barcodeVideo, 0, 0, c.width, c.height);
-      const dataUrl = c.toDataURL("image/jpeg", 0.92);
+      const dataUrl = c.toDataURL("image/jpeg", 0.90);
 
       stopLiveBarcodeScanner();
-      window.pendingSmartPhotoDataUrl = dataUrl;
-      document.getElementById("smartPhotoThumb").src = dataUrl;
+      window.pendingSmartPhotos.push({ dataUrl, name: `Кадр ${window.pendingSmartPhotos.length + 1}` });
+      renderPendingSmartPhotosUI();
       document.getElementById("smartPhotoStatusTitle").textContent = "Кадр с камеры захвачен — распознаём...";
       document.getElementById("smartPhotoStatusSub").textContent = "Проверка QR, штрих-кода и текста этикетки";
-      document.getElementById("smartPhotoPreviewBar").classList.add("visible");
 
       const codes = await decodeCodesFromCanvasOrImage(c);
       if (codes && codes.length > 0) {
@@ -7170,7 +7632,7 @@
       }
       const ok = await runAutomaticLabelOcr(dataUrl);
       if (!ok) {
-        smartStatusText.textContent = "Кадр сохранён! Цифровой QR-код на кадре не обнаружен (возможно, это иллюстрация) — укажите название вина в строке выше.";
+        smartStatusText.textContent = "Кадр сохранён! Цифровой QR-код на кадре не обнаружен — укажите название вина в строке выше или добавьте ещё фото.";
       }
     }
 
@@ -7214,10 +7676,9 @@
               await handleDecodedCodeResult(rawVal, barcodeVideo);
               return;
             }
-            // If user holds camera on a back-label with a decorative/non-digital QR (like Skalisty Bereg's fox) for ~4 seconds, hint or auto-read text
             if (scanTicks === 10 && !barcodeAutoOcrTriggered) {
               document.getElementById("barcodeScanHint").textContent =
-                "Если на бутылке художественный QR-рисунок или мелкий штрих-код — нажмите кнопку «Считать кадр (текст этикетки / код)» ниже";
+                "Если на бутылке вертикальный штрих-код или текст этикетки — нажмите кнопку «Считать кадр (текст этикетки / код)» ниже";
             }
           } catch (_) {}
         }, 380);
@@ -7228,11 +7689,11 @@
 
     document.getElementById("stopBarcodeScanBtn").addEventListener("click", stopLiveBarcodeScanner);
 
-    // Initial boot: Universal Global Wine Map + Wine #19 (Скалистый берег · Каберне Фран 2023) selected in passport
+    // Initial boot: Universal Global Wine Map + Wine #20 (Bodega Toro · Centenario Malbec 2025) selected in passport
     updateHeaderSummary();
     buildDynamicRegionPills();
-    selectWine(19, false);
-    map.setView([44.8100, 37.3700], 12);
+    selectWine(20, false);
+    map.setView([-33.0320, -68.9680], 11);
     renderSemanticMapLayers();
   </script>
 </body>
