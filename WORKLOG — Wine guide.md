@@ -919,3 +919,23 @@
   >    - Клик по любому региону на карте теперь заполняет верхние поля `#qmGrapesVines` (`Сорт и крепость / дозаж`), `#qmRank` (`Лозы, сбор и выдержка`), `#specGrapes` и `#specAging`, а кнопка `+ Добавить вино из этого терруара` вызывает `applyWorldRegionToForm(reg)`, сразу заполняя `#inGrapes` и `#inVinesAging`.
   > 6. **Очищены последние штучные токены в `getShortDomainName`, `GENERIC_CLIMAT_STOPWORDS`, `geoQuery`, `applyParsedWineTitleToForm` и `supplementExistingWineFromImage`**:
   >    - Удалён `.replace(" (Hervé Kerlann)", "")` в пользу универсального `.replace(/\s*\([^)]*\)/g, "")`; удалены штучные слова `"creation"`, `"black"`, `"carruades"`, `"german"`; кропы OCR в `supplementExistingWineFromImage()` приведены к единой геометрической сетке с `runAutomaticLabelOcr()`; добавлен расчёт вкусового профиля `getWineTasteProfile(w)` на основе сорта винограда и стиля.
+
+---
+
+## Запись #87 — Автоматический онлайн-поиск вина + системное извлечение Домена, Кюве (Brut / Grand Cru / Reserva), N.V. и почтовых коммун (2026-04-20)
+
+- **Где**: ☁️ Cloud VM (`/home/antigravity/aezaigrin88/az-wine-selector`) + Google Drive (`G:\My Drive\az-AI\Wine`).
+- **Задача**:
+  1. Сделать так, чтобы вино искалось в поиске самостоятельно (при загрузке фото, при вводе в строку поиска или при вводе только производителя).
+  2. Системно распознавать Домен (`Robert de Pampignac`), Кюве (`Brut` / `Extra Brut` / `Blanc de Blancs` / `Grand Cru` / `Reserva`), винтаж (`N.V.` для игристых без года), целые значения крепости (`12% Vol.` → `12.0% об.`) и почтовые коммуны (`51200 EPERNAY` → `Эперне (Épernay)`, `49.0435, 3.9560`).
+- **Что сделано в `index.html`**:
+  1. **Системное извлечение Производителя, Кюве и N.V. (`extractStructuredWineFacts`)**:
+     - Добавлена нормализация разрядки заглавных букв на этикетках (`"C H A M P A G N E"` → `"CHAMPAGNE"`, `"B R U T"` → `"BRUT"`).
+     - Очистка регламентных фраз апелласьонов (`Appellation d'Origine Contrôlée`, `Produit de France`, `Denominación de Origen`) перед выделением имени производителя.
+     - 4-уровневое выделение Производителя: (8A) `ICONIC_WINE_INDEX`, (8B) международные префиксы хозяйств (`Champagne ...`, `Domaine ...`, `Château ...`, `Bodega ...`, `Marqués de ...`, `Comtes de ...`), (8C) дома с дворянскими частицами и амперсандами (`Robert de Pampignac`, `Barton & Guestier`) даже без префикса на той же строке, (8D) контрэтикетка (`Изготовитель`, `Élaboré par`, `Mis en bouteille par`, `Elaborado por`).
+     - Системное выделение Кюве (`detectedCuvee`): автоматическая подстановка классификаций и стилей кюве (`Brut`, `Extra Brut`, `Brut Nature`, `Blanc de Blancs`, `Blanc de Noirs`, `Grand Cru`, `Premier Cru`, `Vieilles Vignes`, `Gran Reserva`, `Reserva`, `Crianza`), когда на этикетке не вынесен моносорт.
+     - Поддержка целых процентов крепости (`12% Vol.` → `12.0% об.`) с заменой регионального диапазона (`12.0–12.5% об.`) на точный градус бутылки и автоматическая установка `N.V.` для игристых вин и Шампани без года урожая.
+     - Распознавание почтовых индексов винодельческих коммун Франции (`51200 EPERNAY` → `Эперне (Épernay)`, `51100 REIMS` → `Реймс (Reims)`, `21200 BEAUNE` → `Бон (Beaune)`).
+  2. **Самостоятельный автоматический поиск вина (`resolveWineTerroirFromText` + автотриггеры)**:
+     - После распознавания фото строка `#smartQuickSearchInput` заполняется автоматически, и автоматически запускается онлайн-поиск по **OpenFoodFacts Search API** (`world.openfoodfacts.org/cgi/search.pl`), **Vivino Search** (через CORS-прокси) и **6 языковым разделам Wikipedia** со строгой проверкой уникального токена (`primaryDistinctiveToken`), исключающей ложные совпадения (например, не позволяя `Robert de Pampignac` перезаписать распознанную по фото `Шампань` на `Бургундию`).
+     - Добавлен автоматический debounced-поиск (`600–650 мс`) при вводе в `#smartQuickSearchInput`, `#inProducer` и `#inName` — достаточно ввести только производителя, чтобы Кюве (`Brut` или сорт) и остальные поля карточки заполнились самостоятельно.
