@@ -10,7 +10,7 @@
 | `2026-11-06 03:00` | **[Wine guide](conversation://b1a5b1d3-aac5-41da-a0f3-621b6008ca8e)** | **[`WORKLOG — Wine guide.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Wine%20guide.md)** | #87 | 16 |
 | `2026-11-01 10:02` | **[Gevrey-Chambertin & Vivino sync](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f)** | **[`WORKLOG — Gevrey-Chambertin & Vivino sync.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Gevrey-Chambertin%20&%20Vivino%20sync.md)** | #13 | 12 |
 | `2026-11-01 06:50` | **[Serials About Wine And Geography](conversation://99549ac3-1284-4cbd-bd40-26a7f1f9d36d)** | **[`WORKLOG — Serials About Wine And Geography.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Serials%20About%20Wine%20And%20Geography.md)** | #8 | 1 |
-| `2026-10-19 18:15` | **[Champagne selection](conversation://ef8c2d57-485f-42dd-b52b-78452eb56f10)** | **[`WORKLOG — Champagne selection.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Champagne%20selection.md)** | #8 | 0 |
+| `2026-11-06 05:20` | **[Champagne selection (ПК)](conversation://ef8c2d57-485f-42dd-b52b-78452eb56f10)** / **[☁️](conversation://8f190ffc-4dbe-43dd-ac61-8525e9bb0b14)** | **[`WORKLOG — Champagne selection.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Champagne%20selection.md)** | #9 | 2 |
 
 ## 2. Рабочие папки, проверки (`checks/`) и превью (`previews/`) внутри проекта
 
