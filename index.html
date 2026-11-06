@@ -3322,7 +3322,7 @@
     <!-- Lower Catalog Section hidden per user preference (Diary is the single master table) -->
     <section class="atlas-card ledger-section" aria-label="Каталог вин и реестр терруаров" style="display:none;">
       <div class="qcard-header">
-        <span>Каталог вин и реестр терруаров (17 вин)</span>
+        <span>Каталог вин и реестр терруаров</span>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <button type="button" class="pill-btn active-crimson" id="viewAtlasGridBtn" data-catalog-view="grid">
             Карточки вин
@@ -3469,7 +3469,7 @@
         <button type="button" class="btn" id="closeLightboxBtn" style="padding:4px 10px;font-size:0.80rem;">Закрыть (Esc)</button>
       </div>
       <div class="lightbox-body">
-        <img id="lightboxBottleImg" class="lightbox-img" src="img/labels/bottle_20.jpg?v=20261105a" alt="Крупное официальное изображение бутылки" />
+        <img id="lightboxBottleImg" class="lightbox-img" src="img/labels/bottle_19.jpg?v=20261104a" alt="Крупное официальное изображение бутылки" />
         <div id="lightboxPhotosStrip" class="specimen-photos-strip" style="justify-content:center;margin-top:8px;"></div>
         <div class="lightbox-caption" id="lightboxBottleCaption">Официальное изображение бутылки (Vivino)</div>
       </div>
@@ -3570,17 +3570,7 @@
               }
             });
             parsed.wines.forEach(saved => {
-              const sText = ((saved.producer || '') + ' ' + (saved.name || '') + ' ' + (saved.commune || '')).toLowerCase();
-              // Skip accidental false-positive OCR entry "Saint-Estèphe (Haut-Médoc) «German»"
-              if (sText.includes('saint-estèphe') && sText.includes('german')) {
-                return;
-              }
-              if (sText.includes('carruades') || sText.includes('lafite') || sText.includes('pauillac') || sText.includes('пойяк')) {
-                saved.lat = 45.22558;
-                saved.lon = -0.77734;
-                saved.elevation = '27 м';
-                saved.elevation_m = 27;
-              }
+              if (!saved || typeof saved !== "object") return;
               if (!fresh.wines.some(w => Number(w.id) === Number(saved.id))) {
                 fresh.wines.unshift(saved);
               }
@@ -3670,7 +3660,7 @@
     // 4-LEVEL SEMANTIC ZOOM PRESETS (STRICT NORTH-UP EVERYWHERE)
     // =========================================================================
     const REGION_PRESETS = {
-      world:             { center: [30.0, 12.0],     zoom: 2,  level: 1, label: "Уровень 1 · Карта мира: винные страны и 17 вин коллекции (Север ↑ · Юг ↓)" },
+      world:             { center: [30.0, 12.0],     zoom: 2,  level: 1, label: "Уровень 1 · Карта мира: винные страны и коллекция дневника (Север ↑ · Юг ↓)" },
       france:            { center: [46.60, 2.60],    zoom: 6,  level: 2, label: "Уровень 2 · Франция: физический рельеф и ключевые винные регионы (15 вин)" },
       spain:             { center: [40.40, -3.20],   zoom: 6,  level: 2, label: "Уровень 2 · Испания: Пенедес (Corpinnat), Риоха, Рибера-дель-Дуэро и Приорат" },
       germany:           { center: [47.20, 9.20],    zoom: 6,  level: 2, label: "Уровень 2 · Германия и Италия: Мозель, Рейнгау, Пфальц, Баден, Пьемонт и Тоскана" },
@@ -6379,42 +6369,35 @@
         const newId = existingTarget ? existingTarget.id : (Math.max(0, ...atlasData.wines.map(w => w.id)) + 1);
         const botUrl = validPhotos[0] || (existingTarget && existingTarget.bottle_studio) || defaultBottleMap[styleVal] || "img/labels/bottle_17.png";
         const allPhotos = validPhotos.length > 0 ? validPhotos : [botUrl];
-        const inLatVal = parseFloat(String(document.getElementById("inLat").value).replace(",", ".")) || 46.9935;
-        const inLonVal = parseFloat(String(document.getElementById("inLon").value).replace(",", ".")) || 4.7562;
+        let inLatVal = parseFloat(String(document.getElementById("inLat").value).replace(",", ".")) || 46.9935;
+        let inLonVal = parseFloat(String(document.getElementById("inLon").value).replace(",", ".")) || 4.7562;
         const rawRegionInput = document.getElementById("inRegion").value.trim() || "Франция · Бургундия";
+        const rawCommunePreview = document.getElementById("inCommune").value.trim();
 
-        let inferredCountry = "Франция";
-        const rLow = rawRegionInput.toLowerCase();
-        if (rLow.includes("аргент") || rLow.includes("мендос") || rLow.includes("mendoza")) {
-          inferredCountry = "Аргентина";
-        } else if (rLow.includes("чили") || rLow.includes("майпо")) {
-          inferredCountry = "Чили";
-        } else if (rLow.includes("испан") || rLow.includes("катал") || rLow.includes("пенедес") || rLow.includes("риох") || rLow.includes("рибера") || (inLatVal < 43.2 && inLonVal < 3.2 && inLonVal > -10)) {
-          inferredCountry = "Испания";
-        } else if (rLow.includes("португ") || rLow.includes("дору") || rLow.includes("винью")) {
-          inferredCountry = "Португалия";
-        } else if (rLow.includes("крым") || rLow.includes("севастоп") || rLow.includes("бельбек") || rLow.includes("кубан") || rLow.includes("анап") || rLow.includes("росси") || (inLatVal > 44 && inLatVal < 46 && inLonVal > 32 && inLonVal < 39)) {
-          inferredCountry = "Россия";
-        } else if (rLow.includes("италия") || rLow.includes("пьемонт") || rLow.includes("тоскан") || rLow.includes("венето") || rLow.includes("этна") || (inLatVal < 46.5 && inLonVal > 7.5 && inLonVal < 19)) {
-          inferredCountry = "Италия";
-        } else if (rLow.includes("герман") || rLow.includes("баден") || rLow.includes("мозел") || rLow.includes("рейн") || rLow.includes("пфальц") || (inLatVal > 47.5 && inLonVal > 6.5 && inLonVal < 15)) {
-          inferredCountry = "Германия";
-        } else if (rLow.includes("австр") && !rLow.includes("австрал")) {
-          inferredCountry = "Австрия";
-        } else if (rLow.includes("сша") || rLow.includes("напа") || rLow.includes("сонома") || rLow.includes("орегон") || (inLonVal < -30 && inLatVal > 0)) {
-          inferredCountry = "США";
-        } else if (inLatVal < 0 && inLonVal < -30) {
-          inferredCountry = inLonVal > -69.6 ? "Аргентина" : "Чили";
-        } else if (rLow.includes("зеланд") || rLow.includes("марлборо")) {
-          inferredCountry = "Новая Зеландия";
-        } else if (rLow.includes("австрал") || rLow.includes("баросс") || (inLatVal < 0 && inLonVal > 100)) {
-          inferredCountry = "Австралия";
-        } else if (rLow.includes("юар") || rLow.includes("стелленбош") || (inLatVal < 0 && inLonVal > 10 && inLonVal < 40)) {
-          inferredCountry = "ЮАР";
+        // Systematically match region from WORLD_WINE_REGIONS first (so we never rely on ad-hoc country if/else chains or leave Burgundy placeholder coords on non-Burgundy wines)
+        const matchedWorldReg = findMatchingWorldTerroirRegion({
+          country: rawRegionInput,
+          macro_region: rawRegionInput,
+          commune: rawCommunePreview,
+          name: document.getElementById("inName").value.trim(),
+          producer: document.getElementById("inProducer").value.trim(),
+          lat: inLatVal,
+          lon: inLonVal
+        });
+
+        // If user didn't manually change the default Monthelie coordinates (46.9935, 4.7562) and matchedWorldReg is outside Burgundy, snap to the matched region's coordinates!
+        const isDefaultBurgundyCoords = Math.abs(inLatVal - 46.9935) < 0.002 && Math.abs(inLonVal - 4.7562) < 0.002;
+        if (isDefaultBurgundyCoords && matchedWorldReg && Math.hypot((matchedWorldReg.lat || 0) - 46.9935, (matchedWorldReg.lon || 0) - 4.7562) > 0.5) {
+          inLatVal = Number(matchedWorldReg.lat);
+          inLonVal = Number(matchedWorldReg.lon);
         }
 
-        // Strip leading country prefix from regionStr so country + macro_region never duplicate
-        let cleanMacroRegion = rawRegionInput;
+        const rParts = rawRegionInput.split(/\s*·\s*/).filter(Boolean);
+        let inferredCountry = (matchedWorldReg && (matchedWorldReg.country_label || matchedWorldReg.country))
+          || (rParts.length >= 2 ? rParts[0] : "Франция");
+        let cleanMacroRegion = rParts.length >= 2 && rParts[0].toLowerCase() === inferredCountry.toLowerCase()
+          ? rParts.slice(1).join(" · ")
+          : rawRegionInput;
         if (cleanMacroRegion.toLowerCase().startsWith(inferredCountry.toLowerCase() + " · ")) {
           cleanMacroRegion = cleanMacroRegion.slice((inferredCountry + " · ").length).trim();
         }
@@ -6537,6 +6520,10 @@
           atlasData.wines.unshift(wineRecord);
         }
 
+        if (window.lastScannedBarcodeDigits && wineRecord.producer && wineRecord.name) {
+          saveLearnedBarcodeToStorage(window.lastScannedBarcodeDigits, wineRecord);
+        }
+        window.lastScannedBarcodeDigits = null;
         window.editingWineId = null;
         window.accumulatedSmartOcrText = "";
         saveAtlasState();
@@ -6874,8 +6861,10 @@
     async function lookupBarcodeInOpenFoodFacts(barcode) {
       const cleanCode = String(barcode).replace(/\D/g, "");
       if (cleanCode.length < 8) return false;
-      if (typeof KNOWN_WINE_BARCODES !== "undefined" && KNOWN_WINE_BARCODES[cleanCode]) {
-        const kb = KNOWN_WINE_BARCODES[cleanCode];
+      window.lastScannedBarcodeDigits = cleanCode;
+      const learnedMap = typeof getLearnedBarcodeMap === "function" ? getLearnedBarcodeMap() : {};
+      if (learnedMap[cleanCode]) {
+        const kb = learnedMap[cleanCode];
         document.getElementById("inProducer").value = kb.producer;
         document.getElementById("inName").value = kb.name;
         document.getElementById("inVintage").value = kb.vintage;
@@ -6949,24 +6938,51 @@
       "sud", "est", "ouest", "soleil", "eglise", " moulin", "moulins", "jardin", "jardins"
     ]);
 
+    // Universal helper: strips a producer name (and common winery prefixes) from the start of a wine title
+    function stripProducerFromWineTitle(fullTitle, producerName) {
+      const t = String(fullTitle || "").trim();
+      const p = String(producerName || "").trim();
+      if (!t || !p) return t;
+      const coreP = p.replace(/^(?:Weingut|Ch[âa]teau|Domaine|Champagne|Maison|Bodegas?|Tenuta|Cantina|Vi[ñn]a|Quinta)\s+/i, "").replace(/\s*\([^)]*\)/g, "").trim();
+      for (const candidate of [p, coreP]) {
+        if (candidate && candidate.length >= 3 && t.toLowerCase().startsWith(candidate.toLowerCase())) {
+          const rest = t.slice(candidate.length).replace(/^[\s·,\-–—]+/, "").trim();
+          if (rest.length >= 2) return rest;
+        }
+      }
+      return t;
+    }
+
+    // Format a matched pattern from a regional umbrella entry into a clean Producer Title
+    function formatMatchedProducerPattern(pat) {
+      const s = String(pat || "").trim();
+      if (!s) return "";
+      return s.replace(/(?:^|\s|[-'])[a-zа-яё]/g, m => m.toUpperCase());
+    }
+
     function matchWorldTerroirSynchronously(rawText, options = {}) {
       const norm = normalizeSearchText(rawText);
       if (!norm) return null;
       const fromOcr = Boolean(options.fromOcr);
 
-      // 1. Check Iconic Wine & Producer Index first (using whole-word match so short patterns never false-match)
+      // 1. Check Iconic Wine & Producer Index first (using whole-word match and recording the longest matched pattern)
       for (const entry of ICONIC_WINE_INDEX) {
-        if ((entry.patterns || []).some(p => {
+        let bestPat = null;
+        for (const p of (entry.patterns || [])) {
           const np = normalizeSearchText(p);
-          return np.length >= 4 && hasWholeWord(norm, np);
-        })) {
+          if (np.length >= 4 && hasWholeWord(norm, np)) {
+            if (!bestPat || np.length > bestPat.length) bestPat = p;
+          }
+        }
+        if (bestPat) {
           const reg = WORLD_WINE_REGIONS.find(r => r.id === entry.region_id);
-          return { type: "iconic", entry, reg };
+          const isUmbrella = Boolean(!entry.producer || /[·/—–]/.test(entry.producer) || String(entry.name || "").includes("/"));
+          const resolvedProducer = isUmbrella ? formatMatchedProducerPattern(bestPat) : entry.producer;
+          return { type: "iconic", entry, reg, matchedPattern: bestPat, isUmbrella, resolvedProducer };
         }
       }
 
       // 2. Check all 29 World Wine Regions by their appellation/commune/country/producer keywords (whole-word match)
-      //    Checking World Wine Regions BEFORE micro-parcels prevents OCR noise on an Argentine/New World bottle from matching a random French cadastral parcel like "German" in Saint-Estèphe!
       let bestReg = null;
       let bestKwLen = 0;
       for (const reg of WORLD_WINE_REGIONS) {
@@ -7020,16 +7036,17 @@
       const syncMatch = matchWorldTerroirSynchronously(cleanWineText, options);
       if (syncMatch) {
         if (syncMatch.type === "iconic") {
-          const { entry, reg } = syncMatch;
-          const isSpecificDomain = entry.producer && !/[·/]/.test(entry.producer) && !String(entry.name || "").includes("/");
-          if (isSpecificDomain) {
+          const { entry, reg, isUmbrella, resolvedProducer } = syncMatch;
+          if (resolvedProducer && !document.getElementById("inProducer").value.trim()) {
+            document.getElementById("inProducer").value = resolvedProducer;
+          }
+          if (!isUmbrella) {
             document.getElementById("inProducer").value = entry.producer;
             const currentName = document.getElementById("inName").value.trim();
-            if (!currentName || currentName.length < 4 || /rg|075|black creation|german/i.test(currentName)) {
+            if (!currentName || currentName.length < 3) {
               document.getElementById("inName").value = entry.name;
-            } else if (currentName.toLowerCase().startsWith(entry.producer.replace(/^Weingut\s+|^Château\s+|^Champagne\s+|^Bodega\s+/i, "").toLowerCase())) {
-              const stripped = currentName.replace(new RegExp("^" + entry.producer.replace(/^Weingut\s+|^Château\s+|^Champagne\s+|^Bodega\s+/i, ""), "i"), "").trim();
-              if (stripped.length >= 3) document.getElementById("inName").value = stripped;
+            } else {
+              document.getElementById("inName").value = stripProducerFromWineTitle(currentName, entry.producer);
             }
           }
           if (entry.style) document.getElementById("inStyle").value = entry.style;
@@ -7160,17 +7177,14 @@
       const t = (cleanTitle || "").trim();
       if (!t) return { producer: "", name: "" };
 
-      const norm = normalizeSearchText(t);
-      for (const entry of ICONIC_WINE_INDEX) {
-        if ((entry.patterns || []).some(p => hasWholeWord(norm, normalizeSearchText(p)))) {
-          const isSpecificDomain = entry.producer && !/[·/]/.test(entry.producer) && !String(entry.name || "").includes("/");
-          if (!isSpecificDomain) continue;
-          if (norm.includes("burg ravensburg")) {
-            const rest = t.replace(/^(Weingut\s+)?Burg\s+Ravensburg\s*/i, "").trim();
-            return { producer: "Weingut Burg Ravensburg", name: rest || entry.name };
-          }
-          return { producer: entry.producer, name: entry.name };
-        }
+      const syncM = matchWorldTerroirSynchronously(t);
+      if (syncM && syncM.type === "iconic" && syncM.resolvedProducer) {
+        const rest = stripProducerFromWineTitle(t, syncM.resolvedProducer);
+        const fallbackName = !syncM.isUmbrella ? syncM.entry.name : rest;
+        return {
+          producer: syncM.resolvedProducer,
+          name: (rest && rest.toLowerCase() !== t.toLowerCase()) ? rest : (fallbackName || t)
+        };
       }
 
       const commaParts = t.split(/\s*[,·]\s*|\s+[-–—]\s+/);
@@ -7483,14 +7497,36 @@
     // =========================================================================
     // UNIVERSAL iOS SAFARI / ANDROID / DESKTOP QR + BARCODE + MULTI-PHOTO OCR
     // =========================================================================
-    const KNOWN_WINE_BARCODES = {
-      "7790314062001": { producer: "Bodega Toro (Fecovita)", name: "Centenario · Malbec", vintage: "2025", style: "red", grapes: "100% Мальбек (Malbec) · 12.5% об. · сухое", vines: "Лозы 20–30 лет · высокогорная шпалера Мендосы", query: "Bodega Toro Centenario Malbec Mendoza Argentina" },
-      "779031406200":  { producer: "Bodega Toro (Fecovita)", name: "Centenario · Malbec", vintage: "2025", style: "red", grapes: "100% Мальбек (Malbec) · 12.5% об. · сухое", vines: "Лозы 20–30 лет · высокогорная шпалера Мендосы", query: "Bodega Toro Centenario Malbec Mendoza Argentina" },
-      "4660116930424": { producer: "Скалистый берег (Côte Rocheuse)", name: "Каберне Фран · ЗГУ «Кубань»", vintage: "2023", style: "red", grapes: "100% Каберне Фран · 14.3% об. · сухое", vines: "Лозы 11 лет · 12 мес. во французском дубе", query: "Скалистый берег Каберне Фран" },
-      "4650118930424": { producer: "Скалистый берег (Côte Rocheuse)", name: "Каберне Фран · ЗГУ «Кубань»", vintage: "2023", style: "red", grapes: "100% Каберне Фран · 14.3% об. · сухое", vines: "Лозы 11 лет · 12 мес. во французском дубе", query: "Скалистый берег Каберне Фран" },
-      "4660116930011": { producer: "Скалистый берег (Côte Rocheuse)", name: "Красная книга. Глава 1 · ЗГУ «Кубань»", vintage: "2021", style: "white", grapes: "Шардоне, Совиньон Блан, Рислинг · 13.5% об.", vines: "Лозы 10–12 лет · выдержка на осадке", query: "Скалистый берег" },
-      "4660116930028": { producer: "Скалистый берег (Côte Rocheuse)", name: "Красная книга. Глава 2 · ЗГУ «Кубань»", vintage: "2021", style: "red", grapes: "Каберне Совиньон, Мерло, Каберне Фран · 14.0% об.", vines: "Лозы 10–12 лет · выдержка во французском дубе", query: "Скалистый берег" }
-    };
+    // Self-learning local barcode index in localStorage (automatically caches any scanned & saved EAN barcode)
+    const LEARNED_BARCODES_KEY = "az_wine_learned_barcodes_v1";
+    window.lastScannedBarcodeDigits = null;
+
+    function getLearnedBarcodeMap() {
+      try {
+        const raw = localStorage.getItem(LEARNED_BARCODES_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch (_) {
+        return {};
+      }
+    }
+
+    function saveLearnedBarcodeToStorage(eanDigits, wineObj) {
+      const clean = String(eanDigits || "").replace(/\D/g, "");
+      if (clean.length < 8 || !wineObj) return;
+      try {
+        const map = getLearnedBarcodeMap();
+        map[clean] = {
+          producer: wineObj.producer || "",
+          name: wineObj.name || "",
+          vintage: wineObj.vintage || "",
+          style: wineObj.style || "red",
+          grapes: `${wineObj.grapes || ""}${wineObj.abv ? " · " + wineObj.abv : ""}`.trim(),
+          vines: deduplicateDotParts([wineObj.vine_age || "", wineObj.aging || ""]),
+          query: `${wineObj.producer || ""} ${wineObj.name || ""} ${wineObj.commune || ""} ${wineObj.macro_region || ""} ${wineObj.country || ""}`.trim()
+        };
+        localStorage.setItem(LEARNED_BARCODES_KEY, JSON.stringify(map));
+      } catch (_) {}
+    }
 
     // GS1 EAN-13 Country Prefix -> Country & Default Wine Terroir Region Resolver (systematic fallback for any barcode worldwide)
     function resolveCountryFromGs1BarcodePrefix(barcodeStr) {
@@ -7762,37 +7798,58 @@
         }
       }
 
-      // 8. Extract Producer & Cuvée systematically (via Universal Winery Prefix + Iconic Index + Back-Label Regex)
+      // 8. Extract Producer & Cuvée systematically (via Universal Winery Prefix + Iconic Index + Back-Label Regex + Post-Producer Cuvée Tokens)
       let detectedProducer = null;
       let detectedCuvee = null;
       let matchedSyncTerroir = matchWorldTerroirSynchronously(text, { fromOcr: true });
 
-      // Check if matchedSyncTerroir is a specific iconic producer/wine entry (excluding generic regional summary entries with '—' in producer)
-      if (matchedSyncTerroir && matchedSyncTerroir.type === "iconic" && matchedSyncTerroir.entry) {
-        const ent = matchedSyncTerroir.entry;
-        const isSpecificWinery = ent.producer && !/[·/—–]/.test(ent.producer) && !String(ent.name || "").includes("/");
-        if (isSpecificWinery) {
-          detectedProducer = ent.producer;
-          if (ent.name) detectedCuvee = ent.name;
+      const toTitleCaseWords = s => String(s || "").trim() === String(s || "").trim().toUpperCase()
+        ? String(s || "").trim().toLowerCase().replace(/(?:^|\s|[-'])[a-zа-яё]/g, m => m.toUpperCase())
+        : String(s || "").trim();
+
+      // 8A. Check if matchedSyncTerroir matched an iconic winery or regional producer pattern
+      if (matchedSyncTerroir && matchedSyncTerroir.type === "iconic" && matchedSyncTerroir.resolvedProducer) {
+        detectedProducer = matchedSyncTerroir.resolvedProducer;
+        if (!matchedSyncTerroir.isUmbrella && matchedSyncTerroir.entry?.name) {
+          detectedCuvee = matchedSyncTerroir.entry.name;
         }
       }
 
-      // Check international estate prefixes ("Bodega ...", "Domaine ...", "Château ...", "Marqués de ...", "Weingut ...", "Tenuta ...", "Винодельня ...")
-      if (!detectedProducer) {
-        const prefixMatch = text.match(/(?:^|[^A-Za-zА-Яа-яЁё])((?:Bodegas?|Domaine|Ch[âa]teau|Maison|Champagne|Weingut|Schloss|Burg|Tenuta|Cantina|Castello|Fattoria|Marchesi|Marqu[ée]s\s+de|Quinta|Herdade|Vi[ñn]a|Винодельня|Усадьба|Имение)\s+[A-ZА-ЯЁ][A-Za-zА-Яа-яЁё0-9\-'’]+(?:\s+(?:de\s+la\s+|des\s+|du\s+|de\s+|von\s+|&\s+)?[A-ZА-ЯЁ][A-Za-zА-Яа-яЁё0-9\-'’]+){0,1})/i);
-        if (prefixMatch) {
-          const rawP = prefixMatch[1].trim().replace(/\s+(?:GEVREY|CHAMBERTIN|MEURSAULT|POMMARD|VOLNAY|PULIGNY|CHASSAGNE|CHABLIS|PAUILLAC|MARGAUX|RIOJA|MENDOZA|RESERVA|CENTENARIO|GRAND|PREMIER|VIEILLES).*$/i, "").trim();
-          detectedProducer = rawP === rawP.toUpperCase()
-            ? rawP.toLowerCase().replace(/(?:^|\s|[-'])[a-zа-яё]/g, m => m.toUpperCase())
-            : rawP;
+      // 8B. Check international estate prefixes ("Bodega ...", "Domaine ...", "Château ...", "Marqués de ...", "Weingut ...", "Tenuta ...", "Винодельня ...")
+      const prefixMatch = text.match(/(?:^|[^A-Za-zА-Яа-яЁё])((?:Bodegas?|Domaine|Ch[âa]teau|Maison|Champagne|Weingut|Schloss|Burg|Tenuta|Cantina|Castello|Fattoria|Marchesi|Marqu[ée]s\s+de|Quinta|Herdade|Vi[ñn]a|Винодельня|Усадьба|Имение)\s+[A-ZА-ЯЁ][A-Za-zА-Яа-яЁё0-9\-'’]+(?:\s+(?:de\s+la\s+|des\s+|du\s+|de\s+|von\s+|&\s+)?[A-ZА-ЯЁ][A-Za-zА-Яа-яЁё0-9\-'’]+){0,1})/i);
+      if (prefixMatch) {
+        const fullMatchedPrefix = prefixMatch[1].trim();
+        const cuveeSplitRe = /\s+((?:GEVREY|CHAMBERTIN|MEURSAULT|POMMARD|VOLNAY|PULIGNY|CHASSAGNE|CHABLIS|PAUILLAC|MARGAUX|SAINT-ESTEPHE|SAINT-JULIEN|RIOJA|RIBERA|PRIORAT|BAROLO|BARBARESCO|CHIANTI|BRUNELLO|RESERVA|GRAN\s+RESERVA|CRIANZA|RISERVA|CENTENARIO|GRAND\s+CRU|PREMIER\s+CRU|VIEILLES\s+VIGNES|OLD\s+VINES).*)$/i;
+        const splitCuv = fullMatchedPrefix.match(cuveeSplitRe);
+        const cleanProdRaw = fullMatchedPrefix.replace(cuveeSplitRe, "").trim();
+        if (!detectedProducer) {
+          detectedProducer = toTitleCaseWords(cleanProdRaw);
+        }
+        if (splitCuv && !detectedCuvee) {
+          detectedCuvee = toTitleCaseWords(splitCuv[1]);
+        }
+        // Also inspect the 1–3 words immediately following the producer in `text` to capture the Cuvée / Appellation line (e.g. "BODEGA TORO" -> "CENTENARIO")
+        if (!detectedCuvee) {
+          const afterIdx = (prefixMatch.index || 0) + prefixMatch[0].length;
+          const tailAfterProd = text.slice(afterIdx, afterIdx + 65).trim();
+          const candidateTokens = tailAfterProd
+            .split(/\s+/)
+            .filter(tok => tok.length >= 3 && !/^(19\d{2}|20\d{2}|alc|vol|product|of|by|for|and|from|the|appellation|controlee|denominacion|origen|mendoza|argentina|france|italia|espana|chile)$/i.test(tok));
+          if (candidateTokens.length > 0) {
+            const firstTok = candidateTokens[0].replace(/[^A-Za-zА-Яа-яЁё\-'’]/g, "");
+            const isAlreadyGrape = grapeInfo && normalizeSearchText(grapeInfo.grapesStr).includes(normalizeSearchText(firstTok));
+            if (firstTok.length >= 4 && !isAlreadyGrape) {
+              detectedCuvee = toTitleCaseWords(firstTok);
+            }
+          }
         }
       }
 
-      // Check Russian & International back-label producer lines ("Изготовитель: ООО «...»", "Bottled by ...", "Elaborado por ...")
+      // 8C. Check Russian & International back-label producer lines ("Изготовитель: ООО «...»", "Bottled by ...", "Elaborado por ...")
       if (!detectedProducer) {
         const backProdMatch = text.match(/(?:изготовитель|производитель|винодельня|bottled\s*by|produced\s*by|elaborado\s*por|mis\s*en\s*bouteille\s*(?:au|par))\s*[:.-]?\s*(?:ООО|АО|ЗАО|ПАО)?\s*[«"']?([A-ZА-ЯЁ][A-Za-zА-Яа-яЁё0-9\s\-'’]{2,34})[»"']?/i);
         if (backProdMatch) {
-          detectedProducer = backProdMatch[1].trim();
+          detectedProducer = toTitleCaseWords(backProdMatch[1].trim());
         }
       }
 
@@ -7920,8 +7977,9 @@
       const codes = await decodeCodesFromCanvasOrImage(imgEl);
       if (codes && codes.length > 0) {
         const digits = String(codes[0]).replace(/\D/g, "");
-        if (KNOWN_WINE_BARCODES[digits]) {
-          const kb = KNOWN_WINE_BARCODES[digits];
+        const learnedMap = typeof getLearnedBarcodeMap === "function" ? getLearnedBarcodeMap() : {};
+        if (learnedMap[digits]) {
+          const kb = learnedMap[digits];
           if (!w.producer || w.producer === "Вино") w.producer = kb.producer;
           if (!w.name) w.name = kb.name;
           if (kb.grapes) w.grapes = kb.grapes.split("·")[0].trim();
@@ -8109,10 +8167,15 @@
             return c.toDataURL("image/png");
           };
 
-          const cropUpperMain = makeCropDataUrl(0.24, 0.23, 0.34, 0.25, 1.0, 2.0);
-          const cropLowerBack = makeCropDataUrl(0.20, 0.56, 0.35, 0.28, 1.65, 2.2);
-          const cropBroadCenter = makeCropDataUrl(0.14, 0.14, 0.72, 0.72, 1.0, Math.min(1.8, 1100 / Math.max(w * 0.72, h * 0.72)));
-          const cropRusStrip = makeCropDataUrl(0.23, 0.20, 0.33, 0.39, 2.6, 1.8);
+          // Bottle-agnostic geometric crops (independent of how close or far the bottle is held):
+          // 1. Upper Label Zone (top half of bottle frame, unstretched 1.0x)
+          const cropUpperMain = makeCropDataUrl(0.10, 0.08, 0.80, 0.46, 1.0, 1.8);
+          // 2. Lower Back-Label Zone (bottom half of bottle frame, gentle 1.35x cylindrical de-warp)
+          const cropLowerBack = makeCropDataUrl(0.10, 0.46, 0.80, 0.46, 1.35, 1.8);
+          // 3. Full Frame Label Zone (84% x 84% center, unstretched 1.0x)
+          const cropBroadCenter = makeCropDataUrl(0.08, 0.08, 0.84, 0.84, 1.0, Math.min(1.8, 1100 / Math.max(w * 0.84, h * 0.84)));
+          // 4. Full-Height Cylindrical De-Warp Zone (72% x 76%, 1.85x horizontal de-warp for narrow curved back-labels)
+          const cropRusStrip = makeCropDataUrl(0.14, 0.12, 0.72, 0.76, 1.85, 1.8);
 
           let allOcrChunks = [];
 
