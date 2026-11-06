@@ -895,3 +895,27 @@
 
 
 
+#### #86 [✓] `2026-11-05 23:55` — «/boost проверь ещё раз тщательно код на наличие заплаток и задеплой приложение!»
+
+- **Точный запрос пользователя**: «/boost проверь ещё раз тщательно код на наличие заплаток и задеплой приложение!»
+- **Статус черновика / промоушена**: `promoted` (synced to GitHub Pages `aezaigrin88/az-wine-selector` and Google Drive `G:\My Drive\az-AI\Wine`)
+- **Замеры и проверки (`checks run`)**: `Automated cross-reference audit (/tmp/verify_zero_patches.py) across all 29 worldWineRegions, 71 iconicWineIndex entries, and 11 GS1 barcode country prefixes`, `Headless Chromium CDP verification (/tmp/test_systematic_pipeline.mjs) across 6 diverse global wines`, `GitHub Pages deployment status check` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html), [`terroir_atlas_geojson.js`](file:///G:/My%20Drive/az-AI/Wine/terroir_atlas_geojson.js)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > Проведён второй глубокий перекрёстный аудит всего кода (`index.html` + `terroir_atlas_geojson.js`) автоматическим верификатором ссылок, ID регионов, фильтров и регулярных выражений. Обнаружены и полностью устранены **ещё 6 скрытых заплаток и несоответствий ID**:
+  > 1. **Исправлены 7 битых `regionId` в резолвере штрих-кодов `resolveCountryFromGs1BarcodePrefix()` (`index.html`)**:
+  >    - *Причина*: функция возвращала старые несуществующие ключи (`"maipo"`, `"cote_de_beaune"`, `"kuban_taman"`, `"tuscany_chianti"`, `"barossa"`, `"marlborough"`, `"napa"`), которых не было в `worldWineRegions` (`terroir_atlas_geojson.js`), из-за чего `WORLD_WINE_REGIONS.find(r => r.id === gs1Country.regionId)` возвращал `undefined` для штрих-кодов Франции, России, Италии, Чили, США, Австралии и Новой Зеландии.
+  >    - *Фикс*: все 11 префиксов GS1 привязаны к точным ID из `worldWineRegions` (`"mendoza"`, `"maipo_colchagua_coastal"`, `"burgundy"`, `"mosel"`, `"kuban_don"`, `"douro"`, `"tuscany"`, `"rioja"`, `"australia_terroirs"`, `"new_zealand_terroirs"`, `"napa_sonoma"`), а также добавлен автоматический фоллбэк на GS1 внутри `lookupBarcodeInOpenFoodFacts()`.
+  > 2. **Извлечены подлинные региональные `abv`, `grapes_clean` и `vine_age_ru` во всех 29 мировых регионах (`terroir_atlas_geojson.js` + `WORLD_WINE_REGIONS`)**:
+  >    - *Причина*: в `terroir_atlas_geojson.js` крепость региона была зашита внутри строки `grapes_ru` в скобках, а отдельных полей `abv` и `vine_age_ru` не было, из-за чего `WORLD_WINE_REGIONS` в `index.html` подставлял всем 29 регионам мира одинаковую заглушку `"13.0–14.0%"` и `"25–60 лет"` (даже для Мозеля `7.5–12.5%` и Шампани `12.0–12.5%`).
+  >    - *Фикс*: во все 29 регионов `worldWineRegions` добавлены точные поля `abv`, `grapes_clean` (без дублирования процентов) и аутентичный региональный возраст лоз и метод сбора `vine_age_ru`.
+  > 3. **Убран хардкод 3 регионов в фильтре каталога `sub_other` и статические счётчики `(17)` в кнопках фильтра (`renderLedgerTable`)**:
+  >    - *Причина*: кнопка `sub_other` имела зашитый текст `"Шампань, Пенедес и Бельбек (4)"` и проверяла только `w.macro_region.includes("Шампань") || w.macro_region.includes("Каталония") || w.macro_region.includes("Крым")`, скрывая при фильтрации любые вина из Германии, Аргентины, Италии, Кубани, Бордо и Нового Света.
+  >    - *Фикс*: фильтр `sub_other` переведён на универсальное правило `"Другие регионы мира"` (`!isNuitsWine(w) && !isBeauneOrSouthBurgundyWine(w)`), а счётчики на всех кнопках фильтра (`Все вина (18)`, `Красные (10)`, `Другие регионы мира (5)` и т.д.) теперь пересчитываются динамически при любом изменении коллекции.
+  > 4. **Убрана привязка к Бургундии и Франции в хлебных крошках зума карты (`#zoomBreadcrumbBar`)**:
+  >    - *Причина*: клик по `Уровень 3 · Регион` всегда вызывал `applyRegionPreset("burgundy")`, даже если выбрано вино из Мендосы, Бадена, Риохи или Крыма, а `Уровень 2 · Страна` проверял только Испанию и Крым, сбрасывая Германию, Аргентину и Италию на Францию.
+  >    - *Фикс*: кнопки `Страна` и `Регион` теперь динамически определяют страну и терруар выбранного вина через `findMatchingWorldTerroirRegion(w)` и центрируют карту на реальном регионе бутылки.
+  > 5. **Синхронизирована карточка региона `selectTerroirRegion(reg)` с новой структурой Паспорта и формы**:
+  >    - Клик по любому региону на карте теперь заполняет верхние поля `#qmGrapesVines` (`Сорт и крепость / дозаж`), `#qmRank` (`Лозы, сбор и выдержка`), `#specGrapes` и `#specAging`, а кнопка `+ Добавить вино из этого терруара` вызывает `applyWorldRegionToForm(reg)`, сразу заполняя `#inGrapes` и `#inVinesAging`.
+  > 6. **Очищены последние штучные токены в `getShortDomainName`, `GENERIC_CLIMAT_STOPWORDS`, `geoQuery`, `applyParsedWineTitleToForm` и `supplementExistingWineFromImage`**:
+  >    - Удалён `.replace(" (Hervé Kerlann)", "")` в пользу универсального `.replace(/\s*\([^)]*\)/g, "")`; удалены штучные слова `"creation"`, `"black"`, `"carruades"`, `"german"`; кропы OCR в `supplementExistingWineFromImage()` приведены к единой геометрической сетке с `runAutomaticLabelOcr()`; добавлен расчёт вкусового профиля `getWineTasteProfile(w)` на основе сорта винограда и стиля.
