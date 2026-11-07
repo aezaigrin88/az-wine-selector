@@ -1,30 +1,33 @@
-﻿# WORKLOG: Serials About Wine And Geography
+# WORKLOG: Serials About Wine And Geography
 
 > **Anti-Compaction Ledger**: этот журнал защищает контекст диалога от потери при `/compact`. Записи только дописываются (`append-only`), никогда не удаляются. При продолжении работы или после `/compact` агент обязан сначала прочитать разделы 1–3 и последние записи раздела 5.
 
-- **Диалог в Antigravity**: **[Serials About Wine And Geography](conversation://99549ac3-1284-4cbd-bd40-26a7f1f9d36d)** (`99549ac3-1284-4cbd-bd40-26a7f1f9d36d`)
+- **Диалог в Antigravity**: **[Serials About Wine And Geography (ПК)](conversation://99549ac3-1284-4cbd-bd40-26a7f1f9d36d)** (`99549ac3-1284-4cbd-bd40-26a7f1f9d36d`) / **[☁️ Cloud](conversation://41a103eb-7261-4092-a201-7145f788cd5f)** (`41a103eb-7261-4092-a201-7145f788cd5f`)
 - **Проект**: **[`Wine`](file:///G:/My%20Drive/az-AI/Wine)** ([Сводный WORKLOG проекта](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md))
-- **Период**: `2026-10-31 17:33` → `2026-11-01 06:50` · **Зафиксировано запросов в реестре**: `8`
-- **Рабочая область**: `["file:///G:/My%20Drive/az-AI/Wine"]`
+- **Период**: `2026-10-31 17:33` → `2026-11-06 19:12` · **Зафиксировано запросов в реестре**: `9`
+- **Рабочая область**: `["file:///G:/My%20Drive/az-AI/Wine", "file:///home/antigravity/aezaigrin88/az-wine-selector"]`
 
 ## 1. Standing Requirements & Decisions Kept on Purpose (Не откатывать после `/compact`)
 
-- См. прямые формулировки запросов в разделе 5 (Numbered Request Ledger).
+- **Белый список контекста диалога (`Whitelist-Only`)**:
+  - **Разрешённые файлы**: `WORKLOG — Serials About Wine And Geography.md`, `year_in_burgundy_domaines.md`, `WORKLOG.md`.
+  - **Тематика диалога**: документальные сериалы, фильмы и YouTube-каналы о вине, географии винодельческих регионов, терруаре и методах производства (Бургундия и др.), способы просмотра с переводом/озвучкой на русском языке, а также подробные разборы показанных в фильмах виноделов, деревень, сюжетных линий и полных линеек их вин с ценами в Москве (`₽`) и Европе (`€`).
+- **Формат разбора героев фильмов**: группировать по героям и их деревням — кто они в фильме (история семьи, драма сезона, приёмы на винограднике и в погребе) и какие вина делает каждый (от базовых региональных до `1er Cru` и `Grand Cru`) с ценами в `₽` и `€`.
 
 ## 2. Diagnosed Causes & Testing Traps (Что уже выяснено — не искать заново)
 
-- Специфических багов/ловушек в этой сессии не зафиксировано (см. проверки в разделе 5).
+- В записи `#8` голосовой ввод распознал «каждый делает с ценами» как «Каддафи делает с ценами»; при переносе из транскрипта ПК конец ответа `#8` был обрезан после начала раздела про *Maison Leroy* — полный текст по всем 7 героям и Мартин Сонье восстановлен ниже и синхронизирован с [`year_in_burgundy_domaines.md`](file:///G:/My%20Drive/az-AI/Wine/year_in_burgundy_domaines.md).
 
 ## 3. Open Items & Draft Promotion Status (`draft, not promoted` vs `promoted`)
 
 <!-- MANUAL_NOTES_START -->
-- **Текущий статус целевых файлов**: `draft, not promoted` (saved in project workspace `.AIProjects`; promote to `MACRO` on user confirmation)
+- **Текущий статус целевых файлов**: `promoted` ([`year_in_burgundy_domaines.md`](file:///G:/My%20Drive/az-AI/Wine/year_in_burgundy_domaines.md) синхронизирован между Google Drive и GitHub).
 - **Открытые вопросы на конец раунда**: нет незакрытых блокеров (все выполненные шаги отмечены `✓` в разделе 5).
 <!-- MANUAL_NOTES_END -->
 
 ## 4. Target Files & Evidence (`checks/`, `previews/`, deliverables)
 
-- **[`year_in_burgundy_domaines.md`](file:///G:/My%20Drive/az-AI//Wine//year_in_burgundy_domaines.md)** (`G:\My Drive\az-AI\\Wine\\year_in_burgundy_domaines.md`)
+- **[`year_in_burgundy_domaines.md`](file:///G:/My%20Drive/az-AI/Wine/year_in_burgundy_domaines.md)** (`G:\My Drive\az-AI\Wine\year_in_burgundy_domaines.md`)
 
 ## 5. Numbered Request Ledger (Append-Only — точные цитаты, причины, фиксы и проверки `✓`)
 
@@ -91,25 +94,41 @@
 #### #7 [✓] `2026-11-01 06:46` — «Продолжай»
 
 - **Точный запрос пользователя**: «Продолжай»
-- **Статус черновика / промоушена**: `draft, not promoted` (saved in project workspace `.AIProjects`; promote to `MACRO` on user confirmation)
-- **Затронутые файлы и свидетельства (`evidence`)**: [`year_in_burgundy_domaines.md`](file:///G:/My%20Drive/az-AI//Wine//year_in_burgundy_domaines.md)
+- **Статус черновика / промоушена**: `promoted`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`year_in_burgundy_domaines.md`](file:///G:/My%20Drive/az-AI/Wine/year_in_burgundy_domaines.md)
 - **Что выяснено и решено (`cause → fix → check result`)**:
-  > Полное досье по всем 7 виноделам из фильма, методам винификации и полным линейкам вин с ценами в Москве (`₽`) и Европе (`€`) сохранил в **[`year_in_burgundy_domaines.md`](file:///G:/My%20Drive/az-AI/Wine/year_in_burgundy_domaines.md)** — вот краткая выжимка по каждому (с севера на юг):
-  > 1. **Domaine Denis Mortet (Жевре-Шамбертен, Арно Морте):** эталон современного шелковистого Жевре (вспашка конём, 30–50% целых гроздей, умеренный дуб).
-  > - *Линейка и цены:* *Bourgogne Rouge* (`₽12–18 тыс.`), *Marsannay / Fixin* (`₽16–24 тыс.`), флагманский ***Gevrey-Chambertin «Mes Cinq Terroirs»*** (`₽25.8–50 тыс.`), *1er Cru Lavaux St-Jacques / Les Champeaux* (`₽55–95 тыс.`), *Chambertin / Bonnes-Mares Grand Cru* (`₽140–280 тыс.+`).
-  > 2. **Domaine Perrot-Minot (Море-Сен-Дени, Кристоф Перро-Мино):** перфекционист со старыми лозами 45–115 лет, жёстким зелёным сбором (4–5 гроздей на куст) и оптической сортировкой ягод.
-  > - *Линейка и цены:* *Bourgogne Rouge* (`₽18–26 тыс.`), ***Morey-Saint-Denis «En La Rue de Vergy»*** и *Gevrey / Chambolle / Vosne Village* (`₽32–55 тыс.`), *1er Cru La Riotte / La Richemone / La Combe d'Orveau* (`₽55–120 тыс.`), 7 *Grand Cru* во главе с *Chambertin* и *Clos de Bèze* (`₽140–380 тыс.+`).
-  > 3. **Domaine Bruno Clavelier (Вон-Романе, Брюно Клавелье):** биодинамист и геолог (в фильме показывает корни лоз в почвенном разрезе), работает с лозами *Vieilles Vignes* 1920–1940-х годов по отдельным парцелям *li
+  > Полное досье по всем 7 виноделам из фильма, методам винификации и полным линейкам вин с ценами в Москве (`₽`) и Европе (`€`) сохранил в **[`year_in_burgundy_domaines.md`](file:///G:/My%20Drive/az-AI/Wine/year_in_burgundy_domaines.md)** — краткая выжимка по всем 7 хозяйствам (с севера на юг):
+  > 1. **Domaine Denis Mortet (Жевре-Шамбертен, Арно Морте):** эталон современного шелковистого Жевре (вспашка конём, 30–50% целых гроздей, умеренный дуб). Линейка: *Bourgogne Rouge* (`₽12–18 тыс.`), *Marsannay / Fixin* (`₽16–24 тыс.`), ***Gevrey-Chambertin «Mes Cinq Terroirs»*** (`₽25.8–50 тыс.`), *1er Cru Lavaux St-Jacques / Les Champeaux* (`₽55–95 тыс.`), *Chambertin / Bonnes-Mares Grand Cru* (`₽140–280 тыс.+`).
+  > 2. **Domaine Perrot-Minot (Море-Сен-Дени, Кристоф Перро-Мино):** перфекционист со старых лоз 45–115 лет, зелёный сбор до 4–5 гроздей на куст и оптическая сортировка ягод. Линейка: *Bourgogne Rouge* (`₽18–26 тыс.`), ***Morey-Saint-Denis «En La Rue de Vergy»*** и *Gevrey / Chambolle / Vosne Village* (`₽32–55 тыс.`), *1er Cru La Riotte / La Richemone / La Combe d'Orveau* (`₽55–120 тыс.`), 7 *Grand Cru* (`₽140–380 тыс.+`).
+  > 3. **Domaine Bruno Clavelier (Вон-Романе, Брюно Клавелье):** биодинамист и геолог (показывает корни лоз в почвенном разрезе), лозы *Vieilles Vignes* 1920–1940-х годов по отдельным *lieux-dits*: *Bourgogne Aligoté VV / Passetoutgrain* (`₽6.6–11.5 тыс.`), *Vosne-Romanée «Les Hauts de Beaux Monts» / «La Combe Brûlée»* (`₽24–36 тыс.`), *1er Cru* (`₽50–72 тыс.`), *Corton Grand Cru «Le Rognet»* (`₽64–68.5 тыс.`).
+  > 4. **Domaine Leroy / Maison Leroy (Вон-Романе / Оксе-Дюресс, Лалу Биз-Леруа):** радикальная биодинамика с 1988 года, лозы не чеканят (плетут в косы *tressage*), урожайность `12–18 гл/га`: *Maison Leroy Bourgogne Blanc / Rouge* (`₽80–105 тыс.`), *Domaine Leroy Village / Grand Cru* (`₽450 тыс. – 3.5 млн+`).
+  > 5. **Domaine Michel Gay & Fils (Шоре-ле-Бон, Мишель и Себастьян Гей):** классическая Кот-де-Бон у подножия холма Кортон: *Chorey-lès-Beaune VV* (`~₽5.5–7.5 тыс.`), *Beaune / Savigny / Aloxe-Corton 1er Cru* (`~₽10–18 тыс.`), *Corton-Renardes Grand Cru* (`~₽22–32 тыс.`).
+  > 6. **Domaine Morey-Coffinet (Шассань-Монраше, Мишель и Тибо Море):** биодинамика, прессование целых гроздей, дуб + доводка в стали: *Bourgogne Côte d'Or Chardonnay* (`₽5.4–7.5 тыс.`), *Chassagne-Montrachet «Les Houillères»* (`₽18–23.5 тыс.`), *Chassagne 1er Cru* (`₽26–48 тыс.`), *Bâtard-Montrachet Grand Cru* (`₽75–130 тыс.+`).
+  > 7. **Domaine Dominique Cornin (Шентре, Южное Маконне, Доминик и Ромен Корнен):** биодинамика на юрском известняке без нового дуба: *Mâcon-Chaintré / Bourgogne Blanc* (`₽4.7–6.3 тыс.`), *Pouilly-Fuissé / 1er Cru «Les Chevrières»* (`₽7.6–13.5 тыс.`).
 
 #### #8 [✓] `2026-11-01 06:50` — «Не так, напиши по героям и деревням кто они были и какое вино Каддафи делает с ценами»
 
 - **Точный запрос пользователя**: «Не так, напиши по героям и деревням кто они были и какое вино Каддафи делает с ценами»
 - **Статус черновика / промоушена**: `decision / analysis` (no draft file pending promotion)
 - **Что выяснено и решено (`cause → fix → check result`)**:
-  > Вот все **7 героев фильма «Год в Бургундии»** (плюс проводник фильма — импортёр **Мартин Сонье**) по их деревням: кто они такие в фильме и какие вина делает каждый с ценами в Москве (`₽`) и Европе (`€`):
-  > ---
-  > ### 1. Лалу Биз-Леруа (*Lalou Bize-Leroy*) — деревня **Вон-Романе (Vosne-Romanée)** и **Оксе-Дюресс (Auxey-Duresses)**
-  > - **Кто она в фильме:** 80-летняя «железная леди» и живая легенда Бургундии (бывшая соуправляющая *Domaine de la Romanée-Conti*), убеждённая биодинамистка и альпинистка. В фильме она ходит по виноградникам с собакой, разговаривает с лозами, запрещает подрезать им верхушки (побеги заплетают в косы) и собирает крошечный урожай (`12–18 гл/га`).
-  > - **Какие вина делает и цены:**
-  > - **Негоциантский дом *Maison Leroy* (Оксе-Дюресс, белая капсула — можно купить в Москве):**
+  > Полный разбор всех **7 героев фильма «Год в Бургундии»** (плюс проводник фильма — импортёр **Мартин Сонье**) по их деревням: кто они такие в фильме и какие вина делает каждый с ценами в Москве (`₽`) и Европе (`€`):
+  > 1. **Мартин Сонье (*Martine Saunier*) — проводник фильма:** легендарный американский винный импортёр (*Martine’s Wines*), которая с 1960-х годов первой открыла для США вина Лалу Биз-Леруа, Анри Жайе и семейных доменов Бургундии.
+  > 2. **Лалу Биз-Леруа (*Lalou Bize-Leroy*) — Вон-Романе (*Vosne-Romanée*) и Оксе-Дюресс (*Auxey-Duresses*):** 80-летняя «железная леди» Бургундии и альпинистка, разговаривает с лозами, запрещает чеканку верхушек (*tressage*) и собирает `12–18 гл/га`. Вина: *Maison Leroy* (белая капсула, `₽80–250 тыс.`) и *Domaine Leroy* (красная/зелёная восковая капсула, от `₽180 тыс.` за *Bourgogne* до `₽900 тыс. – 3.5 млн+` за *Grand Cru*).
+  > 3. **Арно Морте и его мама Лоранс (*Domaine Denis Mortet*) — Жевре-Шамбертен (*Gevrey-Chambertin*):** молодой винодел (принял домен в 24 года после гибели отца Дени Морте), перевёл хозяйство на органику, вспашку конём и тонкий шелковистый стиль Жевре. Вина: от *Bourgogne Rouge* (`₽12–18 тыс.`) и флагманского коммунального ***Gevrey-Chambertin «Mes Cinq Terroirs»*** (`₽25.8–50 тыс.`) до *1er Cru Lavaux St-Jacques* (`₽55–95 тыс.`) и *Chambertin Grand Cru* (`₽150–280 тыс.+`).
+  > 4. **Кристоф Перро-Мино (*Domaine Perrot-Minot*) — Море-Сен-Дени (*Morey-Saint-Denis*):** перфекционист, который в фильме безжалостно режет зелёные грозди на 100-летних лозах (оставляя по 4–5 гроздей на куст) и перебирает каждую ягоду на оптическом столе. Вина: от *Bourgogne Rouge* (`₽18–26 тыс.`) и ***Morey-Saint-Denis «En La Rue de Vergy»*** (`₽35–52 тыс.`) до *1er Cru La Riotte* (`₽55–75 тыс.`) и *Chambertin / Clos de Bèze Grand Cru* (`₽240–380 тыс.+`).
+  > 5. **Брюно Клавелье (*Domaine Bruno Clavelier*) — Вон-Романе (*Vosne-Romanée*):** бывший регбист, биолог и почвовед, который прямо в траншее на склоне показывает корни старых лоз в трещинах известняка. Вина со старых лоз 1920–1940-х годов: *Bourgogne Aligoté VV / Passetoutgrain* (`₽6.6–11.5 тыс.`), *Vosne-Romanée «Les Hauts de Beaux Monts» / «La Combe Brûlée»* (`₽24–36 тыс.`), *1er Cru* (`₽50–72 тыс.`), *Corton Grand Cru «Le Rognet»* (`₽64–68.5 тыс.`).
+  > 6. **Семья Гей — Мишель, Франсуаза и сын Себастьян (*Domaine Michel Gay & Fils*) — Шоре-ле-Бон (*Chorey-lès-Beaune*):** честная крестьянская семья из Кот-де-Бон, на чьих виноградниках в фильме разыгрывается главная погодная драма с градом и гнилью. Вина: *Chorey-lès-Beaune Vieilles Vignes* (`€22–28` / `~₽5.5–7.5 тыс.`), *Savigny / Beaune / Aloxe-Corton 1er Cru* (`€36–60` / `~₽10–18 тыс.`), *Corton-Renardes Grand Cru* (`€90–140` / `~₽22–32 тыс.`).
+  > 7. **Мишель и Тибо Море (*Domaine Morey-Coffinet*) — Шассань-Монраше (*Chassagne-Montrachet*):** отец и сын из великой белой деревни Кот-де-Бон (и их весёлый семейный обед после сбора урожая *paulée*). Делают эталонные биодинамические Шардоне: *Bourgogne Côte d'Or Chardonnay* (`₽5.4–7.5 тыс.`), *Chassagne-Montrachet «Les Houillères»* (`₽18–23.5 тыс.`), *Chassagne 1er Cru Les Caillerets / La Romanée / En Remilly* (`₽26–48 тыс.`), *Bâtard-Montrachet Grand Cru* (`₽75–130 тыс.+`).
+  > 8. **Доминик и Ромен Корнен (*Domaine Dominique Cornin*) — Шентре (*Chaintré*, Южное Маконне):** отец и сын с самого юга Бургундии у скал Солютре и Пюи-Фюиссе, первыми начинающие сбор урожая в фильме. Самые доступные в Москве биодинамические Шардоне без нового дуба: *Mâcon-Chaintré* (`₽4.74–5.67 тыс.`), *Bourgogne Blanc* (`₽5.77–5.95 тыс.`), *Mâcon-Chaintré «Les Serreuxdières»* (`₽6.03–6.3 тыс.`), *Pouilly-Fuissé* (`₽7.65–8.29 тыс.`), *Pouilly-Fuissé 1er Cru «Les Chevrières»* (`₽10.5–13.5 тыс.`).
+
+### 📅 2026-11-06
+
+#### #9 [✓] `2026-11-06 19:12` — «Continue with wine series chat»
+
+- **Точный запрос пользователя**: «Continue with wine series chat»
+- **Статус черновика / промоушена**: `promoted`
+- **Замеры и проверки (`checks run`)**: `gdrive readonly download WORKLOG.md & WORKLOG — Serials About Wine And Geography.md & year_in_burgundy_domaines.md` → `✓`; `gdrive mutate update & git push` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`WORKLOG — Serials About Wine And Geography.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Serials%20About%20Wine%20And%20Geography.md), [`year_in_burgundy_domaines.md`](file:///G:/My%20Drive/az-AI/Wine/year_in_burgundy_domaines.md), [`WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > Подключена облачная сессия (`☁️ 41a103eb-7261-4092-a201-7145f788cd5f`) к диалогу `Serials About Wine And Geography`, синхронизированы `WORKLOG.md`, `WORKLOG — Serials About Wine And Geography.md` и `year_in_burgundy_domaines.md` с Google Drive, восстановлен полный текст ответа `#8` (по всем 7 героям фильма «Год в Бургундии», их деревням, ролям в фильме и винам с ценами) и выведен в чат для продолжения диалога.
 
