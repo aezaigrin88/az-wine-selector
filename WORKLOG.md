@@ -7,14 +7,14 @@
 
 | Дата обновления | Диалог (клик — открыть чат) | Детальный WORKLOG файла | Записей (`#N`) | Изменено файлов |
 |---|---|---|---:|---:|
-| `2026-11-06 08:00` | **[Wine guide](conversation://b1a5b1d3-aac5-41da-a0f3-621b6008ca8e)** | **[`WORKLOG — Wine guide.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Wine%20guide.md)** | #88 | 16 |
+| `2026-11-07 03:42` | **[Wine guide](conversation://b1a5b1d3-aac5-41da-a0f3-621b6008ca8e)** | **[`WORKLOG — Wine guide.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Wine%20guide.md)** | #89 | 16 |
 | `2026-11-01 10:02` | **[Gevrey-Chambertin & Vivino sync](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f)** | **[`WORKLOG — Gevrey-Chambertin & Vivino sync.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Gevrey-Chambertin%20&%20Vivino%20sync.md)** | #13 | 12 |
 | `2026-11-06 19:12` | **[Serials About Wine And Geography (ПК)](conversation://99549ac3-1284-4cbd-bd40-26a7f1f9d36d)** / **[☁️](conversation://41a103eb-7261-4092-a201-7145f788cd5f)** | **[`WORKLOG — Serials About Wine And Geography.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Serials%20About%20Wine%20And%20Geography.md)** | #9 | 1 |
 | `2026-11-06 05:20` | **[Champagne selection (ПК)](conversation://ef8c2d57-485f-42dd-b52b-78452eb56f10)** / **[☁️](conversation://8f190ffc-4dbe-43dd-ac61-8525e9bb0b14)** | **[`WORKLOG — Champagne selection.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Champagne%20selection.md)** | #9 | 2 |
 
 ## 2. Рабочие папки, проверки (`checks/`) и превью (`previews/`) внутри проекта
 
-- `2026-11-06 08:00` · 📄 Файл: **[`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html)** ([GitHub Pages](https://aezaigrin88.github.io/az-wine-selector/))
+- `2026-11-07 03:42` · 📄 Файл: **[`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html)** ([GitHub Pages](https://aezaigrin88.github.io/az-wine-selector/))
 - `2026-11-05 23:55` · 📄 Файл: **[`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json)**
 - `2026-11-05 23:55` · 📄 Файл: **[`terroir_atlas_geojson.js`](file:///G:/My%20Drive/az-AI/Wine/terroir_atlas_geojson.js)**
 - `2026-11-03 12:11` · 📁 Папка: **[`vendor`](file:///G:/My%20Drive/az-AI/Wine/vendor)**
