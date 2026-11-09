@@ -2,7 +2,7 @@
 
 > **Anti-Compaction Ledger**: этот журнал защищает контекст диалога от потери при `/compact`. Записи только дописываются (`append-only`), никогда не удаляются. При продолжении работы или после `/compact` агент обязан сначала прочитать разделы 1–3 и последние записи раздела 5.
 
-- **Диалог в Antigravity**: **AZ Wine Diary** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#91`)
+- **Диалог в Antigravity (`☁️` Cloud)**: **📱 AZ Wine Diary** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#91`)
 - **Проект**: **[`🍷 Wine`](file:///G:/My%20Drive/az-AI/Wine)** ([Сводный WORKLOG проекта](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md) · [GEMINI.md](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md))
 - **Период**: `2026-10-30 18:25` → `2026-11-09 15:20` · **Зафиксировано запросов в реестре**: `91`
 - **Рабочая область**: `["file:///G:/My%20Drive/az-AI/Wine", "file:///home/antigravity/aezaigrin88/az-wine-selector"]`
@@ -1014,9 +1014,9 @@
 
 #### #91 [✓] `2026-11-09 04:10` — «Создай новый as wine dairy а старый чат архивируй»
 
-- **Точный запрос пользователя**: «Создай новый  as wine dairy а старый чат архивируй»
+- **Точный запрос пользователя**: «Создай новый  as wine dairy а старый чат архивируй» · «Почему когда архивируем 1 чат ворклог тоже чистится????? / Да сделай»
 - **Статус черновика / промоушена**: `promoted`
-- **Замеры и проверки (`checks run`)**: `Archive WORKLOG — Wine guide.md (#1..#90) and WORKLOG — Gevrey-Chambertin & Vivino sync.md (#1..#13) into Wine/_archive/`, `Create clean WORKLOG — AZ Wine Diary.md with Zero-Patch architecture and Whitelist-Only rules`, `Update Wine/GEMINI.md, Wine/WORKLOG.md, and sync to Google Drive & GitHub` → `✓`
-- **Затронутые файлы и свидетельства (`evidence`)**: [`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md), [`Wine/WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`Wine/GEMINI.md`](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md), [`_archive/WORKLOG — Wine guide.md`](file:///G:/My%20Drive/az-AI/Wine/_archive/WORKLOG%20—%20Wine%20guide.md)
+- **Замеры и проверки (`checks run`)**: `Restore full #1..#90 history into WORKLOG — AZ Wine Diary.md and continue numbering at #91`, `Update Wine/WORKLOG.md and Wine/GEMINI.md`, `Forbid moving active WORKLOG to _archive/ or resetting #1 on chat rotation in GEMINI.md and CLAUDE.md` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md), [`Wine/WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`Wine/GEMINI.md`](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md), [`GEMINI.md`](file:///C:/Users/timza/.gemini/GEMINI.md), [`CLAUDE.md`](file:///C:/Users/timza/.claude/CLAUDE.md)
 - **Что выяснено и решено (`cause → fix → check result`)**:
-  > Старый 90-шаговый журнал `WORKLOG — Wine guide.md` (`1QPJVpUksDU9IgE6sIF5PssRpLeEmYLez`) и `WORKLOG — Gevrey-Chambertin & Vivino sync.md` (`1Ed00PLVpvpZ_kLNhf3_pggDSBGW3_w1A`) перенесены в архив [`Wine/_archive/`](file:///G:/My%20Drive/az-AI/Wine/_archive). Создан новый чистый журнал **[`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)** с архитектурой `Zero-Patch & Schema-Driven`, обновлён белый список в [`Wine/GEMINI.md`](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md) и сводный индекс [`Wine/WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md).
+  > Вся история запросов `#1..#90` объединена в основном журнале **[`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)** со сквозной нумерацией (`#91`) без обнуления при архивации старого чата; в глобальных правилах `GEMINI.md` и `CLAUDE.md` закреплён прямой запрет переносить активный `WORKLOG` в `_archive/` или сбрасывать нумерацию на `#1` при ротации чата.

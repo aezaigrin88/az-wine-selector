@@ -6,7 +6,7 @@
 - **Сводный индекс проекта**: [`WORKLOG.md`](./WORKLOG.md) (Drive ID: `1RU9okUPOZBkzu68z0Iag2wxQVmwptNCw`)
 
 ## 2. Белые списки активных диалогов проекта (`Whitelist`)
-1. **`AZ Wine Diary`** (главный диалог приложения, сквозной журнал `#1..#91`): [`WORKLOG — AZ Wine Diary.md`](./WORKLOG%20%E2%80%94%20AZ%20Wine%20Diary.md) — веб-приложение `index.html`, декларативная база `wines_data.json`, геоданные терруаров `terroir_atlas_geojson.js`, генератор кадастра `codex/build_authentic_terroir_geojson.py`, `sync_vivino.py`, `PRODUCT.md` и `DESIGN.md`.
+1. **`📱 AZ Wine Diary`** (`☁️ 🍷 Wine`, главный диалог приложения, сквозной журнал `#1..#91`): [`WORKLOG — AZ Wine Diary.md`](./WORKLOG%20%E2%80%94%20AZ%20Wine%20Diary.md) — веб-приложение `index.html`, декларативная база `wines_data.json`, геоданные терруаров `terroir_atlas_geojson.js`, генератор кадастра `codex/build_authentic_terroir_geojson.py`, `sync_vivino.py`, `PRODUCT.md` и `DESIGN.md`.
 2. **`Champagne selection`**: [`WORKLOG — Champagne selection.md`](./WORKLOG%20%E2%80%94%20Champagne%20selection.md) (`1kIyGHwrNDtvYKJRIIjHootJVMCNJA9Ps`) — отбор и дегустационные разборы шампанских и игристых вин (`champagne_analysis.md`, `discussion_champagne_wine.md`).
 3. **`Serials About Wine And Geography`**: [`WORKLOG — Serials About Wine And Geography.md`](./WORKLOG%20%E2%80%94%20Serials%20About%20Wine%20And%20Geography.md) (`1Rvvx6ajfY1kk9bM8SzyMZudwjaBDQre9`) — подборка фильмов, сериалов и книг о вине и географии (`year_in_burgundy_domaines.md`).
 
