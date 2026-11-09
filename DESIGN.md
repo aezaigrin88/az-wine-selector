@@ -21,29 +21,29 @@ colors:
   foxing-border: "#C4B69A"
 typography:
   display:
-    fontFamily: "'SB Sans Interface', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     fontSize: "1.25rem"
     fontWeight: 700
     lineHeight: 1.25
     letterSpacing: "-0.01em"
   headline:
-    fontFamily: "'SB Sans Interface', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     fontSize: "1.08rem"
     fontWeight: 700
     lineHeight: 1.28
   title:
-    fontFamily: "'SB Sans Interface', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     fontSize: "0.92rem"
     fontWeight: 700
     lineHeight: 1.35
     letterSpacing: "0.03em"
   body:
-    fontFamily: "'SB Sans Interface', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     fontSize: "0.9375rem"
     fontWeight: 400
     lineHeight: 1.5
   label:
-    fontFamily: "'SB Sans Interface', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     fontSize: "0.80rem"
     fontWeight: 600
     lineHeight: 1.35
@@ -83,32 +83,32 @@ components:
     padding: "16px"
 ---
 
-# Design System: Wine & Terroir Atlas
+# Design System: AZ Wine Diary & Terroir Atlas
 
 ## Overview
 
-**Creative North Star: "The Cartographer's Cellar Ledger (`chartbook_geoeconomics`)"**
+**Creative North Star: "The Cartographer's Cellar Ledger (`Vintage Atlas`)"**
 
-The Wine & Terroir Atlas treats a personal wine tasting collection as a living cartographic publication modeled directly on the `chartbook_geoeconomics` Vintage Atlas system. Rather than presenting tasted bottles as dark-mode SaaS cards or generic rating tiles, the interface pairs a multi-scale parchment map plate (switching between European/Crimean vineyard parcels and Moscow tasting venues) with a structured archival terroir passport and ledger table.
+AZ Wine Diary treats a personal wine tasting collection as a living cartographic publication. Rather than presenting tasted bottles as dark-mode SaaS cards or generic rating tiles, the interface pairs a strict North-Up (`N ↑`) 4-level semantic Leaflet map plate (`#atlasLeafletMap`) with a structured archival terroir passport, a dynamic Taste Compass, and an interactive diary ledger.
 
-Every surface evokes engraved survey plates printed on warm cotton vellum: `2px` charcoal-sepia frames, overprinted ink header banners, faded Prussian slate-blue river networks, limestone escarpment contours, L-shaped metric scale bars, and haloed `SB Sans Interface` typography.
+Every surface evokes engraved survey plates printed on warm cotton vellum: `2px` charcoal-sepia frames, overprinted ink header banners, faded Prussian slate-blue river networks, limestone escarpment contours, metric scale bars, and haloed cartographic typography.
 
 **Key Characteristics:**
-- Dual-layer interactive cartographic plate (1. Терруары и парцели vs 2. Места дегустаций в Москве) plus 300 DPI static publication plates.
+- 4-level semantic cartographic plate (`Z2–Z4` Countries → `Z5–Z7` Relief & Macro Regions → `Z8–Z11` Sub-regions & Appellations → `Z12–Z17` Cadastral Parcels 1:25 000 with SRTM contours and solar exposure vectors `☀️`).
 - Warm archival paper hierarchy (`#F5F2E6` canvas, `#FDF5E6` card stock, `#EFEAD8` toolbar strips) paired with deep charcoal-sepia ink (`#2F2926`).
 - Wine-style semantic coding grounded in archival ink pigments: Archival Crimson (`#8A0D2F`) for red wines, Faded Prussian Blue (`#3B6E8F`) for white wines, and Burnt Amber (`#C85A17`) for sparkling wines.
-- Self-hosted `SB Sans Interface` across UI controls, cartographic labels, and tabular numeric columns (`tabular-nums`).
+- Crisp system grotesque (`-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`) across UI controls, cartographic labels, and tabular numeric columns (`tabular-nums`).
 
 ## Colors
 
-The palette combines archival vellum neutrals with mineral cartographic pigments drawn directly from `chartbook_geoeconomics`.
+The palette combines archival vellum neutrals with mineral cartographic pigments.
 
 ### Primary
 - **Archival Crimson** (`#8A0D2F`): Primary action buttons, red wine parcel pins, active map-mode tabs, and the terroir passport header band.
 - **Deep Map-Plate Blue** (`#2C4F6B`): Cartographic plate header band, active region pills, and external Vivino links.
 
 ### Secondary
-- **Faded Prussian Blue** (`#3B6E8F`): White wine parcel markers (Chardonnay, Aligoté, Pinot Blanc) and river/water typography.
+- **Faded Prussian Blue** (`#3B6E8F`): White wine parcel markers (Chardonnay, Aligoté, Pinot Blanc, Chenin Blanc) and river/water typography.
 - **Burnt Amber** (`#C85A17`): Sparkling wine markers (Champagne Grand Cru, Crémant de Bourgogne, Corpinnat) and star rating highlights.
 
 ### Tertiary
@@ -126,13 +126,13 @@ The palette combines archival vellum neutrals with mineral cartographic pigments
 ### Named Rules
 **The Pigment-Means-Style Rule.** Archival Crimson (`#8A0D2F`), Faded Prussian Blue (`#3B6E8F`), and Burnt Amber (`#C85A17`) encode wine styles (Red, White, Sparkling) across map pins, legend swatches, and table badges. Never repurpose these three pigments for unrelated decorative chrome.
 
-**The Haloed Cartographic Label Rule.** Every text label placed over the map canvas must carry a `3px` `#FDF5E6` stroke halo (`paint-order: stroke`) so commune and parcel names remain legible across rivers, roads, and appellation boundaries.
+**The Haloed Cartographic Label Rule.** Every text label placed over the map canvas must carry a `#FDF5E6` stroke halo so commune and parcel names remain legible across rivers, roads, and appellation boundaries.
 
 ## Typography
 
-**Display & UI Font:** `'SB Sans Interface'` (self-hosted `.ttf` in `fonts/`, weights 400, 600, 700, plus italic)
+**Display & UI Font:** `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` (paired with `'Courier New', monospace` for catalog codes and coordinates)
 
-**Character:** A crisp, high-legibility humanist grotesque that bridges dense statistical tables, Russian/French cartographic nomenclature (*lieux-dits*, communes, appellations), and compact UI controls without ornamental distraction.
+**Character:** A crisp, high-legibility humanist grotesque that bridges dense statistical tables, Russian/French/Spanish/Italian/German cartographic nomenclature (*lieux-dits*, communes, appellations), and compact mobile/desktop UI controls.
 
 ### Hierarchy
 - **Display** (`700`, `1.25rem`, `1.25` line-height, `-0.01em` tracking): Application title in the sticky top bar.
@@ -149,11 +149,11 @@ The palette combines archival vellum neutrals with mineral cartographic pigments
 ## Layout
 
 The interface uses a `1480px` maximum container (`20px` horizontal padding on desktop, `12px` on mobile) structured around an immediate operational first viewport:
-- **Sticky Top Atlas Bar**: Brand title, live collection counter (`17 бутылок · 9 красных · 4 белых · 4 игристых`), primary `+ Записать бутылку` drawer trigger, and 1-click JSON export.
+- **Sticky Top Atlas Bar**: Brand title, live collection counter (`AZ Wine Diary · N вин`), primary `+ Добавить бутылку` trigger, and 1-click JSON export.
 - **First-Viewport Split Workspace (`grid-template-columns: minmax(0, 1.85fr) minmax(340px, 1fr)`, `18px` gap)**:
-  - Left `2/3`: Interactive Cartographic Plate (`540px` height on desktop, `400px` on mobile) with layer tabs, regional zoom presets, vector SVG map / 300 DPI static plate viewer, flat legend ribbon, and source caption bar.
-  - Right `1/3`: Active Bottle & Terroir Dossier displaying the bottle label photograph, front/back photo toggle, interactive 5-star rating widget, 6-row terroir passport table, live-saved tasting notes, and direct Vivino link.
-- **Archival Ledger & Session Timeline**: Full-width searchable, filterable table of all 17 bottles followed by a responsive grid (`repeat(auto-fill, minmax(310px, 1fr))`) of tasting session cards.
+  - Left `2/3`: Interactive Cartographic Plate (`#atlasLeafletMap`) with clean header filter (`Дневник`, `Все вина`, `Фавориты`, `С оценкой`, `Красные`, `Белые`, `Игристые`), `Рельеф / Спутник` basemap toggle, 4-level semantic zoom breadcrumbs, and legend ribbon.
+  - Right `1/3`: Active Bottle & Terroir Dossier displaying the bottle label gallery, grape variety and dosage/ABV badges at the very top, 4-component personal ratings for Artem and Anya, terroir passport table, and live-saved tasting notes.
+- **Taste Compass & Archival Ledger**: Dynamic summary of favorite communes, styles, and next-step terroir recommendations (`#tasteSummaryRecommendation`), followed by a searchable, filterable catalog of all bottles.
 
 ## Elevation & Depth
 
@@ -193,17 +193,17 @@ Surfaces combine crisp `2px solid #2F2926` ink framing with a soft directional p
 - **Style:** `1.5px solid #8A8175` border on warm white `#FFFDF7`, `4px` radius, `8px 11px` padding.
 - **Focus:** Border shifts to `#2C4F6B` with a `2px solid #B8963E` focus-visible ring.
 
-### Interactive Cartographic Plate (`#atlasSvgMap`)
-- **Behavior:** Supports drag-pan, `+`/`−`/reset zoom controls, 1-click regional bounding-box presets, layer switching between European/Crimean terroir parcels and Moscow tasting venues, and coordinate picking when logging a new bottle.
+### Interactive Cartographic Plate (`#atlasLeafletMap`)
+- **Behavior:** Strict North-Up (`N ↑`) Leaflet map supporting 4-level semantic zoom (`Z2–Z17`), 1-click regional bounding-box presets, `Рельеф / Спутник` basemap switching, and coordinate picking when logging a new bottle.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** use the exact `chartbook_geoeconomics` cartographic palette (`#F3EDE0` land, `#E3D9C6` slope relief, `#DCE0D3` forest, `#A8BCC9` water, `#7C98AB` shoreline) on all interactive and static map plates.
-- **Do** pair every wine entry with its parcel-level geography (*commune*, *lieu-dit*, coordinates, and soil profile) alongside its Moscow tasting session date and venue.
-- **Do** keep credentials (`VIVINO_EMAIL`, `VIVINO_PASSWORD`) strictly outside the repository in `C:\Users\timza\.env` when running `sync_vivino.py`.
+- **Do** use the Vintage Atlas cartographic palette (`#F3EDE0` land, `#E3D9C6` slope relief, `#DCE0D3` forest, `#A8BCC9` water, `#7C98AB` shoreline) on all map layers.
+- **Do** store all canonical bottle attributes declaratively in `wines_data.json` (`Single Source of Truth`).
+- **Do** keep credentials strictly outside the repository in `.env` when running `sync_vivino.py`.
 
 ### Don't:
 - **Don't** nest bordered cards inside `.atlas-card` containers; use horizontal hairline dividers (`#DFD5C0`) and tonal bands (`#EFEAD8`) instead.
 - **Don't** place uppercase kickers/eyebrows or `01 / 02` section numbers above headings.
-- **Don't** substitute Unicode geometric symbols (`●`, `■`, `◆`, `★`) for inline SVG icons or matplotlib scatter markers.
+- **Don't** hardcode per-bottle `if/elif` patches in `index.html` or `codex/build_authentic_terroir_geojson.py`.

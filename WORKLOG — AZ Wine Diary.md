@@ -2,9 +2,9 @@
 
 > **Anti-Compaction Ledger**: этот журнал защищает контекст диалога от потери при `/compact`. Записи только дописываются (`append-only`), никогда не удаляются. При продолжении работы или после `/compact` агент обязан сначала прочитать разделы 1–3 и последние записи раздела 5.
 
-- **Диалог в Antigravity (`☁️` Cloud)**: **📱 AZ Wine Diary** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#91`)
+- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#92`)
 - **Проект**: **[`🍷 Wine`](file:///G:/My%20Drive/az-AI/Wine)** ([Сводный WORKLOG проекта](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md) · [GEMINI.md](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md))
-- **Период**: `2026-10-30 18:25` → `2026-11-09 15:20` · **Зафиксировано запросов в реестре**: `91`
+- **Период**: `2026-10-30 18:25` → `2026-11-09 17:30` · **Зафиксировано запросов в реестре**: `92`
 - **Рабочая область**: `["file:///G:/My%20Drive/az-AI/Wine", "file:///home/antigravity/aezaigrin88/az-wine-selector"]`
 - **Продуктовая ссылка (GitHub Pages)**: [`https://aezaigrin88.github.io/az-wine-selector/`](https://aezaigrin88.github.io/az-wine-selector/)
 
@@ -22,7 +22,7 @@
   3. **Автоматическая компиляция поисковых запросов (`Single Query Compiler`)**: запросы Этапа 3 (OpenFoodFacts, Vivino, Wikipedia/Wikidata) формируются универсальной функцией из структурированных полей этикетки (`producer`, `cuvee`, `appellation`, `vintage`).
   4. **Каноническая нормализация атрибутов (`Canonical Attribute Resolution`)**: сорт винограда всегда отделяется от аппелласьона (`#inGrapes` vs `#inName`), а ранг парцеля (`Grand Cru` / `Premier Cru` / `Village`) определяется только по официальному реестру INAO / кадастру аппелласьона.
 
-## 2. Diagnosed Causes & Architecture Summary (`#1..#91`)
+## 2. Diagnosed Causes & Architecture Summary (`#1..#92`)
 
 - **Карта терруаров мира (Leaflet 1.9.4 + OpenStreetMap + `terroir_atlas_geojson.js`)**:
   - Строго географическая ориентация **Север сверху (`N ↑`)** и 4 семантических уровня зума: `Z2–Z4` (Страны) → `Z5–Z7` (Рельеф и регионы) → `Z8–Z11` (Субрегионы и аппелласьоны) → `Z12–Z17` (Кадастровые парцели 1:25 000, изогипсы SRTM, векторы экспозиции склона `☀️`).
@@ -39,12 +39,12 @@
 
 <!-- MANUAL_NOTES_START -->
 - **Текущий статус целевых файлов**: `promoted` (опубликовано на `https://aezaigrin88.github.io/az-wine-selector/`)
-- **Приоритетные задачи для нового диалога `AZ Wine Diary` (по результатам аудита `Zero-Patch`)**:
-  1. Убрать хардкод `WINE_MATCHES = {2: ..., 14: ...}`, `if wid_osm == ...` и `if wid == 1..19` из [`codex/build_authentic_terroir_geojson.py`](file:///G:/My%20Drive/az-AI/Wine/codex/build_authentic_terroir_geojson.py), перенеся привязку в [`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json).
-  2. Убрать синтетическую раздачу `Grand Cru` / `Premier Cru` по порядковому номеру площади полигона (`idx < 45`) и долготе (`cx <= 37.405`) в `build_authentic_terroir_geojson.py`.
-  3. Перевести `index.html` на прямое чтение `wines_data.json` (единая схема данных без тройного дублирования `INITIAL_DATA` и многослойных миграций `localStorage`).
-  4. Сделать блок рекомендаций в «Компасе вкусов» (`#recBox`) динамическим по реальным оценкам Артёма и Ани вместо зашитой строки про Бургундию и Шампань.
-  5. Очистить [`PRODUCT.md`](file:///G:/My%20Drive/az-AI/Wine/PRODUCT.md) и [`DESIGN.md`](file:///G:/My%20Drive/az-AI/Wine/DESIGN.md) от старых упоминаний сторонних шрифтов и путей.
+- **Выполненные задачи рефакторинга `Zero-Patch` (`#92`, `2026-11-09`)**:
+  1. [x] Убран хардкод `WINE_MATCHES = {2: ..., 14: ...}`, `if wid_osm == ...` и `if wid == 1..19` из [`codex/build_authentic_terroir_geojson.py`](file:///G:/My%20Drive/az-AI/Wine/codex/build_authentic_terroir_geojson.py), привязка перенесена декларативно в [`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json) (`commune_code`, `cadastral_lieu_dit`, `osm_way_id`, `parcel_label`, `parcel_tier`).
+  2. [x] Убрана синтетическая раздача `Grand Cru` / `Premier Cru` по порядковому номеру площади полигона (`idx < 45`) и координатам (`cx <= 37.405`) в `build_authentic_terroir_geojson.py` и `terroir_atlas_geojson.js` (`classify_osm_vineyard_tier`).
+  3. [x] `index.html` переведён на прямое чтение `wines_data.json` (`loadCanonicalWinesCatalog()`) без дублирования 63 KB `INITIAL_DATA` в HTML и без многослойных миграций `localStorage` (`v8..v11`), а `countOurWinesInCountry` переведён на декларативный `findMatchingWorldTerroirRegion(w)`.
+  4. [x] Блок рекомендаций в «Компасе вкусов» (`#tasteSummaryRecommendation` / `recBox`) сделан полностью динамическим по реальным оценкам Артёма и Ани, сорту винограда, почвам и высотам.
+  5. [x] [`PRODUCT.md`](file:///G:/My%20Drive/az-AI/Wine/PRODUCT.md) и [`DESIGN.md`](file:///G:/My%20Drive/az-AI/Wine/DESIGN.md) очищены от старых упоминаний сторонних шрифтов (`SB Sans Interface`), `#atlasSvgMap` и локальных путей.
 <!-- MANUAL_NOTES_END -->
 
 ## 4. Target Files & Evidence (`checks/`, `previews/`, deliverables)

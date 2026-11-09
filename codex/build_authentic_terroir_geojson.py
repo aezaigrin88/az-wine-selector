@@ -333,25 +333,34 @@ NON_VINEYARD_WORDS = [
     "ZONE INDUSTRIELLE", "CIMETIERE", "USINE", "CHATEAU D EAU", "STADE", "MARAIS", "PORT ",
 ]
 
-# Authentic cadastral lieu-dit mapping for the French collection wines (matching wines_data.json & World Atlas of Wine)
-WINE_MATCHES = {
-    2:  ("51029", "LES CHANTRAINES", "Champagne Camille Bonville · Avize Grand Cru «Les Chantraines»", "Grand Cru", 160, "В 92°", 92),
-    14: ("51029", "LES AVATS", "Champagne Les Gamins d'Avize · Avize Grand Cru «Les Avats»", "Grand Cru", 175, "ВЮВ 115°", 115),
-    1:  ("21295", "EN MOTROT", "Domaine Tortochot · Gevrey-Chambertin VV (En Champs · Les Crais · En Motrot)", "Village", 280, "ВЮВ 112°", 112),
-    3:  ("21295", "CAROUGEOT", "Moillard · Gevrey-Chambertin «Beau Versant» (Carougeot)", "Village", 270, "В 94°", 94),
-    9:  ("21267", "LES AUTROTS", "Domaine Jean-Marc Millot · Bourgogne Passetoutgrain «Les Autrots»", "Village", 245, "В 96°", 96),
-    4:  ("21267", "LA COMBE D ORVEAUX", "Domaine de la Vougeraie · Crémant «Fête de Famille» (La Combe d'Orveaux)", "Hautes-Côtes", 345, "ВЮВ 115°", 115),
-    8:  ("21219", "LES TOPPES", "Domaine Anne Gros · Hautes-Côtes de Nuits «Curtil-Vergy / La Taupe»", "Hautes-Côtes", 395, "ЮВ 135°", 135),
-    7:  ("21464", "LES ARGILLATS", "Domaine Jean-Pierre Guyon · Nuits-Saint-Georges «Les Argillats»", "Village", 290, "ВЮВ 116°", 116),
-    6:  ("21450", "LES CHAGNOTS", "Domaine Dujardin · Bourgogne Aligoté «Chasne» (Nantoux)", "Hautes-Côtes", 375, "ЮВ 132°", 132),
-    16: ("21450", "EN CHAUMONT", "Rossignol-Cornu & Fils · Hautes-Côtes de Beaune (Nantoux)", "Hautes-Côtes", 380, "ЮЮВ 155°", 155),
-    17: ("21428", "EN CUILLERY", "Château de Laborde · Hautes-Côtes de Beaune «En Cuillery» (Monthélie)", "Hautes-Côtes", 330, "ЮЮВ 158°", 158),
-    5:  ("21412", "EN BUZIGNY", "Pierre Boisson · Coteaux Bourguignons «En Buzigny» (Meursault)", "Village", 230, "ВЮВ 110°", 110),
-    11: ("21150", "LA GOUJONNE", "Domaine Lucien Muzard · Chassagne-Montrachet VV Rouge (La Goujonne)", "Village", 255, "ЮВ 125°", 125),
-    10: ("71378", "LA CHAUMETTE", "Domaine Jean-Baptiste Ponsot · Rully Rouge (у Molesme и Préaux)", "Village", 285, "ЮВ 128°", 128),
-    12: ("69145", "LA FOLIE", "Domaine Pierre-Olivier Garcia · Brouilly «La Folie»", "Premier Cru", 340, "ЮВ 138°", 138),
-    18: ("33314", "BARAIL DE LAFITE", "Château Lafite Rothschild · Carruades de Lafite · Pauillac (Plateau des Carruades)", "Premier Cru", 27, "ВЮВ 120°", 120),
-}
+def classify_osm_vineyard_tier(tags, base_tier):
+    """Canonical appellation rank from OSM designation/appellation tags or zone's official INAO/DOCG/ЗНМП/ЗГУ tier."""
+    raw = " ".join(
+        str(tags.get(k, ""))
+        for k in ("designation", "appellation", "wine:appellation", "cru", "classification", "name")
+    ).upper()
+    if any(k in raw for k in ("GRAND CRU", "GROSSE LAGE", "ЗНМП", "DOCG", "GRAN SELEZIONE")):
+        return "Grand Cru"
+    if any(k in raw for k in ("PREMIER CRU", "1ER CRU", "ERSTE LAGE", "ЗГУ")):
+        return "Premier Cru"
+    return base_tier
+
+
+def apply_declarative_wine_match(f_props, wine_obj, cy, cx, assigned_wine_coords):
+    """Apply wine metadata declaratively from wines_data.json without per-bottle if/elif branches."""
+    wid = wine_obj["id"]
+    tier = wine_obj.get("parcel_tier") or f_props.get("tier") or "Village"
+    f_props["wine_id"] = wid
+    f_props["name"] = wine_obj.get("parcel_label") or f"{wine_obj.get('producer', '')} · {wine_obj.get('name', '')}".strip(" ·")
+    f_props["tier"] = tier
+    f_props["rank"] = tier
+    if wine_obj.get("elevation_m") is not None:
+        f_props["elev_m"] = wine_obj["elevation_m"]
+    if wine_obj.get("aspect_code"):
+        f_props["aspect_code"] = wine_obj["aspect_code"]
+    if wine_obj.get("aspect_deg") is not None:
+        f_props["aspect_deg"] = wine_obj["aspect_deg"]
+    assigned_wine_coords[wid] = (round(cy, 5), round(cx, 5))
 
 
 def load_commune_geojson(ccode):
@@ -432,7 +441,6 @@ def classify_tier_and_name(commune_code, nom_raw, nom_upper, cy, default_tier):
             return "Premier Cru", nom_raw.title()
 
     if commune_code.startswith("33"):
-        # In Bordeaux communes, distinguish plateau/croupe parcels (1er Cru) vs outer commune (Village)
         if any(w in nom_upper for w in ("CHATEAU", "CLOS", "PLATEAU", "PUY", "COTE", "TERTRE", "BARAIL", "GRAVES", "PEY", "GRAND")):
             return "Premier Cru", nom_raw.title()
         return "Village", nom_raw.title()
@@ -450,9 +458,18 @@ def build_all():
         raw_js = f.read()
     old_data = json.loads(raw_js[raw_js.index("{"):raw_js.rindex("}") + 1])
 
+    with open("wines_data.json", "r", encoding="utf-8") as f:
+        wdata = json.load(f)
+
     wine_by_lieu = {}
-    for wid, (ccode, ld_name, label, tier_override, elev, asp_code, asp_deg) in WINE_MATCHES.items():
-        wine_by_lieu[(ccode, ld_name)] = (wid, label, tier_override, elev, asp_code, asp_deg)
+    wine_by_osm_way = {}
+    for w in wdata.get("wines", []):
+        ccode = str(w.get("commune_code") or "").strip()
+        ld_name = str(w.get("cadastral_lieu_dit") or "").strip().upper()
+        if ccode and ld_name:
+            wine_by_lieu[(ccode, ld_name)] = w
+        if w.get("osm_way_id"):
+            wine_by_osm_way[int(w["osm_way_id"])] = w
 
     features = []
     assigned_wine_coords = {}
@@ -515,11 +532,11 @@ def build_all():
 
             cx, cy = poly_centroid(ring)
             area = poly_area_deg2(ring)
-            is_wine_match = (ccode, nom_upper) in wine_by_lieu
+            matched_wine = wine_by_lieu.get((ccode, nom_upper))
 
             tier, clean_name = classify_tier_and_name(commune_code=ccode, nom_raw=nom, nom_upper=nom_upper, cy=cy, default_tier=default_tier)
 
-            if not is_wine_match:
+            if not matched_wine:
                 if not (min_lon <= cx <= max_lon and min_lat <= cy <= max_lat):
                     continue
                 max_area = 0.00045 if is_non_burg_fr else (0.00028 if tier in ("Grand Cru", "Premier Cru") else 0.00018)
@@ -557,16 +574,8 @@ def build_all():
             if is_non_burg_fr:
                 f_props["world_cru"] = True
 
-            if is_wine_match:
-                wid, label, tier_override, w_elev, w_asp_code, w_asp_deg = wine_by_lieu[(ccode, nom_upper)]
-                f_props["wine_id"] = wid
-                f_props["name"] = label
-                f_props["tier"] = tier_override
-                f_props["rank"] = tier_override
-                f_props["elev_m"] = w_elev
-                f_props["aspect_code"] = w_asp_code
-                f_props["aspect_deg"] = w_asp_deg
-                assigned_wine_coords[wid] = (round(cy, 5), round(cx, 5))
+            if matched_wine:
+                apply_declarative_wine_match(f_props, matched_wine, cy, cx, assigned_wine_coords)
 
             features.append({
                 "type": "Feature",
@@ -580,20 +589,21 @@ def build_all():
     # 2. Penedès (Corpinnat) real OSM vineyard polygons (49 ways)
     for f in old_data.get("cadastralClimats", {}).get("features", []):
         if f.get("properties", {}).get("region") == "penedes":
-            f["properties"]["reg_key"] = "penedes"
-            f["properties"]["world_cru"] = True
-            if f["properties"].get("wine_id") == 13:
-                f["properties"]["elev_m"] = 240
-                f["properties"]["aspect_code"] = "ЮВ 135°"
-                f["properties"]["aspect_deg"] = 135
+            f_props = f["properties"]
+            f_props["reg_key"] = "penedes"
+            f_props["world_cru"] = True
+            f_props.pop("wine_id", None)
+            src_str = str(f_props.get("source") or "")
+            m_way = re.search(r"Way\s+(\d+)", src_str)
+            if m_way and int(m_way.group(1)) in wine_by_osm_way:
                 cx, cy = poly_centroid(f["geometry"]["coordinates"][0])
-                assigned_wine_coords[13] = (round(cy, 5), round(cx, 5))
+                apply_declarative_wine_match(f_props, wine_by_osm_way[int(m_way.group(1))], cy, cx, assigned_wine_coords)
             p_geom = Polygon(f["geometry"]["coordinates"][0])
             if p_geom.is_valid:
                 subregion_polys["penedes"].append(p_geom)
             features.append(f)
 
-    # 3. Real OpenStreetMap Vineyard Polygons (`landuse=vineyard`) for Kuban & Crimea (1,271 real ways!)
+    # 3. Real OpenStreetMap Vineyard Polygons (`landuse=vineyard`) for Kuban & Crimea (1,271 real ways)
     RU_CRIMEA_ZONES = [
         # --- КУБАНЬ (KUBAN) ---
         ("kuban_skalisty_varvarovka", "kuban_don", "Скалистый берег · с. Варваровка и Сукко (хребет Семисам)", "ЗГУ «Кубань. Анапа»", "Grand Cru", 195, "ЮЮЗ 205°", "Верхнемеловой мергель, известняк и песчаник хребта Семисам"),
@@ -643,32 +653,8 @@ def build_all():
             cx, cy = poly_centroid(clean_ring)
             subregion_polys[reg_key].append(p_geom)
 
-            # Classify individual vineyard parcel tier within the zone based on authentic viticultural hierarchy
-            parcel_tier = base_tier
-            if zkey == "kuban_skalisty_varvarovka":
-                # Semisam ridge amphitheater around Varvarovka (37.35..37.405) is Grand Cru (Skalisty Bereg); outer valley is 1er Cru
-                parcel_tier = "Grand Cru" if cx <= 37.405 else "Premier Cru"
-            elif zkey == "kuban_gaikodzor":
-                # Upper amphitheater of Gai-Kodzor (44.848..44.862, 37.425..37.455) is Grand Cru; surrounding slopes 1er Cru
-                parcel_tier = "Grand Cru" if (37.425 <= cx <= 37.458 and 44.845 <= cy <= 44.865) else "Premier Cru"
-            elif zkey == "kuban_sennoy":
-                parcel_tier = "Grand Cru" if cy >= 45.275 else "Premier Cru"
-            elif zkey == "crimea_belbek":
-                # Kara-Tau plateau (cy >= 44.680) is Premier Cru; lower valley floor is Village
-                parcel_tier = "Premier Cru" if cy >= 44.680 else "Village"
-            elif zkey == "crimea_kacha_alma":
-                # Foothill slopes of Alma & Kacha (cx >= 33.66) are Premier Cru; western coastal plain is Village
-                parcel_tier = "Premier Cru" if cx >= 33.665 else "Village"
-            elif zkey == "crimea_sudak":
-                # Central Ai-Sava & Novy Svet foothill slopes are Grand Cru / Premier Cru; outer valley is Village
-                parcel_tier = "Grand Cru" if (cy <= 44.865 and cx <= 34.985) else ("Premier Cru" if cy <= 44.885 else "Village")
-            elif zkey == "crimea_solnechnaya":
-                # Arkhaderesse amphitheater is Grand Cru (ЗНМП Солнечная Долина); outer slopes 1er Cru
-                parcel_tier = "Grand Cru" if cy <= 44.868 else "Premier Cru"
-            elif zkey == "crimea_koktebel":
-                parcel_tier = "Grand Cru" if cy <= 44.958 else "Premier Cru"
-
             tags = wobj.get("tags", {})
+            parcel_tier = classify_osm_vineyard_tier(tags, base_tier)
             osm_name = tags.get("name") or f"{zone_title} · уч. #{wid_osm % 1000}"
 
             tier_ru_map = {
@@ -693,27 +679,8 @@ def build_all():
                 "source": f"OpenStreetMap Vineyard Way {wid_osm}",
             }
 
-            # Match Wine #19: Скалистый берег · Каберне Фран 2023 -> way 397137274 (44.83225 N, 37.37692 E)
-            if wid_osm == 397137274:
-                f_props["wine_id"] = 19
-                f_props["name"] = "Скалистый берег (Côte Rocheuse) · Каберне Фран · Хребет Семисам (Варваровка)"
-                f_props["tier"] = "Grand Cru"
-                f_props["rank"] = "Grand Cru"
-                f_props["elev_m"] = 195
-                f_props["aspect_code"] = "ЮЮЗ 205°"
-                f_props["aspect_deg"] = 205
-                assigned_wine_coords[19] = (round(cy, 5), round(cx, 5))
-
-            # Match Wine #15: STN Winemakers Selection · Плато Кара-Тау (Долина Бельбек) -> way 126468157
-            if wid_osm == 126468157:
-                f_props["wine_id"] = 15
-                f_props["name"] = "Плато Кара-Тау · Долина Бельбек (STN Winemakers Selection)"
-                f_props["tier"] = "Premier Cru"
-                f_props["rank"] = "Premier Cru"
-                f_props["elev_m"] = 210
-                f_props["aspect_code"] = "ЮЗ 215°"
-                f_props["aspect_deg"] = 215
-                assigned_wine_coords[15] = (round(cy, 5), round(cx, 5))
+            if wid_osm in wine_by_osm_way:
+                apply_declarative_wine_match(f_props, wine_by_osm_way[wid_osm], cy, cx, assigned_wine_coords)
 
             features.append({
                 "type": "Feature",
@@ -736,9 +703,8 @@ def build_all():
             continue
         with open(vfile, "r", encoding="utf-8") as f:
             vways = json.load(f)
-        # Keep top 160 largest vineyard ways per region to keep GeoJSON fast & crisp
         sorted_ways = sorted(vways.values(), key=lambda w: poly_area_deg2(w["coords"]), reverse=True)[:160]
-        for idx, wobj in enumerate(sorted_ways):
+        for wobj in sorted_ways:
             wid_osm = int(wobj["id"])
             ring = wobj["coords"]
             if len(ring) < 4:
@@ -747,27 +713,31 @@ def build_all():
             p_geom = Polygon(clean_ring)
             if not p_geom.is_valid or p_geom.is_empty:
                 continue
+            cx, cy = poly_centroid(clean_ring)
             subregion_polys[reg_key].append(p_geom)
             tags = wobj.get("tags", {})
-            osm_name = tags.get("name") or f"{zone_title} · Cru #{idx + 1}"
-            parcel_tier = "Grand Cru" if idx < 45 else ("Premier Cru" if idx < 110 else "Village")
+            osm_name = tags.get("name") or f"{zone_title} · уч. #{wid_osm % 1000}"
+            parcel_tier = classify_osm_vineyard_tier(tags, base_tier)
+            f_props = {
+                "name": osm_name,
+                "commune": comm_label,
+                "region": reg_key,
+                "reg_key": reg_key,
+                "tier": parcel_tier,
+                "rank": parcel_tier,
+                "tier_label": f"{parcel_tier} · {comm_label}",
+                "elev_m": base_elev,
+                "aspect_code": base_asp,
+                "soil": soil_desc,
+                "world_cru": True,
+                "osm_real": True,
+                "source": f"OpenStreetMap Vineyard Way {wid_osm}",
+            }
+            if wid_osm in wine_by_osm_way:
+                apply_declarative_wine_match(f_props, wine_by_osm_way[wid_osm], cy, cx, assigned_wine_coords)
             features.append({
                 "type": "Feature",
-                "properties": {
-                    "name": osm_name,
-                    "commune": comm_label,
-                    "region": reg_key,
-                    "reg_key": reg_key,
-                    "tier": parcel_tier,
-                    "rank": parcel_tier,
-                    "tier_label": f"{parcel_tier} · {comm_label}",
-                    "elev_m": base_elev,
-                    "aspect_code": base_asp,
-                    "soil": soil_desc,
-                    "world_cru": True,
-                    "osm_real": True,
-                    "source": f"OpenStreetMap Vineyard Way {wid_osm}",
-                },
+                "properties": f_props,
                 "geometry": {"type": "Polygon", "coordinates": [clean_ring]}
             })
 
@@ -906,38 +876,13 @@ def build_all():
     with open("terroir_atlas_geojson.js", "w", encoding="utf-8") as f:
         f.write(out_js)
 
-    with open("wines_data.json", "r", encoding="utf-8") as f:
-        wdata = json.load(f)
-
     for w in wdata.get("wines", []):
         wid = w["id"]
         if wid in assigned_wine_coords:
             w["lat"], w["lon"] = assigned_wine_coords[wid]
-        if wid == 1:
-            w["lieu_dit"] = "Vieilles Vignes (En Champs · Les Crais · En Motrot)"
-        elif wid == 8:
-            w["lieu_dit"] = "Curtil-Vergy · La Taupe («Ле Топ»)"
-        elif wid == 11:
-            w["lieu_dit"] = "La Goujonne / Старые лозы юга Chassagne-Montrachet"
-        elif wid == 18:
-            w["elevation"] = "27 м"
-        elif wid == 19:
-            w["elevation"] = "195 м"
-            w["lieu_dit"] = "Хребет Семисам · с. Варваровка (44.8323° N, 37.3769° E)"
 
     with open("wines_data.json", "w", encoding="utf-8") as f:
         json.dump(wdata, f, ensure_ascii=False, indent=2)
-
-    with open("index.html", "r", encoding="utf-8") as f:
-        html = f.read()
-
-    m = re.search(r"const INITIAL_DATA = (\{.*?\});\s*\n\s*const STORAGE_KEY", html, flags=re.S)
-    if m:
-        init_json = json.dumps(wdata, ensure_ascii=False, separators=(",", ":"))
-        html = html[:m.start(1)] + init_json + html[m.end(1):]
-        with open("index.html", "w", encoding="utf-8") as f:
-            f.write(html)
-        print("Updated INITIAL_DATA in index.html")
 
     by_tier = {}
     for f in features:
@@ -950,3 +895,4 @@ def build_all():
 
 if __name__ == "__main__":
     build_all()
+

@@ -66,7 +66,10 @@
         "acidity": 3.8,
         "minerality": 4.1,
         "sweetness": 1.2
-      }
+      },
+      "osm_way_id": 397137274,
+      "parcel_label": "Скалистый берег (Côte Rocheuse) · Каберне Фран · Хребет Семисам (Варваровка)",
+      "parcel_tier": "Grand Cru"
     },
     {
       "id": 17,
@@ -127,7 +130,11 @@
         "acidity": 4.2,
         "minerality": 4.1,
         "sweetness": 1.2
-      }
+      },
+      "commune_code": "21428",
+      "cadastral_lieu_dit": "EN CUILLERY",
+      "parcel_label": "Château de Laborde · Hautes-Côtes de Beaune «En Cuillery» (Monthélie)",
+      "parcel_tier": "Hautes-Côtes"
     },
     {
       "id": 1,
@@ -188,7 +195,11 @@
         "acidity": 3.7,
         "minerality": 4.3,
         "sweetness": 1.3
-      }
+      },
+      "commune_code": "21295",
+      "cadastral_lieu_dit": "EN MOTROT",
+      "parcel_label": "Domaine Tortochot · Gevrey-Chambertin VV (En Champs · Les Crais · En Motrot)",
+      "parcel_tier": "Village"
     },
     {
       "id": 16,
@@ -249,7 +260,11 @@
         "acidity": 4.3,
         "minerality": 3.9,
         "sweetness": 1.1
-      }
+      },
+      "commune_code": "21450",
+      "cadastral_lieu_dit": "EN CHAUMONT",
+      "parcel_label": "Rossignol-Cornu & Fils · Hautes-Côtes de Beaune (Nantoux)",
+      "parcel_tier": "Hautes-Côtes"
     },
     {
       "id": 2,
@@ -310,7 +325,11 @@
         "acidity": 4.7,
         "minerality": 4.9,
         "sweetness": 1.3
-      }
+      },
+      "commune_code": "51029",
+      "cadastral_lieu_dit": "LES CHANTRAINES",
+      "parcel_label": "Champagne Camille Bonville · Avize Grand Cru «Les Chantraines»",
+      "parcel_tier": "Grand Cru"
     },
     {
       "id": 3,
@@ -371,7 +390,11 @@
         "acidity": 4.1,
         "minerality": 4.2,
         "sweetness": 1.2
-      }
+      },
+      "commune_code": "21295",
+      "cadastral_lieu_dit": "CAROUGEOT",
+      "parcel_label": "Moillard · Gevrey-Chambertin «Beau Versant» (Carougeot)",
+      "parcel_tier": "Village"
     },
     {
       "id": 4,
@@ -432,7 +455,11 @@
         "acidity": 4.4,
         "minerality": 4.3,
         "sweetness": 1.3
-      }
+      },
+      "commune_code": "21267",
+      "cadastral_lieu_dit": "LA COMBE D ORVEAUX",
+      "parcel_label": "Domaine de la Vougeraie · Crémant «Fête de Famille» (La Combe d'Orveaux)",
+      "parcel_tier": "Hautes-Côtes"
     },
     {
       "id": 5,
@@ -493,7 +520,11 @@
         "acidity": 4.5,
         "minerality": 4.8,
         "sweetness": 1.1
-      }
+      },
+      "commune_code": "21412",
+      "cadastral_lieu_dit": "EN BUZIGNY",
+      "parcel_label": "Pierre Boisson · Coteaux Bourguignons «En Buzigny» (Meursault)",
+      "parcel_tier": "Village"
     },
     {
       "id": 6,
@@ -554,7 +585,11 @@
         "acidity": 4.6,
         "minerality": 4.5,
         "sweetness": 1.1
-      }
+      },
+      "commune_code": "21450",
+      "cadastral_lieu_dit": "LES CHAGNOTS",
+      "parcel_label": "Domaine Dujardin · Bourgogne Aligoté «Chasne» (Nantoux)",
+      "parcel_tier": "Hautes-Côtes"
     },
     {
       "id": 7,
@@ -615,7 +650,11 @@
         "acidity": 3.9,
         "minerality": 4.4,
         "sweetness": 1.3
-      }
+      },
+      "commune_code": "21464",
+      "cadastral_lieu_dit": "LES ARGILLATS",
+      "parcel_label": "Domaine Jean-Pierre Guyon · Nuits-Saint-Georges «Les Argillats»",
+      "parcel_tier": "Village"
     },
     {
       "id": 8,
@@ -676,7 +715,11 @@
         "acidity": 4.3,
         "minerality": 4.2,
         "sweetness": 1.2
-      }
+      },
+      "commune_code": "21219",
+      "cadastral_lieu_dit": "LES TOPPES",
+      "parcel_label": "Domaine Anne Gros · Hautes-Côtes de Nuits «Curtil-Vergy / La Taupe»",
+      "parcel_tier": "Hautes-Côtes"
     },
     {
       "id": 9,
@@ -737,7 +780,11 @@
         "acidity": 4.1,
         "minerality": 3.8,
         "sweetness": 1.3
-      }
+      },
+      "commune_code": "21267",
+      "cadastral_lieu_dit": "LES AUTROTS",
+      "parcel_label": "Domaine Jean-Marc Millot · Bourgogne Passetoutgrain «Les Autrots»",
+      "parcel_tier": "Village"
     },
     {
       "id": 10,
@@ -798,7 +845,11 @@
         "acidity": 3.9,
         "minerality": 4.0,
         "sweetness": 1.3
-      }
+      },
+      "commune_code": "71378",
+      "cadastral_lieu_dit": "LA CHAUMETTE",
+      "parcel_label": "Domaine Jean-Baptiste Ponsot · Rully Rouge (у Molesme и Préaux)",
+      "parcel_tier": "Village"
     },
     {
       "id": 11,
@@ -859,7 +910,11 @@
         "acidity": 3.8,
         "minerality": 4.3,
         "sweetness": 1.2
-      }
+      },
+      "commune_code": "21150",
+      "cadastral_lieu_dit": "LA GOUJONNE",
+      "parcel_label": "Domaine Lucien Muzard · Chassagne-Montrachet VV Rouge (La Goujonne)",
+      "parcel_tier": "Village"
     },
     {
       "id": 12,
@@ -920,7 +975,11 @@
         "acidity": 4.2,
         "minerality": 4.6,
         "sweetness": 1.2
-      }
+      },
+      "commune_code": "69145",
+      "cadastral_lieu_dit": "LA FOLIE",
+      "parcel_label": "Domaine Pierre-Olivier Garcia · Brouilly «La Folie»",
+      "parcel_tier": "Premier Cru"
     },
     {
       "id": 13,
@@ -981,7 +1040,10 @@
         "acidity": 4.6,
         "minerality": 4.5,
         "sweetness": 1.0
-      }
+      },
+      "osm_way_id": 1188475169,
+      "parcel_label": "Can Nadal de la Bogadella · Corpinnat (Finca Nadal)",
+      "parcel_tier": "Premier Cru"
     },
     {
       "id": 14,
@@ -1042,7 +1104,11 @@
         "acidity": 4.3,
         "minerality": 4.1,
         "sweetness": 1.4
-      }
+      },
+      "commune_code": "51029",
+      "cadastral_lieu_dit": "LES AVATS",
+      "parcel_label": "Champagne Les Gamins d'Avize · Avize Grand Cru «Les Avats»",
+      "parcel_tier": "Grand Cru"
     },
     {
       "id": 15,
@@ -1103,7 +1169,10 @@
         "acidity": 3.5,
         "minerality": 3.6,
         "sweetness": 1.4
-      }
+      },
+      "osm_way_id": 126468157,
+      "parcel_label": "Плато Кара-Тау · Долина Бельбек (STN Winemakers Selection)",
+      "parcel_tier": "Premier Cru"
     }
   ]
 }
