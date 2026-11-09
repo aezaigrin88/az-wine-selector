@@ -7,7 +7,7 @@
 
 | Дата обновления | Диалог (клик — открыть чат) | Детальный WORKLOG файла | Записей (`#N`) | Статус |
 |---|---|---|---:|---|
-| `2026-11-09 17:30` | **[☁️ 📱 AZ Wine Diary](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (архив чата `#1..#90`: `ed23f531-6679-4a98-b5fa-3646b89b5a5f`) | **[`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)** | #92 | Активный в `☁️ 🍷 Wine` (сквозная история `#1..#92`) |
+| `2026-11-09 17:48` | **[☁️ 📱 AZ Wine Diary](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (архив чата `#1..#90`: `ed23f531-6679-4a98-b5fa-3646b89b5a5f`) | **[`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)** | #93 | Активный в `☁️ 🍷 Wine` (сквозная история `#1..#93`) |
 | `2026-11-06 05:20` | **[Champagne selection (ПК)](conversation://ef8c2d57-485f-42dd-b52b-78452eb56f10)** / **[☁️](conversation://8f190ffc-4dbe-43dd-ac61-8525e9bb0b14)** | **[`WORKLOG — Champagne selection.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Champagne%20selection.md)** | #9 | Активный |
 | `2026-11-06 19:12` | **[Serials About Wine And Geography (ПК)](conversation://99549ac3-1284-4cbd-bd40-26a7f1f9d36d)** / **[☁️](conversation://41a103eb-7261-4092-a201-7145f788cd5f)** | **[`WORKLOG — Serials About Wine And Geography.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Serials%20About%20Wine%20And%20Geography.md)** | #9 | Активный |
 

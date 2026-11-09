@@ -2,9 +2,9 @@
 
 > **Anti-Compaction Ledger**: этот журнал защищает контекст диалога от потери при `/compact`. Записи только дописываются (`append-only`), никогда не удаляются. При продолжении работы или после `/compact` агент обязан сначала прочитать разделы 1–3 и последние записи раздела 5.
 
-- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#92`)
+- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#93`)
 - **Проект**: **[`🍷 Wine`](file:///G:/My%20Drive/az-AI/Wine)** ([Сводный WORKLOG проекта](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md) · [GEMINI.md](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md))
-- **Период**: `2026-10-30 18:25` → `2026-11-09 17:30` · **Зафиксировано запросов в реестре**: `92`
+- **Период**: `2026-10-30 18:25` → `2026-11-09 17:48` · **Зафиксировано запросов в реестре**: `93`
 - **Рабочая область**: `["file:///G:/My%20Drive/az-AI/Wine", "file:///home/antigravity/aezaigrin88/az-wine-selector"]`
 - **Продуктовая ссылка (GitHub Pages)**: [`https://aezaigrin88.github.io/az-wine-selector/`](https://aezaigrin88.github.io/az-wine-selector/)
 
@@ -1020,3 +1020,33 @@
 - **Затронутые файлы и свидетельства (`evidence`)**: [`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md), [`Wine/WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`Wine/GEMINI.md`](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md), [`GEMINI.md`](file:///C:/Users/timza/.gemini/GEMINI.md), [`CLAUDE.md`](file:///C:/Users/timza/.claude/CLAUDE.md)
 - **Что выяснено и решено (`cause → fix → check result`)**:
   > Вся история запросов `#1..#90` объединена в основном журнале **[`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)** со сквозной нумерацией (`#91`) без обнуления при архивации старого чата; в глобальных правилах `GEMINI.md` и `CLAUDE.md` закреплён прямой запрет переносить активный `WORKLOG` в `_archive/` или сбрасывать нумерацию на `#1` при ротации чата.
+
+---
+
+#### #92 [✓] `2026-11-09 17:30` — «Wine Diary 9.11.26 continue»
+
+- **Точный запрос пользователя**: «Wine Diary 9.11.26 continue»
+- **Статус черновика / промоушена**: `promoted` (synced to Google Drive `G:\My Drive\az-AI\Wine` and GitHub `aezaigrin88/az-wine-selector` commit `16c07e3`)
+- **Замеры и проверки (`checks run`)**: `py_compile codex/build_authentic_terroir_geojson.py`, `Node VM syntax check on index.html and terroir_atlas_geojson.js`, `Zero-Patch audit across all 5 checklist items` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json), [`codex/build_authentic_terroir_geojson.py`](file:///G:/My%20Drive/az-AI/Wine/codex/build_authentic_terroir_geojson.py), [`terroir_atlas_geojson.js`](file:///G:/My%20Drive/az-AI/Wine/terroir_atlas_geojson.js), [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html), [`PRODUCT.md`](file:///G:/My%20Drive/az-AI/Wine/PRODUCT.md), [`DESIGN.md`](file:///G:/My%20Drive/az-AI/Wine/DESIGN.md), [`WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > Полностью выполнен 5-пунктовый чек-лист архитектурного стандарта `Zero-Patch` из Раздела 3:
+  > 1. **Декларативная привязка парцелей в [`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json)**: для всех 18 вин добавлены `commune_code`, `cadastral_lieu_dit`, `osm_way_id`, `parcel_label` и `parcel_tier`; из [`codex/build_authentic_terroir_geojson.py`](file:///G:/My%20Drive/az-AI/Wine/codex/build_authentic_terroir_geojson.py) полностью удалены `WINE_MATCHES`, `if wid_osm == ...` и `if wid == 1..19` (заменены на универсальную `apply_declarative_wine_match()`).
+  > 2. **Каноническая классификация терруаров**: убрана синтетическая раздача `Grand Cru` / `Premier Cru` по порядковому номеру площади полигона (`idx < 45` / `idx < 110`) и координатам (`cx <= 37.405`) в `build_authentic_terroir_geojson.py` (`classify_osm_vineyard_tier()`) и в `883` полигонах [`terroir_atlas_geojson.js`](file:///G:/My%20Drive/az-AI/Wine/terroir_atlas_geojson.js), очищены синтетические суффиксы `Cru #...` и остаточный `wine_id: 18` / `Bodega Toro`.
+  > 3. **Единый источник истины в [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html)**: удалён дублирующий 63 KB блок `INITIAL_DATA` и цепочка старых ключей `localStorage` (`v8..v11`) в пользу `loadCanonicalWinesCatalog()` из `wines_data.json`; `countOurWinesInCountry()` переведён на декларативный `findMatchingWorldTerroirRegion(w)`.
+  > 4. **Динамический «Компас вкусов» (`#tasteSummaryRecommendation`)**: рекомендации строятся автоматически по реальным оценкам Артёма и Ани, лидирующим сортам винограда, почвам, высотам и непродегустированным бутылкам из тех же регионов.
+  > 5. **Чистая документация**: [`PRODUCT.md`](file:///G:/My%20Drive/az-AI/Wine/PRODUCT.md) и [`DESIGN.md`](file:///G:/My%20Drive/az-AI/Wine/DESIGN.md) очищены от устаревших упоминаний `SB Sans Interface`, `#atlasSvgMap` и локальных путей.
+
+---
+
+#### #93 [✓] `2026-11-09 17:46` — «Ты коммиты  сделал в GitHub? По обновлению?»
+
+- **Точный запрос пользователя**: «Ты коммиты  сделал в GitHub? По обновлению?»
+- **Статус черновика / промоушена**: `promoted` (verified on GitHub `origin/main` and GitHub Pages Action `42635936322`)
+- **Замеры и проверки (`checks run`)**: `git log -n 2 --stat`, `gh api repos/aezaigrin88/az-wine-selector/commits/main`, `gh api repos/aezaigrin88/az-wine-selector/actions/runs?per_page=2` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > Проверен статус удалённого репозитория [`aezaigrin88/az-wine-selector`](https://github.com/aezaigrin88/az-wine-selector) и деплоя GitHub Pages:
+  > - Коммит [`16c07e314fb0db5d260878c326498a6e356c2900`](https://github.com/aezaigrin88/az-wine-selector/commit/16c07e314fb0db5d260878c326498a6e356c2900) (`Complete Zero-Patch refactoring (#92: declarative wines_data.json, canonical terroir tiers, dynamic Taste Compass)`, 8 файлов) запушен в ветку `main` (`2026-11-09 14:33:58 UTC`).
+  > - Сборка GitHub Pages (`pages build and deployment`, run `42635936322`) успешно завершилась со статусом `completed / success` (`2026-11-09 14:36:15 UTC`), обновление опубликовано на https://aezaigrin88.github.io/az-wine-selector/ и синхронизировано с Google Drive (`G:\My Drive\az-AI\Wine`).
+
