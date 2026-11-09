@@ -1,30 +1,43 @@
-﻿# WORKLOG: Champagne selection
+# WORKLOG: Champagne selection
 
 > **Anti-Compaction Ledger**: этот журнал защищает контекст диалога от потери при `/compact`. Записи только дописываются (`append-only`), никогда не удаляются. При продолжении работы или после `/compact` агент обязан сначала прочитать разделы 1–3 и последние записи раздела 5.
 
-- **Диалог в Antigravity**: **[Champagne selection](conversation://ef8c2d57-485f-42dd-b52b-78452eb56f10)** (`ef8c2d57-485f-42dd-b52b-78452eb56f10`)
+- **Диалог в Antigravity**: ПК **[Champagne selection](conversation://ef8c2d57-485f-42dd-b52b-78452eb56f10)** (`ef8c2d57-485f-42dd-b52b-78452eb56f10`) · Облако (`☁️`) **[Champagne selection](conversation://8f190ffc-4dbe-43dd-ac61-8525e9bb0b14)** (`8f190ffc-4dbe-43dd-ac61-8525e9bb0b14`)
 - **Проект**: **[`Wine`](file:///G:/My%20Drive/az-AI/Wine)** ([Сводный WORKLOG проекта](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md))
-- **Период**: `2026-10-19 17:44` → `2026-10-19 18:15` · **Зафиксировано запросов в реестре**: `8`
-- **Артефакты диалога (ПК + iOS `_artifacts/`)**: [`champagne_analysis.md`](./_artifacts/Champagne selection/champagne_analysis.md) ([ПК](file:///C:/Users/timza/.gemini/antigravity/brain/ef8c2d57-485f-42dd-b52b-78452eb56f10/champagne_analysis.md))
+- **Период**: `2026-10-19 17:44` → `2026-11-06 05:19` · **Зафиксировано запросов в реестре**: `9`
+- **Артефакты диалога (ПК + iOS `_artifacts/`)**: [`champagne_analysis.md`](file:///G:/My%20Drive/az-AI/Wine/champagne_analysis.md) · [`discussion_champagne_wine.md`](file:///G:/My%20Drive/az-AI/Wine/discussion_champagne_wine.md)
 
-## 1. Standing Requirements & Decisions Kept on Purpose (Не откатывать после `/compact`)
+## 1. Standing Requirements & Whitelist (Не откатывать после `/compact`)
 
-- См. прямые формулировки запросов в разделе 5 (Numbered Request Ledger).
+- **Белый список контекста диалога (`Whitelist-Only`)**:
+  - Журналы и файлы диалога: [`WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`WORKLOG — Champagne selection.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Champagne%20selection.md), [`champagne_analysis.md`](file:///G:/My%20Drive/az-AI/Wine/champagne_analysis.md), [`discussion_champagne_wine.md`](file:///G:/My%20Drive/az-AI/Wine/discussion_champagne_wine.md), `_artifacts/Champagne selection/champagne_analysis.md`.
+- **Эталонный вкусовой профиль пользователя (по двум точкам отсчёта)**:
+  1. **Шампань**: *Franck Bonville «Camille» Grand Cru Blanc de Blancs Brut* (Côte des Blancs: Avize, Oger, Cramant — 100% Chardonnay, классический `Brut` ~6–7 г/л).
+  2. **Красная Бургундия**: *Moillard Gevrey-Chambertin 2021* (Côte de Nuits — 100% Pinot Noir, прохладный винтаж с живой кислотностью и шёлковой текстурой).
+- **Структурные критерии отбора (6 ключевых осей)**:
+  1. **Тело и плотность (Body)**: среднее / среднее+ (`3,5–4,5 / 5`), собранное и объёмное без тяжести.
+  2. **Текстура (Mouthfeel)**: шелковистая, сливочно-кремовая (полная малолактика, длительная выдержка на осадке, мелкий мусс).
+  3. **Кислотность (Acidity)**: живая, прохладная, вертикальная, но интегрированная в сливочное или ягодное тело.
+  4. **Дозаж (Dosage)**: классический `Brut` (`6–8 г/л`) для мягкого комфорта либо выдержанный `Extra Brut` (`2–5 г/л`) со старых лоз.
+  5. **Ароматический вектор**: двухслойный баланс чистой первой волны (*белый персик, груша / красная вишня, лесная земляника*) и благородного второго плана (*сливочное масло, бриошь, мокрый мел, орех, тонкий дуб*).
+  6. **Послевкусие (Finish)**: долгое, чистое, минерально-сливочное или ягодно-пряное.
 
 ## 2. Diagnosed Causes & Testing Traps (Что уже выяснено — не искать заново)
 
-- **[#4 · `2026-10-19`]** * Вы любите **высокую французскую классику в бургундском ключе**: два благородных сорта — **Шардоне** и **Пино Нуар** — с чистой ароматикой, живой прохладной кислотностью (каким был винтаж 2021 в Бургундии), шёлковой текстурой и аккуратной,
-- **[#7 · `2026-10-19`]** ---
+- **[#1 · `2026-10-19`]** В прайсах поставщика (WINE BANK «Global Champagne Day», 13 позиций) годы в начале названий (`2017`, `2018`, `2021`, `2023`) у 12 из 13 позиций — это технический год базового урожая или партии поставки, а не миллезим на этикетке. Настоящий винтаж в том листе один — **2011 J.L. Vergnon MSNL Grand Cru**. Для старых партий (`2017`–`2018`) всегда стоит уточнять у менеджера дату дегоржажа.
+- **[#3 · `2026-10-19`]** Экспериментальные бессерные шампанские (`Sans Soufre` / `0 SO₂`) в категории `Brut Nature` (`0 г/л`, например *Chavost*) дают оголённую лимонную кислоту и сидрово-рассольные тона мочёного яблока и закваски — это антипрофиль относительно гармоничной бургундско-шампанской классики.
+- **[#7 · `2026-10-19`]** Выбирать шампанское нужно не буквально по сорту винограда («раз нравится красный Пино Нуар — ищем шампанское из Пино Нуар»), а по **физическим структурным характеристикам во рту** (тело, текстура, кислотность, дозаж, двухслойная ароматика).
 
 ## 3. Open Items & Draft Promotion Status (`draft, not promoted` vs `promoted`)
 
 <!-- MANUAL_NOTES_START -->
-- **Открытые вопросы на конец раунда**: нет незакрытых блокеров (все выполненные шаги отмечены `✓` в разделе 5).
+- **Статус**: итоговый аналитический разбор 13 позиций сохранён в [`champagne_analysis.md`](file:///G:/My%20Drive/az-AI/Wine/champagne_analysis.md) (`promoted`). Готов к продолжению: выбору конкретных бутылок к заказу, проверке новых прайсов/винных карт или составлению заявки менеджеру.
 <!-- MANUAL_NOTES_END -->
 
 ## 4. Target Files & Evidence (`checks/`, `previews/`, deliverables)
 
-*(Целевые файлы напрямую через `write_file`/`edit_file` не перезаписывались; работа велась через диагностику/скрипты)*
+- [`champagne_analysis.md`](file:///G:/My%20Drive/az-AI/Wine/champagne_analysis.md) — сводный аналитический гид (1. характеристики стиля → 2. таблица 13 позиций по физическим характеристикам → 3. сценарии покупки).
+- [`discussion_champagne_wine.md`](file:///G:/My%20Drive/az-AI/Wine/discussion_champagne_wine.md) — полный архив диалога `#1..#8`.
 
 ## 5. Numbered Request Ledger (Append-Only — точные цитаты, причины, фиксы и проверки `✓`)
 
@@ -124,3 +137,13 @@
   > * **Рядом с исходным PDF в загрузках:** [Global_Champagne_Day_Разбор.md](file:///C:/Users/timza/Downloads/Telegram%20Desktop/Global_Champagne_Day_%D0%A0%D0%B0%D0%B7%D0%B1%D0%BE%D1%80.md)
   > Если нужно, могу дополнительно сформировать короткий текст заявки/списка артикулов для отправки менеджеру WINE BANK (включая вопрос про даты дегоржажа по выбранным позициям).
 
+### 📅 2026-11-06
+
+#### #9 [✓] `2026-11-06 05:19` — «continue dialog champange selection»
+
+- **Точный запрос пользователя**: «continue dialog champange selection»
+- **Статус черновика / промоушена**: `promoted`
+- **Замеры и проверки (`checks run`)**: `gdrive readonly download WORKLOG.md & WORKLOG — Champagne selection.md` + сверка `champagne_analysis.md` и `discussion_champagne_wine.md` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`WORKLOG — Champagne selection.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20Champagne%20selection.md), [`WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`champagne_analysis.md`](file:///G:/My%20Drive/az-AI/Wine/champagne_analysis.md)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > Восстановлен полный контекст диалога **Champagne selection** (`#1..#8`) в облачной сессии (`☁️` `8f190ffc-4dbe-43dd-ac61-8525e9bb0b14`) по правилу `Whitelist-Only`: подтянуты и сверены `WORKLOG.md`, `WORKLOG — Champagne selection.md`, итоговый гид `champagne_analysis.md` и архив `discussion_champagne_wine.md`; оформлен раздел 1 с белым списком файлов и структурным вкусовым профилем (*Franck Bonville «Camille» Grand Cru Brut* + *Moillard Gevrey-Chambertin 2021*).
