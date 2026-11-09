@@ -1069,4 +1069,38 @@
   >    - **Математический экстрактор цифр штрих-кода из OCR по контрольной сумме GS1 Modulo-10 (`isValidGs1Checksum` + `extractValidGs1BarcodesFromOcrText`)**: если сами полоски штрих-кода искажены изгибом бутылки, но цифры под штрих-кодом (`0 608051 090829`, `4 603928 005162` и т.п.) прочитаны OCR, код валидируется по контрольному разряду GS1 Modulo-10 и автоматически обрабатывается как считанный штрих-код.
   >    - **Офлайн и онлайн разрешение (`lookupBarcodeInOpenFoodFacts` + `handleDecodedCodeResult`)**: поддерживает локальный кеш `learnedMap`, поиск по существующим бутылкам дневника `atlasData.wines`, разбор GS1 Digital Link QR (`/01/<GTIN>`), кодов «Честный ЗНАК» (`010<GTIN>`), текстовых/URL QR-кодов и GS1-страны без необходимости постоянного онлайна.
 
+---
 
+#### #95 [✓] `2026-11-09 18:43` — «Протестировал на новой бутылке: 1/ qr код скачан, не-а вивино ничего правильного таким не нашел 2/ ссылка битая Текст захардкоженныц?? Откуда рейтинг на вивино, если ссылка не открывается? Check out this wine. I scanned it with the @Vivino app: https://www.vivino.com/wines/53228131 Нужна опциЯ до заполнять поиск самому »
+
+- **Точный запрос пользователя**: «Протестировал на новой бутылке:
+1/ qr код скачан, не-а вивино ничего правильного таким не нашел
+2/ ссылка битая
+
+Текст захардкоженныц??
+Откуда рейтинг на вивино, если ссылка не открывается?
+
+Check out this wine. I scanned it with the @Vivino app: https://www.vivino.com/wines/53228131
+
+Нужна опциЯ до заполнять поиск самому »
+- **Статус черновика / промоушена**: `promoted` (synced to Google Drive `G:\My Drive\az-AI\Wine` and GitHub `aezaigrin88/az-wine-selector`)
+- **Замеры и проверки (`checks run`)**: `Node VM syntax check on index.html (0 syntax errors)`, `End-to-end Node test of OCR 2-line ALL-CAPS brand extraction + Vivino Algolia WINES_prod lookup + Vivino mobile share string resolution (/wines/53228131 -> wine_id 3889388, Vivino ★ 3.3)` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html), [`WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > В строгом соответствии со стандартом `Zero-Patch` устранены все 5 системных причин, проявившихся при тесте новой бутылки (`IMG_0866.png`, `IMG_0868.png`, `IMG_0869.png`):
+  > 1. **Прямой поиск по официальному глобальному каталогу Vivino Algolia (`WINES_prod`) и разбор мобильных ссылок `@Vivino app` (`queryVivinoAlgoliaCatalog` + `resolveVivinoUrlToHit` + `parseSmartTextOrUrl`)**:
+  >    - Ранее приложение искало незнакомые названия в английской/русской Википедии (`resolveWineTerroirFromText` Step 2C и `runStage3DeepWebBottleEnrichment` Step 3D), из-за чего запрос `"Garland wine"` находил статью Википедии `"Palm-wine music"` и `"Sharon Garland"`, подставляя в Производителя `"Palm-wine music · Garland"`, а в регион — Чили (`Долина Майпо`) или Испанию (`Риоха DOCa` из-за вхождения подстроки `"haro"` внутрь слова `"sharon"`).
+  >    - Запросы к Википедии за случайными статьями полностью удалены. Вместо них подключён официальный публичный индекс **Vivino Algolia (`WINES_prod`)**, отдающий реальные бутылки с винодельней (`winery.name`), точным `wine_id`, винтажами (`vintages`), реальным рейтингом (`statistics.ratings_average`), регионом и валидным URL.
+  >    - В `parseSmartTextOrUrl()` исправлен парсер ссылок: теперь `https?://...` извлекается из любого места вставленного текста (включая строку шаринга из мобильного приложения `Check out this wine. I scanned it with the @Vivino app: https://www.vivino.com/wines/53228131`), а короткие ссылки `/wines/<vintage_id>` автоматически разрешаются в полный канонический URL `/w/<wine_id>` и карточку Vivino.
+  >    - В `extractStructuredWineFacts()` (шаг `8E`) добавлено склеивание двух подряд идущих однословных `ALL-CAPS` строк заголовка этикетки (например, `GARLAND` + `CREST` → `Garland Crest`), чтобы двухстрочный бренд на этикетке не разрывался между полями «Производитель» и «Кюве».
+  > 2. **Исправление битых ссылок Vivino (`buildValidVivinoUrl`)**:
+  >    - Ранее при отсутствии `vivino_url` формировалась битая ссылка `/w/${vivino_id}` даже тогда, когда число было `vintage_id` (`53228131`), либо вела на `404`. Теперь `buildValidVivinoUrl(w)` строит валидный канонический адрес `https://www.vivino.com/<seo_name>/w/<wine_id>` (или `/wines/<vintage_id>`, либо рабочий поиск `https://www.vivino.com/en/explore?search_term=...`).
+  > 3. **Полное удаление захардкоженных текстов и шаблонов (`enrichWineMetadata`, `applyWorldRegionToForm`, `runStage3DeepWebBottleEnrichment`)**:
+  >    - Из `applyWorldRegionToForm()` и `enrichWineMetadata()` убрано копирование энциклопедических правил выдержки региона (`"Reserva 36+ мес., Gran Reserva 60+ мес."`, возраст лоз региона) и списков чужих хозяйств в скобках (`"(Almaviva, Don Melchor, Chadwick)"`) в карточку конкретной бутылки.
+  >    - Из `runStage3DeepWebBottleEnrichment()` полностью удалена генерация 3-абзацного шаблонного эссе в поле `#inNotes` («Локация и хозяйство: ... Почвы и участок: ... Сортовой состав и винификация: ...»). Поле `#inNotes` теперь заполняется только реальным текстом с контрэтикетки или заметками самого пользователя.
+  >    - В `findMatchingWorldTerroirRegion()` подстрочный поиск `hay.includes(kwLow)` заменён на проверку целых слов `hasWholeWord()`, а в `extractUniversalAppellationInfo()` добавлены национальные категории `Vin de France`, `IGP Pays d'Oc`, `IGP Côtes de Gascogne`, `IGP Val de Loire`, `Vino de España`, `Toscana IGT` и др.
+  > 4. **Полный запрет на выдуманные рейтинги Vivino (`selectWine`, `formatWinePairRatingBadge`, `renderStarWidget`, `finishSave`)**:
+  >    - Удалены все подстановки фейковых оценок `"3.8"`, `"3.9"` и `"4.0"` при отсутствии данных из Vivino. Если точная карточка на Vivino не найдена, `vivino_avg` остаётся `null` (в паспорте отображается `Vivino: —`).
+  > 5. **Ручное дозаполнение поискового запроса и выбор бутылки из списка Vivino (`✏️ Из полей` + `🔍 Найти в Vivino`)**:
+  >    - Отключены агрессивные `600ms` таймеры на полях `#inProducer`, `#inName`, `#inRegion` и `#inCommune`, которые раньше перезаписывали форму прямо во время ручного ввода.
+  >    - Рядом со строкой поиска добавлены кнопки **«✏️ Из полей»** (`#syncQueryFromFormBtn` — одним нажатием собирает запрос из введённых вручную полей «Производитель», «Кюве», «Сорт», «Год») и **«🔍 Найти в Vivino»** (`#smartParseBtn`), а при вводе в строку поиска открывается живой выпадающий список реальных бутылок из каталога Vivino с рейтингом, регионом и годом.

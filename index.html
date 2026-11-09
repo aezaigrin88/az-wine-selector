@@ -2885,9 +2885,15 @@
           </span>
         </div>
 
-        <div class="smart-search-row">
-          <input id="smartQuickSearchInput" type="search" class="smart-search-input" placeholder="Ссылка на винный магазин / Vivino, штрих-код EAN-13 или название бутылки / производителя..." />
-          <button type="button" class="btn btn-primary" id="smartParseBtn">🔍 Найти на сайтах и дозаполнить всё</button>
+        <div style="display:flex;flex-direction:column;gap:4px;width:100%;">
+          <label for="smartQuickSearchInput" style="font-size:0.78rem;font-weight:700;color:var(--color-ink-secondary);">
+            Поисковый запрос или ссылка из Vivino (можно дописать или уточнить вручную перед поиском):
+          </label>
+          <div class="smart-search-row" style="display:flex;gap:6px;flex-wrap:wrap;">
+            <input id="smartQuickSearchInput" type="search" class="smart-search-input" style="flex:1;min-width:220px;" placeholder="Допишите бренд / винтаж или вставьте текст из Vivino (https://www.vivino.com/wines/...)" />
+            <button type="button" class="btn" id="syncQueryFromFormBtn" title="Подставить текущие поля формы (Производитель + Кюве + Сорт) в строку поиска для ручного редактирования">✏️ Из полей</button>
+            <button type="button" class="btn btn-primary" id="smartParseBtn">🔍 Найти в Vivino</button>
+          </div>
         </div>
 
         <div class="smart-suggestions-box" id="smartSuggestionsBox"></div>
@@ -2910,7 +2916,7 @@
             <div style="color:var(--color-ink-secondary);" id="smartPhotoStatusSub">Готово к сохранению в атлас и дневник</div>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button type="button" class="btn btn-primary" id="runStage3WebBtn" style="padding:4px 9px;font-size:0.76rem;" title="Найти эту бутылку на винных сайтах и дозаполнить полный контент">🌐 Дозаполнить с сайтов</button>
+            <button type="button" class="btn btn-primary" id="runStage3WebBtn" style="padding:4px 9px;font-size:0.76rem;" title="Найти эту бутылку в базе Vivino по текущим полям">🌐 Найти в Vivino</button>
             <label for="smartCameraInput" class="btn" style="padding:4px 9px;font-size:0.76rem;cursor:pointer;">+ Ещё фото</label>
             <button type="button" class="btn" id="clearSmartPhotosBtn" style="padding:4px 9px;font-size:0.76rem;">Сбросить</button>
           </div>
@@ -2946,12 +2952,12 @@
           </div>
           <div class="form-field">
             <label for="inVinesAging">Лозы, сбор и выдержка</label>
-            <input id="inVinesAging" class="form-input" type="text" placeholder="Напр., Лозы 25 лет · 12 мес. в дубе" />
+            <input id="inVinesAging" class="form-input" type="text" placeholder="Только если указано на бутылке (напр., Vieilles Vignes · 12 мес. в дубе)" />
           </div>
 
           <div class="form-field">
             <label for="inRegion">Регион и субрегион</label>
-            <input id="inRegion" class="form-input" type="text" placeholder="Напр., Аргентина · Мендоса или Бургундия" required />
+            <input id="inRegion" class="form-input" type="text" placeholder="Напр., Франция · Vin de France или Бургундия" required />
           </div>
           <div class="form-field">
             <label for="inCommune">Коммуна и парцель (lieu-dit)</label>
@@ -3029,8 +3035,8 @@
             </div>
           </div>
           <div class="form-field">
-            <label for="inVivinoId">Vivino Vintage ID (опционально)</label>
-            <input id="inVivinoId" class="form-input num" type="number" placeholder="Напр., 176701510" />
+            <label for="inVivinoId">Vivino ID (подставляется автоматически)</label>
+            <input id="inVivinoId" class="form-input num" type="number" placeholder="Напр., 53228131" />
           </div>
 
           <div class="form-field">
@@ -3046,8 +3052,8 @@
             <input id="inPhoto" class="form-input" type="file" accept="image/*" multiple />
           </div>
           <div class="form-field span-2">
-            <label for="inNotes">Полное досье бутылки: аромат, вкус, история дома, гастропара (заполняется автоматически из сети)</label>
-            <textarea id="inNotes" class="form-input" rows="3" placeholder="Органолептика, особенности винификации, история производителя и гастрономическая пара (дозаполняется автоматически на Этапе 3)..."></textarea>
+            <label for="inNotes">Личные дегустационные заметки и описание с контрэтикетки</label>
+            <textarea id="inNotes" class="form-input" rows="3" placeholder="Ваши впечатления об аромате и вкусе или реальный текст с контрэтикетки бутылки..."></textarea>
           </div>
         </div>
         <div class="form-footer">
@@ -4306,11 +4312,27 @@
       return rem.length < 2;
     }
 
-    // Strips pure grape variety segments from a dot-separated Cuvée / Appellation string while keeping real Cuvée / Appellation names
+    // Strips pure grape variety segments AND trailing grape variety words (e.g. "Garland Crest Chardonnay" -> "Garland Crest") while keeping real Cuvée / Appellation names
     function stripPureGrapeSuffixFromCuvee(cuveeStr) {
       const s = String(cuveeStr || "").trim();
       if (!s) return "";
-      const parts = s.split(/\s*·\s*/).map(p => p.trim()).filter(Boolean);
+      const parts = s.split(/\s*·\s*/).map(p => {
+        let seg = p.trim();
+        const words = seg.split(/\s+/).filter(Boolean);
+        while (words.length > 1) {
+          const lastTwo = words.slice(-2).join(" ");
+          if (words.length > 2 && isPureGrapeVarietyName(lastTwo)) {
+            words.splice(-2, 2);
+            continue;
+          }
+          if (isPureGrapeVarietyName(words[words.length - 1])) {
+            words.pop();
+            continue;
+          }
+          break;
+        }
+        return words.join(" ").trim();
+      }).filter(Boolean);
       const filtered = parts.filter(p => !isPureGrapeVarietyName(p));
       return filtered.join(" · ");
     }
@@ -4363,13 +4385,24 @@
       return out.replace(/\s{2,}/g, " ").trim();
     }
 
-    // Universal Appellation & Subregion Extractor: extracts official wine appellations (DO, DOC, DOCG, AOC, AOP, W.O., AVA, GI, ЗГУ) and valley/commune names from OCR or Web text
+    // Universal Appellation & Subregion Extractor: extracts official wine appellations (DO, DOC, DOCG, AOC, AOP, IGP, IGT, W.O., AVA, GI, ЗГУ, Vin de France) and valley/commune names from OCR or Web text
     function extractUniversalAppellationInfo(rawText) {
       const text = normalizeOcrHomoglyphs(String(rawText || ""));
       if (!text) return null;
 
       // 1. Check structured world wine valleys & appellations (strictly geographic!)
       const GEO_APPELLATIONS = [
+        { re: /\b(vin\s+de\s+france|вэн\s+де\s+франс|вино\s+франции)\b/i, appellation: "Vin de France", commune: "Франция (Vin de France)", regionId: null, country: "Франция", macro_region: "Vin de France", lat: 46.6033, lon: 2.4489 },
+        { re: /\b(pays\s+d['’\s]?oc|пеи\s+д['’\s]?ок|languedoc[-\s]roussillon|лангедок)\b/i, appellation: "IGP Pays d'Oc", commune: "Лангедок (IGP Pays d'Oc)", regionId: null, country: "Франция", macro_region: "Лангедок — Руссильон (IGP Pays d'Oc)", lat: 43.3850, lon: 3.2150 },
+        { re: /\b(c[oô]tes\s+de\s+gascogne|кот\s+де\s+гасконь)\b/i, appellation: "IGP Côtes de Gascogne", commune: "Гасконь · Юго-Запад Франции (IGP Côtes de Gascogne)", regionId: null, country: "Франция", macro_region: "Юго-Запад Франции (Гасконь)", lat: 43.8250, lon: 0.1850 },
+        { re: /\b(val\s+de\s+loire|валь\s+де\s+луар|долин[аы]\s+луар[ые])\b/i, appellation: "IGP Val de Loire", commune: "Долина Луары (Val de Loire)", regionId: "loire", country: "Франция", macro_region: "Долина Луары", lat: 47.3310, lon: 0.6850 },
+        { re: /\b(c[oô]tes\s+de\s+provence|кот\s+де\s+прованс|прованс)\b/i, appellation: "Côtes de Provence AOC", commune: "Прованс (Côtes de Provence AOC)", regionId: "provence", country: "Франция", macro_region: "Прованс", lat: 43.3950, lon: 6.2650 },
+        { re: /\b(alsace|эльзас)\b/i, appellation: "Alsace AOC", commune: "Рибовилле и Кольмар (Alsace AOC)", regionId: "alsace", country: "Франция", macro_region: "Эльзас", lat: 48.1950, lon: 7.3180 },
+        { re: /\b(bourgogne\s+(?:aligot[eé]|chardonnay|pinot\s+noir|hautes[-\s]c[oô]tes|c[oô]te\s+d['’]or)|бургунди[яи]|bourgogne\s+aoc|bourgogne\s+aop)\b/i, appellation: "Bourgogne AOC", commune: "Бургундия (Bourgogne AOC)", regionId: "burgundy", country: "Франция", macro_region: "Бургундия", lat: 47.0260, lon: 4.8400 },
+        { re: /\b(bordeaux\s+(?:sup[eé]rieur|aoc|aop|blanc|rouge)|бордо)\b/i, appellation: "Bordeaux AOC", commune: "Бордо (Bordeaux AOC)", regionId: "bordeaux", country: "Франция", macro_region: "Бордо", lat: 44.8378, lon: -0.5792 },
+        { re: /\b(vino\s+de\s+espa[ñn]a|вино\s+испании|castilla\s+vt|vino\s+de\s+la\s+tierra\s+de\s+castilla)\b/i, appellation: "Vino de España / VdT Castilla", commune: "Кастилия · Испания", regionId: null, country: "Испания", macro_region: "Кастилия (Vino de España)", lat: 39.8628, lon: -3.9270 },
+        { re: /\b(toscana\s+igt|тоскана\s+igt)\b/i, appellation: "Toscana IGT", commune: "Тоскана (Toscana IGT)", regionId: "tuscany", country: "Италия", macro_region: "Тоскана", lat: 43.4650, lon: 11.2550 },
+        { re: /\b(terre\s+siciliane|sicilia\s+doc|сицили[яи])\b/i, appellation: "Sicilia DOC / Terre Siciliane IGT", commune: "Сицилия (Sicilia DOC)", regionId: "sicily_etna_south", country: "Италия", macro_region: "Сицилия", lat: 37.7510, lon: 14.9934 },
         { re: /\b(valle\s+central|central\s+valley|центральн(?:ая|ой)\s+долин[аые])\b/i, appellation: "Valle Central DO (Центральная долина Чили)", commune: "Центральная долина · Долина Майпо и Рапель (Valle Central DO)", regionId: "maipo_colchagua_coastal", lat: -33.6150, lon: -70.5750 },
         { re: /\b(puente\s+alto|пуэнте[-\s]*альто)\b/i, appellation: "Puente Alto DO (Valle del Maipo)", commune: "Пуэнте-Альто · Высокий Майпо (Puente Alto DO)", regionId: "maipo_colchagua_coastal", lat: -33.6050, lon: -70.5650 },
         { re: /\b(valle\s+del?\s+maipo|maipo\s+valley|долин[аы]\s+майпо|\bmaipo\b)\b/i, appellation: "Valle del Maipo DO", commune: "Долина Майпо (Valle del Maipo DO)", regionId: "maipo_colchagua_coastal", lat: -33.6200, lon: -70.5600 },
@@ -4424,16 +4457,21 @@
         }
       }
 
-      // 2. Generic regex for explicit AOC / AOP / DOC / DOCG / DO / W.O. / AVA patterns in text
+      // 2. Generic regex for explicit AOC / AOP / IGP / DOC / DOCG / DO / W.O. / AVA patterns in text
       const woMatch = text.match(/\b(?:W\.?\s*O\.?|Wine\s+of\s+Origin)\s+([A-Z][A-Za-z\s\-]{2,24})\b/i);
       if (woMatch) {
         const place = toTitleCaseWineSmart(woMatch[1].trim());
         return { appellation: `W.O. ${place}`, commune: `${place} (W.O. ${place})`, regionId: "south_africa_terroirs", lat: -33.9249, lon: 18.8602 };
       }
+      const igpMatch = text.match(/\b(?:IGP|Indication\s+G[ée]ographique\s+Prot[ée]g[ée]e)\s+([A-ZÀ-Ÿa-zà-ÿ\s\-'’]{3,28})\b/i);
+      if (igpMatch) {
+        const place = toTitleCaseWineSmart(igpMatch[1].trim());
+        return { appellation: `IGP ${place}`, commune: `${place} (IGP ${place})`, regionId: null, country: "Франция", macro_region: `IGP ${place}`, lat: 43.6108, lon: 3.8767 };
+      }
       const aocMatch = text.match(/\bAppellation\s+([A-ZÀ-Ÿa-zà-ÿ\s\-]{3,30}?)\s+(?:Contr[ôo]l[ée]e|Prot[ée]g[ée]e)\b/i);
       if (aocMatch) {
         const place = toTitleCaseWineSmart(aocMatch[1].trim());
-        return { appellation: `${place} AOC`, commune: `${place} (${place} AOC)`, regionId: null, lat: null, lon: null };
+        return { appellation: `${place} AOC`, commune: `${place} (${place} AOC)`, regionId: null, country: "Франция", macro_region: `${place} AOC`, lat: null, lon: null };
       }
       const doMatch = text.match(/\b(?:D\.?\s*O\.?(?:Ca|Q)?|Denominaci[óo]n\s+de\s+Origen)\s+([A-ZÁÉÍÓÚÑ][A-Za-záéíóúñ\s\-]{2,24})\b/i);
       if (doMatch) {
@@ -4451,14 +4489,24 @@
       if (appInfo && appInfo.regionId) {
         return findReg(appInfo.regionId);
       }
+      // If text explicitly indicates broad national/IGP appellation (e.g. "Vin de France", "Vino de España"), do not force a narrower regional AOC like Rioja or Chile!
+      if (appInfo && appInfo.country && !appInfo.regionId) {
+        return null;
+      }
       const low = ctx.toLowerCase();
-      if (/\b(чили|chile|chilean|santiago)\b/i.test(low)) return findReg("maipo_colchagua_coastal");
+      if (/\b(шампан[ьи]|шампанское|champagne|epernay|reims)\b/i.test(low)) return findReg("champagne");
+      if (/\b(бургунди[яи]|bourgogne|burgundy|chablis|шабли|c[oô]te\s+d['’]or|meursault|gevrey|pommard|beaune)\b/i.test(low)) return findReg("burgundy");
+      if (/\b(бордо|bordeaux|m[eé]doc|pauillac|margaux|saint[-\s][eé]milion)\b/i.test(low)) return findReg("bordeaux");
+      if (/\b(луар[аы]|loire|sancerre|сансер|pouilly|vouvray|muscadet|chinon)\b/i.test(low)) return findReg("loire");
+      if (/\b(рон[аы]|rh[oô]ne|ch[aâ]teauneuf|gigondas|condrieu|hermitage)\b/i.test(low)) return findReg("rhone");
+      if (/\b(эльзас|alsace|ribeauvill[eé]|colmar)\b/i.test(low)) return findReg("alsace");
+      if (/\b(прованс|provence|bandol)\b/i.test(low)) return findReg("provence");
+      if (/\b(чили|chile|chilean|valle\s+del\s+maipo|colchagua|casablanca\s+valley)\b/i.test(low)) return findReg("maipo_colchagua_coastal");
       if (/\b(аргентин[аые]|argentin[ae]|mendoza|мендос[аы])\b/i.test(low)) return findReg("mendoza");
       if (/\b(юар|южная\s+африка|south\s+african?|western\s+cape|западный\s+кейп|stellenbosch|swartland|пинотаж|pinotage)\b/i.test(low)) return findReg("south_africa_terroirs");
       if (/\b(грузи[яи]|georgia|georgian|кахети[яи]|kakheti|саперави|saperavi|ркацители|rkatsiteli)\b/i.test(low)) return findReg("georgia_terroirs");
       if (/\b(крым|севастополь|crimea|sevastopol|инкерман|массандра|бельбек|золотая\s+балка)\b/i.test(low)) return findReg("crimea");
       if (/\b(кубань|тамань|анапа|геленджик|новороссийск|долина\s+дона|красностоп|сибирьковый)\b/i.test(low)) return findReg("kuban_don");
-      if (/\b(шампан[ьи]|шампанское|champagne|epernay|reims)\b/i.test(low)) return findReg("champagne");
       if (/\b(новая\s+зеландия|new\s+zealand|marlborough|марлборо)\b/i.test(low)) return findReg("new_zealand_terroirs");
       if (/\b(австрали[яи]|australia|australian|barossa|баросса)\b/i.test(low)) return findReg("australia_terroirs");
       if (/\b(австри[яи]|austria|austrian|wachau|вахау|kamptal)\b/i.test(low)) return findReg("austria_terroirs");
@@ -4467,28 +4515,45 @@
       if (/\b(венето|veneto|prosecco|просекко|valpolicella|soave)\b/i.test(low)) return findReg("veneto_northeast");
       if (/\b(пьемонт|piedmont|piemonte|barolo|barbaresco)\b/i.test(low)) return findReg("piedmont");
       if (/\b(риох[аи]|rioja)\b/i.test(low)) return findReg("rioja");
-      if (/\b(бордо|bordeaux|m[eé]doc|pauillac|margaux|saint[-\s][eé]milion)\b/i.test(low)) return findReg("bordeaux");
       return null;
     }
 
-    // Systematic matching of any wine object to its WORLD_WINE_REGIONS terroir entry
+    // Helper: strip third-party showcase winery names in parentheses (e.g. "(Almaviva, Don Melchor, Chadwick)") from regional terroir soil descriptions when applied to an individual bottle
+    function stripShowcaseWineriesFromRegionalSoil(soilStr) {
+      return String(soilStr || "")
+        .replace(/\s*\((?:Almaviva|Don\s+Melchor|Vega\s+Sicilia|Pingus|Catena|Zuccardi|Kanonkop|Sadie|Eben|Cloudy\s+Bay|Penfolds|Henschke|Gaja|Conterno|Antinori|Sassicaia|Ornellaia|Opus\s+One|Screaming\s+Eagle|P[eé]trus|Margaux|Latour|Lafite)[^)]*\)/gi, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+    }
+
+    // Systematic matching of any wine object to its WORLD_WINE_REGIONS terroir entry (using strict whole-word matching so "haro" never matches inside "sharon"/"chardonnay")
     function findMatchingWorldTerroirRegion(w) {
       if (!w) return null;
-      const hay = `${w.country || ""} ${w.macro_region || ""} ${w.sub_region || ""} ${w.commune || ""} ${w.lieu_dit || ""} ${w.name || ""} ${w.producer || ""}`.toLowerCase();
+      const geoHay = normalizeSearchText(`${w.country || ""} ${w.macro_region || ""} ${w.sub_region || ""} ${w.commune || ""} ${w.lieu_dit || ""}`);
+      const fullHay = normalizeSearchText(`${w.country || ""} ${w.macro_region || ""} ${w.sub_region || ""} ${w.commune || ""} ${w.lieu_dit || ""} ${w.name || ""} ${w.producer || ""}`);
+      // Do not force a specific sub-region if the wine is explicitly a broad national table/IGP wine ("Vin de France", "Vino de España")
+      if (/\b(vin de france|pays d oc|cotes de gascogne|vino de espana)\b/.test(fullHay) && !/\b(bourgogne|bordeaux|champagne|rioja|chablis|sancerre|rhone|alsace)\b/.test(geoHay)) {
+        return null;
+      }
+      const explicitCountryNorm = normalizeSearchText(w.country || "");
       let bestReg = null;
       let bestScore = 0;
       for (const r of WORLD_WINE_REGIONS) {
         let score = 0;
-        const rMacro = (r.macro_region || "").split("(")[0].trim().toLowerCase();
-        const rSub = (r.sub_region || "").split("·")[0].trim().toLowerCase();
-        const rCountry = (r.country_label || r.country || "").toLowerCase();
-        if (rMacro && rMacro.length >= 3 && hay.includes(rMacro)) score += 30;
-        if (rSub && rSub.length >= 4 && hay.includes(rSub)) score += 20;
-        if (rCountry && rCountry.length >= 3 && hay.includes(rCountry)) score += 10;
+        const rMacro = normalizeSearchText((r.macro_region || "").split("(")[0].trim());
+        const rSub = normalizeSearchText((r.sub_region || "").split("·")[0].trim());
+        const rCountry = normalizeSearchText(r.country_label || r.country || "");
+        // If the bottle has a known country that conflicts with this region's country, skip it
+        if (explicitCountryNorm && explicitCountryNorm.length >= 4 && rCountry && !explicitCountryNorm.includes(rCountry) && !rCountry.includes(explicitCountryNorm) && explicitCountryNorm !== "европа") {
+          continue;
+        }
+        if (rMacro && rMacro.length >= 3 && hasWholeWord(geoHay, rMacro)) score += 30;
+        if (rSub && rSub.length >= 4 && hasWholeWord(geoHay, rSub)) score += 20;
+        if (rCountry && rCountry.length >= 3 && hasWholeWord(geoHay, rCountry)) score += 8;
         for (const kw of (r.keywords || [])) {
-          const kwLow = String(kw || "").toLowerCase();
-          if (kwLow.length >= 4 && hay.includes(kwLow)) {
-            score = Math.max(score, 15 + kwLow.length);
+          const kwNorm = normalizeSearchText(kw);
+          if (kwNorm.length >= 4 && hasWholeWord(fullHay, kwNorm)) {
+            score = Math.max(score, 15 + kwNorm.length);
           }
         }
         if (score > bestScore) {
@@ -4496,7 +4561,7 @@
           bestReg = r;
         }
       }
-      if (bestReg && bestScore >= 12) return bestReg;
+      if (bestReg && bestScore >= 16) return bestReg;
 
       const lat = Number(w.lat);
       const lon = Number(w.lon);
@@ -4504,18 +4569,22 @@
         let nearest = null;
         let minDist = Infinity;
         for (const r of WORLD_WINE_REGIONS) {
+          const rCountry = normalizeSearchText(r.country_label || r.country || "");
+          if (explicitCountryNorm && explicitCountryNorm.length >= 4 && rCountry && !explicitCountryNorm.includes(rCountry) && !rCountry.includes(explicitCountryNorm) && explicitCountryNorm !== "европа") {
+            continue;
+          }
           const d = Math.hypot((r.lat || 0) - lat, (r.lon || 0) - lon);
           if (d < minDist) {
             minDist = d;
             nearest = r;
           }
         }
-        if (nearest && minDist < 5.5) return nearest;
+        if (nearest && minDist < 3.5) return nearest;
       }
-      return bestReg;
+      return null;
     }
 
-    // Systematic Terroir & Varietal Inheritance: ensures no bottle ever keeps placeholder crutches ("Красное кюве", "30 лет", "Выдержка", "180 м")
+    // Systematic Terroir & Varietal Inheritance: ensures no bottle ever keeps placeholder crutches without injecting hardcoded regional Reserva/Gran Reserva rules
     function enrichWineMetadata(w) {
       if (!w || typeof w !== "object") return w;
       const reg = findMatchingWorldTerroirRegion(w);
@@ -4551,30 +4620,26 @@
       const abvInText = textForAbv.match(/\b(1[0-6][.,]\d)\s*%/);
       if (abvInText && (!w.abv || w.abv === "13.0%")) {
         w.abv = `${abvInText[1].replace(",", ".")}% об.`;
-      } else if ((!w.abv || w.abv === "13.0%") && reg && reg.abv) {
-        w.abv = reg.abv;
       }
 
-      // 4. Systematically resolve Vines & Aging if missing or generic ("30 лет", "Выдержка")
-      const isGenericVineAge = !w.vine_age || w.vine_age === "30 лет";
+      // 4. Resolve Vines & Aging ONLY from actual bottle metadata (never copy regional encyclopedia strings like "Reserva 36+ мес., Gran Reserva 60+ мес." into an unaged bottle)
+      const isGenericVineAge = !w.vine_age || w.vine_age === "30 лет" || /Reserva\s+36\+|непривитые\s+лозы\s+дофиллоксерного/i.test(String(w.vine_age));
       if (isGenericVineAge) {
         const vMatch = `${w.soil || ""} ${w.notes || ""}`.match(/(?:возраст\s*лоз|лозы?)\s*[:.-]?\s*(\d{1,3}(?:\s*[–-]\s*\d{1,3})?\s*лет)/i);
-        if (vMatch) {
-          w.vine_age = `Лозы ${vMatch[1]}`;
-        } else if (reg && reg.vine_age) {
-          w.vine_age = reg.vine_age;
-        }
+        w.vine_age = vMatch ? `Лозы ${vMatch[1]}` : "Классический сбор";
       }
-      const isGenericAging = !w.aging || w.aging === "Выдержка";
+      const isGenericAging = !w.aging || w.aging === "Выдержка" || /Reserva\s+36\+\s*мес|Gran\s+Reserva\s+60\+/i.test(String(w.aging));
       if (isGenericAging) {
-        if (reg && reg.aging) {
-          w.aging = reg.aging;
-        } else {
-          w.aging = w.style === "sparkling" ? "Выдержка на осадке" : "Классическая винификация и выдержка";
-        }
+        w.aging = w.style === "sparkling" ? "Выдержка на осадке" : "Классическая винификация в стали / нейтральных ёмкостях";
       }
 
-      // 5. Systematically resolve Elevation, Slope, Aspect, Soil, Microclimate & Dossier from terroir
+      // 5. Systematically resolve Elevation, Slope, Aspect, Soil, Microclimate & Dossier from terroir (stripping third-party showcase winery lists)
+      if (w.soil) {
+        w.soil = stripShowcaseWineriesFromRegionalSoil(w.soil);
+      }
+      if (w.geology_stage) {
+        w.geology_stage = stripShowcaseWineriesFromRegionalSoil(w.geology_stage);
+      }
       const soilElevMatch = String(w.soil || w.elevation || "").match(/(\d{1,4})(?:\s*[–-]\s*(\d{1,4}))?\s*(?:м|m)(?![а-яa-z])/i);
       if ((!w.elevation_m || w.elevation_m === 180) && soilElevMatch) {
         w.elevation_m = Number(soilElevMatch[2] || soilElevMatch[1]);
@@ -4589,17 +4654,18 @@
         if (!w.aspect || w.aspect === "ВЮВ (склон)") w.aspect = reg.aspect || w.aspect || "ЮВ";
         if (!w.appellation_rank || w.appellation_rank === "Village / Парцель") w.appellation_rank = reg.appellation_rank || "AOC / ЗГУ";
         if (!w.microclimate || w.microclimate === "Континентальный склон") w.microclimate = reg.microclimate || "Умеренно-континентальный";
-        if (!w.geology_stage || w.geology_stage === "Известняк и мергель") w.geology_stage = reg.geology_stage || reg.soil || w.soil;
-        if (!w.soil || w.soil === "Известняк и мергель") w.soil = reg.soil || w.geology_stage;
-        if (!w.drinking_window || w.drinking_window === "2025–2030") w.drinking_window = reg.drinking_window || "2025–2032";
+        const cleanRegSoil = stripShowcaseWineriesFromRegionalSoil(reg.soil || reg.geology_stage || "");
+        if (!w.geology_stage || w.geology_stage === "Известняк и мергель") w.geology_stage = cleanRegSoil || w.soil;
+        if (!w.soil || w.soil === "Известняк и мергель") w.soil = cleanRegSoil;
+        if (!w.drinking_window || w.drinking_window === "2025–2030") w.drinking_window = reg.drinking_window || "2025–2030";
         if (!w.serving_temp || w.serving_temp === "15–16 °C") w.serving_temp = reg.serving_temp || (w.style === "white" ? "10–12 °C" : w.style === "sparkling" ? "8–10 °C" : "15–17 °C");
         if (!w.glassware || w.glassware === "Универсальный винный бокал") w.glassware = reg.glassware || (w.style === "red" ? "Бордоский / бургундский бокал" : "Бокал для белого вина");
-        if (!w.food_pairing || w.food_pairing === "Гастрономическая пара") w.food_pairing = reg.food_pairing || "Мясные и гастрономические блюда";
+        if (!w.food_pairing || w.food_pairing === "Гастрономическая пара") w.food_pairing = reg.food_pairing || "Гастрономическая пара по стилю вина";
         if (!w.domain_history || w.domain_history === "Запись добавлена через форму дневника.") {
-          w.domain_history = reg.domain_history || `Винодельческое хозяйство ${w.producer || ""} в регионе ${reg.macro_region}.`;
+          w.domain_history = `Винодельческое хозяйство ${w.producer || ""} (${w.country || reg.country_label || ""}${w.macro_region ? ", " + w.macro_region : ""}).`;
         }
         if (!w.climat_dossier || w.climat_dossier === "Индивидуальный парцель.") {
-          w.climat_dossier = reg.climat_dossier || reg.soil || w.notes || `Терруар ${w.commune || reg.commune}.`;
+          w.climat_dossier = cleanRegSoil || w.notes || `Терруар ${w.commune || reg.commune}.`;
         }
       }
       return w;
@@ -5411,9 +5477,10 @@
       }
       const lbCapEl = document.getElementById("lightboxBottleCaption");
       if (lbCapEl) {
+        const vivCap = w.vivino_avg ? `Vivino ★ ${w.vivino_avg}` : "Фото из дневника";
         lbCapEl.textContent = photos.length > 1
-          ? `Фото ${safeIdx + 1} из ${photos.length} · Vivino ${w.vivino_avg || "4.0"}`
-          : `Vivino ${w.vivino_avg || "4.0"}`;
+          ? `Фото ${safeIdx + 1} из ${photos.length} · ${vivCap}`
+          : vivCap;
       }
 
       const buildStripHtml = (stripType) => {
@@ -5465,6 +5532,28 @@
       });
     }
 
+    function buildValidVivinoUrl(w) {
+      if (!w) return "https://www.vivino.com/en/explore";
+      const rawUrl = String(w.vivino_url || "").trim();
+      if (
+        rawUrl &&
+        /^https?:\/\/(?:www\.)?vivino\.com\//i.test(rawUrl) &&
+        !/\/w(?:ines)?\/(?:null|undefined|0)$/i.test(rawUrl) &&
+        !/\/search\/wines\?q=/i.test(rawUrl) &&
+        !/\/users\/artem-zaigrin$/i.test(rawUrl)
+      ) {
+        return rawUrl;
+      }
+      if (w.wine_id && /^\d{4,10}$/.test(String(w.wine_id))) {
+        return `https://www.vivino.com/w/${w.wine_id}`;
+      }
+      if (w.vintage_id && /^\d{4,10}$/.test(String(w.vintage_id))) {
+        return `https://www.vivino.com/wines/${w.vintage_id}`;
+      }
+      const q = translateRussianGrapesToLatin(`${w.producer || ""} ${w.name || ""}`.trim());
+      return q ? `https://www.vivino.com/en/explore?search_term=${encodeURIComponent(q)}` : "https://www.vivino.com/en/explore";
+    }
+
     function selectWine(wineId, zoomToParcel = false) {
       const w = atlasData.wines.find(item => item.id === wineId) || atlasData.wines[0];
       if (!w) return;
@@ -5482,10 +5571,11 @@
 
       renderWinePhotoStrips(w, 0);
       const photosCount = getWinePhotosList(w).length;
+      const vivinoCaptionPart = w.vivino_avg ? `Vivino ★ ${w.vivino_avg}` : "Фото бутылки";
       document.getElementById("specimenOfficialCaption").textContent =
         photosCount > 1
-          ? `Vivino ${w.vivino_avg || "4.0"} · ${photosCount} фото`
-          : `Vivino ${w.vivino_avg || "4.0"}`;
+          ? `${vivinoCaptionPart} · ${photosCount} фото`
+          : vivinoCaptionPart;
 
       const styleClass = w.style === "red" ? "badge-red" : (w.style === "white" ? "badge-white" : "badge-sparkling");
       const grapeLabel = w.grapes || (w.style === "red" ? "Красное кюве" : "Белое кюве");
@@ -5506,11 +5596,11 @@
       renderWineTasteBars(w);
 
       const vineLabel = w.vine_age
-        ? (/^лоз/i.test(String(w.vine_age)) ? w.vine_age : `Лозы ${w.vine_age}`)
-        : "Лозы 25–35 лет";
+        ? (/^(лоз|классич|старые)/i.test(String(w.vine_age)) ? w.vine_age : `Лозы ${w.vine_age}`)
+        : "Классический сбор";
       const agingLabel = w.aging && w.aging !== "Выдержка"
         ? w.aging
-        : "Классическая винификация и выдержка";
+        : "Классическая винификация";
 
       const qmGvEl = document.getElementById("qmGrapesVines");
       if (qmGvEl) {
@@ -5565,10 +5655,10 @@
       document.getElementById("dossierDateInput").value = w.tasted_date || "2026-10-31";
       document.getElementById("dossierPurchasedInput").value = w.purchased_at || "";
       document.getElementById("dossierNotesInput").value = w.notes || "";
-      document.getElementById("dossierVivinoLink").href = w.vivino_url || `https://www.vivino.com/wines/${w.vintage_id}`;
+      document.getElementById("dossierVivinoLink").href = buildValidVivinoUrl(w);
       document.getElementById("dossierVivinoIds").textContent = w.user_vintage_id
         ? `Vivino ID: ${w.user_vintage_id}`
-        : `vintage_id: ${w.vintage_id || "локальная запись"}`;
+        : (w.wine_id || w.vintage_id ? `Vivino ID: ${w.wine_id || w.vintage_id}${w.vivino_avg ? " · ★ " + w.vivino_avg : ""}` : "Открыть на Vivino");
 
       if (zoomToParcel) {
         map.flyTo([w.lat, w.lon], Math.max(map.getZoom(), 14), { duration: 0.65 });
@@ -5609,7 +5699,7 @@
       }
       if (az !== null) return `Артём: ${az.toFixed(1)}`;
       if (anya !== null) return `Аня: ${anya.toFixed(1)}`;
-      return `Vivino ${w.vivino_avg || "4.0"}`;
+      return w.vivino_avg ? `Vivino ★ ${w.vivino_avg}` : "Без оценки";
     }
 
     function formatTerroirCommuneLine(w) {
@@ -5644,7 +5734,7 @@
 
       const applyNewPersonScore = (newScore) => {
         w[fieldKey] = newScore;
-        const pKey = fieldKey === "rating_az" ? "az" : "anya";
+        const pKey = fieldKey === "az" ? "az" : "anya";
         if (newScore === null) {
           w[pKey === "az" ? "rating_az_parts" : "rating_anya_parts"] = { aroma: null, balance: null, finish: null, complexity: null };
         } else {
@@ -5820,7 +5910,7 @@
         } else if (pair !== null) {
           pairBadge.textContent = `Средняя: ${pair.toFixed(1)}`;
         } else {
-          pairBadge.textContent = `Vivino: ${w.vivino_avg || "4.0"}`;
+          pairBadge.textContent = w.vivino_avg ? `Vivino: ★ ${w.vivino_avg}` : "Vivino: —";
         }
       }
     }
@@ -6907,8 +6997,8 @@
           .replace(/\s*·\s*(сухое|полусухое|полусладкое|брют|экстра\s*брют|брют\s*натюр|дозаж[^·]*)(\s*·\s*дозаж[^·]*)?\s*$/i, "")
           .trim();
 
-        let parsedVineAge = existingTarget?.vine_age || "30 лет";
-        let parsedAging = existingTarget?.aging || "Выдержка";
+        let parsedVineAge = existingTarget?.vine_age || "Классический сбор";
+        let parsedAging = existingTarget?.aging || "Классическая винификация";
         if (rawVinesInput) {
           const vParts = rawVinesInput.split(/\s*·\s*/).filter(Boolean);
           if (vParts.length >= 2) {
@@ -6928,6 +7018,7 @@
         };
 
         const webMeta = window.lastEnrichedWebMeta || {};
+        const enteredVivinoId = Number((document.getElementById("inVivinoId")?.value || "").replace(/\D/g, "")) || null;
 
         const wineRecord = {
           ...(existingTarget || {}),
@@ -6938,8 +7029,8 @@
           aspect_code: existingTarget?.aspect_code || "ВЮВ 120°",
           slope_pos_pct: existingTarget?.slope_pos_pct || 50,
           atlas_spread: existingTarget?.atlas_spread || "The World Atlas of Wine (9th Ed.) · OpenStreetMap",
-          wine_id: existingTarget?.wine_id || null,
-          vintage_id: Number(document.getElementById("inVivinoId").value) || webMeta.vivino_id || existingTarget?.vintage_id || null,
+          wine_id: webMeta.wine_id || existingTarget?.wine_id || null,
+          vintage_id: enteredVivinoId || webMeta.vivino_id || existingTarget?.vintage_id || null,
           user_vintage_id: existingTarget?.user_vintage_id || null,
           producer: document.getElementById("inProducer").value.trim(),
           name: document.getElementById("inName").value.trim(),
@@ -6986,14 +7077,14 @@
             complexity: parseNumScore("inAnyaComplexity")
           },
           rating: null,
-          vivino_avg: webMeta.vivino_avg || existingTarget?.vivino_avg || 4.0,
+          vivino_avg: webMeta.vivino_avg || existingTarget?.vivino_avg || null,
           notes: document.getElementById("inNotes").value.trim(),
           tasted_date: document.getElementById("inTastedDate").value || new Date().toISOString().slice(0, 10),
           purchased_at: document.getElementById("inPurchasedAt").value.trim(),
           bottle_studio: botUrl,
           photos: allPhotos,
           appellation_rank: webMeta.appellation_rank || existingTarget?.appellation_rank || "Village / Парцель",
-          vivino_url: webMeta.vivino_url || existingTarget?.vivino_url || "https://www.vivino.com/users/artem-zaigrin"
+          vivino_url: webMeta.vivino_url || existingTarget?.vivino_url || null
         };
 
         // Run systematic terroir & varietal inheritance so any unfilled fields inherit from WORLD_WINE_REGIONS
@@ -7297,15 +7388,13 @@
       document.getElementById("inCommune").value = customCommune || reg.commune;
       document.getElementById("inLat").value = Number(reg.lat).toFixed(4);
       document.getElementById("inLon").value = Number(reg.lon).toFixed(4);
-      document.getElementById("inSoil").value = customSoil || `${reg.elevation} · ${reg.aspect_code} · ${reg.soil}`;
+      const cleanSoil = stripShowcaseWineriesFromRegionalSoil(customSoil || `${reg.elevation} · ${reg.aspect_code} · ${reg.soil}`);
+      document.getElementById("inSoil").value = cleanSoil;
       const inGrapesEl = document.getElementById("inGrapes");
       if (inGrapesEl && !inGrapesEl.value.trim() && reg.grapes) {
         inGrapesEl.value = `${reg.grapes} · ${reg.abv || "13.5% об."}`;
       }
-      const inVinesEl = document.getElementById("inVinesAging");
-      if (inVinesEl && !inVinesEl.value.trim() && (reg.vine_age || reg.aging)) {
-        inVinesEl.value = deduplicateDotParts([reg.vine_age || "", reg.aging || ""]);
-      }
+      // Do NOT copy regional textbook vine_age / aging (e.g. "Reserva 36+ мес.") into #inVinesAging for an individual bottle
       if (reg.default_style && !document.getElementById("inStyle").dataset.userSet) {
         document.getElementById("inStyle").value = reg.default_style;
       }
@@ -7623,6 +7712,33 @@
     async function resolveWineTerroirFromText(cleanWineText, options = {}) {
       if (!cleanWineText) return false;
       const fromOcr = Boolean(options.fromOcr);
+      const hasExistingRegionFromPhoto = Boolean(
+        options.preserveOcrFields && document.getElementById("inRegion")?.value.trim()
+      );
+
+      // Step 0: Check explicit appellation / national classification (e.g. "Vin de France", "IGP Pays d'Oc", "Rioja DOCa")
+      const appInfo = extractUniversalAppellationInfo(cleanWineText);
+      if (appInfo && !hasExistingRegionFromPhoto) {
+        if (appInfo.regionId) {
+          const reg = WORLD_WINE_REGIONS.find(r => r.id === appInfo.regionId);
+          if (reg) {
+            applyWorldRegionToForm(reg, appInfo.commune);
+            return true;
+          }
+        } else if (appInfo.country) {
+          document.getElementById("inRegion").value = deduplicateDotParts([appInfo.country, appInfo.macro_region || appInfo.appellation]);
+          document.getElementById("inCommune").value = appInfo.commune || appInfo.appellation;
+          if (Number.isFinite(appInfo.lat) && Number.isFinite(appInfo.lon)) {
+            document.getElementById("inLat").value = Number(appInfo.lat).toFixed(4);
+            document.getElementById("inLon").value = Number(appInfo.lon).toFixed(4);
+          }
+          const inSoilEl = document.getElementById("inSoil");
+          if (inSoilEl && !inSoilEl.value.trim()) {
+            inSoilEl.value = `${appInfo.appellation} (${appInfo.country})`;
+          }
+          return true;
+        }
+      }
 
       // Step 1: Instant local resolution against Iconic Index, World Regions & Cadastral Climats
       const syncMatch = matchWorldTerroirSynchronously(cleanWineText, options);
@@ -7651,11 +7767,13 @@
           if (defVint && !document.getElementById("inVintage").dataset.hasExplicitYear) {
             document.getElementById("inVintage").value = defVint;
           }
-          document.getElementById("inRegion").value = deduplicateDotParts([entry.region || (reg ? `${reg.country_label} · ${reg.macro_region}` : (entry.country || "Франция"))]);
-          document.getElementById("inCommune").value = entry.commune;
-          document.getElementById("inLat").value = Number(entry.lat).toFixed(4);
-          document.getElementById("inLon").value = Number(entry.lon).toFixed(4);
-          document.getElementById("inSoil").value = entry.soil;
+          if (!hasExistingRegionFromPhoto) {
+            document.getElementById("inRegion").value = deduplicateDotParts([entry.region || (reg ? `${reg.country_label} · ${reg.macro_region}` : (entry.country || "Франция"))]);
+            document.getElementById("inCommune").value = entry.commune;
+            document.getElementById("inLat").value = Number(entry.lat).toFixed(4);
+            document.getElementById("inLon").value = Number(entry.lon).toFixed(4);
+            document.getElementById("inSoil").value = stripShowcaseWineriesFromRegionalSoil(entry.soil);
+          }
           const inGrapesEl = document.getElementById("inGrapes");
           if (inGrapesEl && !inGrapesEl.value.trim()) {
             const gExt = extractGrapesFromText(`${cleanWineText} ${entry.name || ""} ${entry.soil || ""}`);
@@ -7665,241 +7783,18 @@
               inGrapesEl.value = `${reg.grapes} · ${reg.abv || "13.5% об."}`;
             }
           }
-          const inVinesEl = document.getElementById("inVinesAging");
-          if (inVinesEl && !inVinesEl.value.trim() && reg) {
-            inVinesEl.value = deduplicateDotParts([reg.vine_age || "", reg.aging || ""]);
-          }
           if (typeof map !== "undefined" && map) {
             map.flyTo([entry.lat, entry.lon], 13, { duration: 0.65 });
           }
-          if (!options.forceOnlineBottleSearch) return true;
+          return true;
         }
-        if (syncMatch.type === "climat") {
+        if (syncMatch.type === "climat" && !hasExistingRegionFromPhoto) {
           applyClimatMatchToForm(syncMatch.climat, !fromOcr);
-          if (!options.forceOnlineBottleSearch) return true;
+          return true;
         }
-        if (syncMatch.type === "region") {
+        if (syncMatch.type === "region" && !hasExistingRegionFromPhoto) {
           applyWorldRegionToForm(syncMatch.reg);
-          if (!options.forceOnlineBottleSearch) return true;
-        }
-      }
-
-      if (fromOcr && !options.allowOnlineFromOcr && !options.forceOnlineBottleSearch) {
-        return Boolean(syncMatch);
-      }
-
-      // Extract distinctive tokens (length >= 4, excluding generic wine/title/first-name stopwords and grape varieties) so online searches never apply unrelated fuzzy hits
-      const NON_DISTINCTIVE_STOPWORDS = new Set([
-        "wine", "vino", "wines", "vinho", "wein", "champagne", "шампанское", "игристое", "вино",
-        "domaine", "chateau", "bodega", "bodegas", "maison", "weingut", "schloss", "tenuta", "cantina", "castello", "quinta", "vina",
-        "brut", "extra", "nature", "zero", "dosage", "demi", "rouge", "blanc", "blancs", "noirs", "rose", "tinto", "blanco", "bianco", "rosso",
-        "grand", "premier", "vieilles", "vignes", "reserva", "riserva", "crianza", "classico", "superiore", "trocken",
-        "robert", "jean", "pierre", "louis", "michel", "paul", "charles", "henri", "francois", "antoine", "nicolas", "philippe", "bernard",
-        "france", "italia", "espana", "argentina", "chile", "deutschland"
-      ]);
-      const distinctiveTokens = normalizeSearchText(translateRussianGrapesToLatin(cleanWineText))
-        .split(/\s+/)
-        .filter(tok => tok.length >= 4 && !NON_DISTINCTIVE_STOPWORDS.has(tok) && !isPureGrapeVarietyName(tok) && !/^\d+$/.test(tok))
-        .sort((a, b) => b.length - a.length);
-      const primaryDistinctiveToken = distinctiveTokens[0] || "";
-
-      const hasExistingRegionFromPhoto = Boolean(
-        options.preserveOcrFields && document.getElementById("inRegion")?.value.trim()
-      );
-
-      // Step 2A: Query OpenFoodFacts Global Wine & Champagne Text Search API (CORS-native JSON, covers retail & négociant bottles worldwide)
-      if (primaryDistinctiveToken.length >= 4) {
-        try {
-          const offCtrl = new AbortController();
-          const offTimer = setTimeout(() => offCtrl.abort(), 3200);
-          const offUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(translateRussianGrapesToLatin(cleanWineText))}&search_simple=1&action=process&json=1&page_size=6`;
-          const offResp = await fetch(offUrl, { signal: offCtrl.signal });
-          clearTimeout(offTimer);
-          if (offResp.ok) {
-            const offData = await offResp.json();
-            const products = Array.isArray(offData?.products) ? offData.products : [];
-            const matchingProd = products.find(p => {
-              const hay = normalizeSearchText(`${p.brands || ""} ${p.product_name_fr || ""} ${p.product_name || ""} ${p.generic_name || ""}`);
-              return hasWholeWord(hay, primaryDistinctiveToken);
-            });
-            if (matchingProd) {
-              const brand = (matchingProd.brands || "").split(",")[0].trim();
-              const title = (matchingProd.product_name_fr || matchingProd.product_name || matchingProd.generic_name || "").trim();
-              const inProdEl = document.getElementById("inProducer");
-              const inNameEl = document.getElementById("inName");
-              if (brand && (!inProdEl.value.trim() || inProdEl.value.trim() === "Вино")) {
-                inProdEl.value = brand;
-              }
-              if (title && (!inNameEl.value.trim() || isPureGrapeVarietyName(inNameEl.value) || inNameEl.value.trim().toLowerCase() === inProdEl.value.trim().toLowerCase())) {
-                const stripped = stripPureGrapeSuffixFromCuvee(stripProducerFromWineTitle(title, inProdEl.value || brand));
-                if (stripped && !isPureGrapeVarietyName(stripped)) inNameEl.value = stripped;
-              }
-              const combinedOffContext = `${brand} ${title} ${matchingProd.origins || ""} ${matchingProd.categories || ""} ${matchingProd.labels || ""} ${matchingProd.manufacturing_places || ""}`;
-              const offSync = matchWorldTerroirSynchronously(combinedOffContext);
-              if (offSync && !hasExistingRegionFromPhoto) {
-                if (offSync.type === "iconic") applyWorldRegionToForm(offSync.reg, offSync.entry.commune, offSync.entry.soil);
-                else if (offSync.type === "climat") applyClimatMatchToForm(offSync.climat);
-                else if (offSync.type === "region") applyWorldRegionToForm(offSync.reg);
-              }
-              const offFacts = extractStructuredWineFacts(combinedOffContext);
-              if (offFacts) {
-                if (offFacts.detectedCuvee && (!inNameEl.value.trim() || isPureGrapeVarietyName(inNameEl.value))) inNameEl.value = offFacts.detectedCuvee;
-                if (offFacts.detectedStyle && !options.preserveOcrFields) document.getElementById("inStyle").value = offFacts.detectedStyle;
-                if (offFacts.abvStr && document.getElementById("inGrapes") && !document.getElementById("inGrapes").value.includes("%")) {
-                  document.getElementById("inGrapes").value = `${document.getElementById("inGrapes").value.trim()} · ${offFacts.abvStr}`.replace(/^ · /, "");
-                }
-              }
-              return true;
-            }
-          }
-        } catch (_) {}
-      }
-
-      // Step 2B: Query Vivino Wine Search via CORS Proxy (extracts Winery, Cuvée, Region & Vivino ID for any commercial bottle)
-      if (primaryDistinctiveToken.length >= 4) {
-        const vivinoTarget = `https://www.vivino.com/search/wines?q=${encodeURIComponent(translateRussianGrapesToLatin(cleanWineText))}`;
-        const vivinoProxies = [
-          `https://api.allorigins.win/get?url=${encodeURIComponent(vivinoTarget)}`,
-          `https://corsproxy.io/?${encodeURIComponent(vivinoTarget)}`
-        ];
-        for (const pUrl of vivinoProxies) {
-          try {
-            const vCtrl = new AbortController();
-            const vTimer = setTimeout(() => vCtrl.abort(), 3000);
-            const vResp = await fetch(pUrl, { signal: vCtrl.signal });
-            clearTimeout(vTimer);
-            if (!vResp.ok) continue;
-            const rawTxt = await vResp.text();
-            let htmlStr = rawTxt;
-            if (pUrl.includes("allorigins.win")) {
-              try { htmlStr = JSON.parse(rawTxt).contents || ""; } catch (_) {}
-            }
-            if (!htmlStr || htmlStr.length < 200) continue;
-            const doc = new DOMParser().parseFromString(htmlStr, "text/html");
-            const cards = Array.from(doc.querySelectorAll(".default-wine-card, .card, [data-vintage]"));
-            for (const card of cards.slice(0, 4)) {
-              const cardText = card.textContent.replace(/\s+/g, " ").trim();
-              if (!hasWholeWord(normalizeSearchText(cardText), primaryDistinctiveToken)) continue;
-              const nameLink = card.querySelector(".wine-card__name a, a[href*='/wines/']");
-              const regionText = Array.from(card.querySelectorAll(".wine-card__region a, .wine-card__region")).map(el => el.textContent.trim()).join(" · ");
-              const fullCardTitle = nameLink ? nameLink.textContent.replace(/\s+/g, " ").trim() : "";
-              const href = nameLink?.getAttribute("href") || "";
-              const vIdMatch = href.match(/\/wines\/(\d+)/) || href.match(/(\d{5,9})/);
-              if (vIdMatch && document.getElementById("inVivinoId") && !document.getElementById("inVivinoId").value.trim()) {
-                document.getElementById("inVivinoId").value = vIdMatch[1];
-              }
-              if (fullCardTitle) {
-                const sp = splitProducerAndCuvee(fullCardTitle);
-                const inProdEl = document.getElementById("inProducer");
-                const inNameEl = document.getElementById("inName");
-                if (sp.producer && (!inProdEl.value.trim() || inProdEl.value.trim() === "Вино")) {
-                  inProdEl.value = sp.producer;
-                }
-                if (sp.name && !isPureGrapeVarietyName(sp.name) && (!inNameEl.value.trim() || isPureGrapeVarietyName(inNameEl.value) || inNameEl.value.trim().toLowerCase() === inProdEl.value.trim().toLowerCase())) {
-                  inNameEl.value = sp.name;
-                }
-              }
-              if (regionText && !hasExistingRegionFromPhoto) {
-                const vSync = matchWorldTerroirSynchronously(`${fullCardTitle} ${regionText}`);
-                if (vSync) {
-                  if (vSync.type === "iconic") applyWorldRegionToForm(vSync.reg, vSync.entry.commune, vSync.entry.soil);
-                  else if (vSync.type === "climat") applyClimatMatchToForm(vSync.climat);
-                  else if (vSync.type === "region") applyWorldRegionToForm(vSync.reg);
-                }
-              }
-              return true;
-            }
-          } catch (_) {}
-        }
-      }
-
-      // Step 2C: Query 6-Language Wikipedia API (en / fr / it / de / es / ru support CORS origin=* natively in every browser)
-      // Strict guard: only accept Wikipedia hits that actually contain the primaryDistinctiveToken!
-      const wikiEngines = [
-        "https://en.wikipedia.org/w/api.php",
-        "https://fr.wikipedia.org/w/api.php",
-        "https://it.wikipedia.org/w/api.php",
-        "https://de.wikipedia.org/w/api.php",
-        "https://es.wikipedia.org/w/api.php",
-        "https://ru.wikipedia.org/w/api.php"
-      ];
-      for (const apiBase of wikiEngines) {
-        try {
-          const url = `${apiBase}?action=query&list=search&srsearch=${encodeURIComponent(translateRussianGrapesToLatin(cleanWineText) + " wine")}&utf8=1&format=json&origin=*`;
-          const resp = await fetch(url);
-          if (!resp.ok) continue;
-          const data = await resp.json();
-          const hits = (data?.query?.search || []).filter(h => {
-            if (!primaryDistinctiveToken) return true;
-            const hay = normalizeSearchText(`${h.title || ""} ${(h.snippet || "").replace(/<[^>]+>/g, " ")}`);
-            return hasWholeWord(hay, primaryDistinctiveToken);
-          });
-          if (hits.length === 0) continue;
-          const topTitle = (hits[0].title || "").replace(/\s*\([^)]*\)\s*/g, "").trim();
-          const combinedSnippet = hits.slice(0, 3).map(h => `${h.title} ${h.snippet.replace(/<[^>]+>/g, " ")}`).join(" ");
-          const wikiMatch = matchWorldTerroirSynchronously(combinedSnippet);
-          if (wikiMatch && !hasExistingRegionFromPhoto) {
-            if (topTitle && /^(Ch[âa]teau|Domaine|Maison|Champagne|Weingut|Schloss|Tenuta|Marchesi|Castello|Bodegas?|Vega|Quinta|Vi[ñn]a|Penfolds)/i.test(topTitle)) {
-              const curProd = document.getElementById("inProducer").value.trim();
-              if (!curProd || !topTitle.toLowerCase().includes(curProd.toLowerCase())) {
-                document.getElementById("inProducer").value = topTitle;
-                const stripped = stripPureGrapeSuffixFromCuvee(stripProducerFromWineTitle(cleanWineText, topTitle));
-                if (stripped && !isPureGrapeVarietyName(stripped) && stripped.toLowerCase() !== topTitle.toLowerCase()) {
-                  document.getElementById("inName").value = stripped;
-                }
-              }
-            }
-            if (wikiMatch.type === "iconic") {
-              applyWorldRegionToForm(wikiMatch.reg, wikiMatch.entry.commune, wikiMatch.entry.soil);
-              return true;
-            }
-            if (wikiMatch.type === "climat") {
-              applyClimatMatchToForm(wikiMatch.climat);
-              return true;
-            }
-            if (wikiMatch.type === "region") {
-              applyWorldRegionToForm(wikiMatch.reg);
-              return true;
-            }
-          }
-        } catch (_) {}
-      }
-
-      // Step 3: Restricted Nominatim village lookup ONLY within major wine-producing countries (only if region not already set from photo)
-      if (!hasExistingRegionFromPhoto) {
-        const geoQuery = cleanWineText
-          .replace(/\b(chardonnay|шардоне|pinot\s*noir|пино\s*нуар|pinot\s*blanc|пино\s*блан|pinot\s*gris|riesling|рислинг|sp[äa]tburgunder|weissburgunder|grauburgunder|lemberger|blaufr[äa]nkisch|cabernet|каберне|merlot|мерло|syrah|сира|shiraz|sauvignon\s*blanc|совиньон|aligot[ée]|алиготе|gamay|гаме|nebbiolo|неббиоло|sangiovese|tempranillo|темпранильо|malbec|мальбек|brut|брют|extra\s*brut|grand\s*cru|premier\s*cru|1er\s*cru|vieilles\s*vignes|reserve|reserva|riserva|gran\s*reserva|crianza|trocken|gg|grosses\s*gew[äa]chs|erste\s*lage|ortswein|gutswein|rouge|blanc|rose|ros[ée]|chateau|domaine|weingut|bodegas?|tenuta|cantina|quinta|vina)\b/gi, " ")
-          .replace(/\s{2,}/g, " ")
-          .trim();
-        if (geoQuery.length >= 4) {
-          try {
-            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&accept-language=ru&countrycodes=fr,de,it,es,pt,ru,us,cl,ar,au,nz,at,za&featuretype=settlement&limit=1&q=${encodeURIComponent(geoQuery)}`;
-            const resp = await fetch(url);
-            if (resp.ok) {
-              const arr = await resp.json();
-              if (Array.isArray(arr) && arr.length > 0) {
-                const hit = arr[0];
-                const lat = parseFloat(hit.lat);
-                const lon = parseFloat(hit.lon);
-                if (Number.isFinite(lat) && Number.isFinite(lon)) {
-                  const nearReg = WORLD_WINE_REGIONS.find(r => Math.hypot(r.lat - lat, r.lon - lon) < 1.8);
-                  const addr = hit.address || {};
-                  const country = addr.country || (nearReg ? nearReg.country_label : "Европа");
-                  const state = addr.state || addr.county || (nearReg ? nearReg.macro_region : "");
-                  const village = addr.village || addr.town || addr.city || addr.municipality || hit.name || geoQuery;
-                  document.getElementById("inRegion").value = nearReg ? `${nearReg.country_label} · ${nearReg.macro_region}` : (state ? `${country} · ${state}` : country);
-                  document.getElementById("inCommune").value = village;
-                  document.getElementById("inLat").value = lat.toFixed(4);
-                  document.getElementById("inLon").value = lon.toFixed(4);
-                  document.getElementById("inSoil").value = nearReg ? `${nearReg.elevation} · ${nearReg.soil}` : `Винодельческий терруар ${village} (${country})`;
-                  if (typeof map !== "undefined" && map) {
-                    map.flyTo([lat, lon], 13, { duration: 0.65 });
-                  }
-                  return true;
-                }
-              }
-            }
-          } catch (_) {}
+          return true;
         }
       }
       return false;
@@ -7924,20 +7819,20 @@
     }
 
     function splitProducerAndCuvee(cleanTitle) {
-      const t = (cleanTitle || "").trim();
-      if (!t) return { producer: "", name: "" };
+      const raw = (cleanTitle || "").trim();
+      if (!raw) return { producer: "", name: "" };
 
-      const syncM = matchWorldTerroirSynchronously(t);
+      const syncM = matchWorldTerroirSynchronously(raw);
       if (syncM && syncM.type === "iconic" && syncM.resolvedProducer) {
-        const rest = stripPureGrapeSuffixFromCuvee(stripProducerFromWineTitle(t, syncM.resolvedProducer));
+        const rest = stripPureGrapeSuffixFromCuvee(stripProducerFromWineTitle(raw, syncM.resolvedProducer));
         const fallbackName = syncM.resolvedEntryName || (!syncM.isUmbrella ? syncM.entry.name : rest);
         return {
           producer: syncM.resolvedProducer,
-          name: (rest && !isPureGrapeVarietyName(rest) && rest.toLowerCase() !== t.toLowerCase()) ? rest : (fallbackName || "")
+          name: (rest && !isPureGrapeVarietyName(rest) && rest.toLowerCase() !== raw.toLowerCase()) ? rest : (fallbackName || "")
         };
       }
 
-      const commaParts = t.split(/\s*[,·]\s*|\s+[-–—]\s+/);
+      const commaParts = raw.split(/\s*[,·]\s*|\s+[-–—]\s+/);
       if (commaParts.length >= 2) {
         const rawN = stripPureGrapeSuffixFromCuvee(commaParts.slice(1).join(" · ").trim());
         return {
@@ -7946,24 +7841,34 @@
         };
       }
 
+      // Extract any explicit appellation phrase (e.g. "Vin de France", "IGP Pays d'Oc") and strip trailing grape variety names before splitting words
+      const appInTitle = extractUniversalAppellationInfo(raw);
+      let t = stripPureGrapeSuffixFromCuvee(raw)
+        .replace(/\b(vin\s+de\s+france|igp\s+pays\s+d['’\s]?oc|igp\s+c[oô]tes\s+de\s+gascogne|vino\s+de\s+espa[ñn]a)\b/gi, " ")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      if (!t) t = raw;
+
       const estateMatch = t.match(/^((?:Domaine|Ch[âa]teau|Maison|Champagne|Cave|Bodegas?|Tenuta|Weingut|Burg|Schloss|Kloster|Cantina|Castello|Marqu[ée]s|Baron(?:s|ne)?|Comte(?:s|sse)?|Veuve|Quinta|Vi[ñn]a)\s+(?:de\s+la\s+|des\s+|du\s+|de\s+|von\s+|zu\s+)?[A-Za-zА-Яа-яЁё][\w\-'’]+(?:\s+(?:de\s+la\s+|des\s+|du\s+|de\s+|von\s+|&|et|und)\s+[A-Za-zА-Яа-яЁё][\w\-'’]+)?)\s+(.+)$/i);
       if (estateMatch) {
         const rawN = stripPureGrapeSuffixFromCuvee(estateMatch[2].trim());
         return {
           producer: toTitleCaseWineSmart(estateMatch[1].trim()),
-          name: rawN && !isPureGrapeVarietyName(rawN) ? toTitleCaseWineSmart(rawN) : ""
+          name: rawN && !isPureGrapeVarietyName(rawN) ? toTitleCaseWineSmart(rawN) : (appInTitle?.appellation || "")
         };
       }
 
       const PARTICLES = new Set(["de", "du", "des", "la", "le", "les", "d", "von", "zu", "van", "di", "del", "della", "da", "do", "dos", "das", "el", "los", "las", "&", "et"]);
-      const words = t.split(/\s+/);
+      const EXPLICIT_CUVEE_OR_APP_RE = /^(brut|брют|extra|cr[ée]mant|креман|champagne|шампанское|reserva|riserva|crianza|centenario|grand|premier|1er|vieilles|old|classico|superiore|trocken|chablis|шабли|sancerre|сансер|meursault|мерсо|puligny|chassagne|pommard|volnay|gevrey|pauillac|margaux|barolo|бароло|barbaresco|барбареско|chianti|кьянти|brunello|prosecco|просекко|cava|кава|soave|соаве)$/i;
+      const words = t.split(/\s+/).filter(Boolean);
+
       if (words.length >= 3) {
-        const cuveeOrGrapeIdx = words.findIndex((w, i) => i >= 1 && /^(chardonnay|шардоне|pinot|пино|riesling|рислинг|sp[äa]tburgunder|weissburgunder|grauburgunder|lemberger|blaufr[äa]nkisch|cabernet|каберне|merlot|мерло|syrah|сира|malbec|мальбек|sauvignon|совиньон|aligot[ée]|алиготе|gamay|гаме|brut|брют|extra|cr[ée]mant|креман|champagne|шампанское|reserva|riserva|crianza|centenario|grand|premier)$/i.test(w));
+        const cuveeOrGrapeIdx = words.findIndex((w, i) => i >= 1 && (EXPLICIT_CUVEE_OR_APP_RE.test(w) || isPureGrapeVarietyName(w)));
         if (cuveeOrGrapeIdx >= 2 && !PARTICLES.has(words[cuveeOrGrapeIdx - 1].toLowerCase())) {
           const tailStr = stripPureGrapeSuffixFromCuvee(words.slice(cuveeOrGrapeIdx).join(" "));
           return {
             producer: toTitleCaseWineSmart(words.slice(0, cuveeOrGrapeIdx).join(" ")),
-            name: tailStr && !isPureGrapeVarietyName(tailStr) ? toTitleCaseWineSmart(tailStr) : ""
+            name: tailStr && !isPureGrapeVarietyName(tailStr) ? toTitleCaseWineSmart(tailStr) : (appInTitle?.appellation || "")
           };
         }
         let splitAt = 2;
@@ -7971,26 +7876,352 @@
           splitAt = Math.min(words.length, 3);
         }
         if (splitAt >= words.length) {
-          // Pure producer name with particle — do not duplicate into Cuvée!
-          return { producer: toTitleCaseWineSmart(t), name: "" };
+          return { producer: toTitleCaseWineSmart(t), name: appInTitle?.appellation || "" };
         }
         const tailStr = stripPureGrapeSuffixFromCuvee(words.slice(splitAt).join(" "));
         return {
           producer: toTitleCaseWineSmart(words.slice(0, splitAt).join(" ")),
-          name: tailStr && !isPureGrapeVarietyName(tailStr) ? toTitleCaseWineSmart(tailStr) : ""
+          name: tailStr && !isPureGrapeVarietyName(tailStr) ? toTitleCaseWineSmart(tailStr) : (appInTitle?.appellation || "")
         };
       }
 
       if (words.length === 2) {
         if (PARTICLES.has(words[0].toLowerCase())) {
-          return { producer: toTitleCaseWineSmart(t), name: "" };
+          return { producer: toTitleCaseWineSmart(t), name: appInTitle?.appellation || "" };
         }
         if (isPureGrapeVarietyName(words[1])) {
-          return { producer: toTitleCaseWineSmart(words[0]), name: "" };
+          return { producer: toTitleCaseWineSmart(words[0]), name: appInTitle?.appellation || "" };
         }
-        return { producer: toTitleCaseWineSmart(words[0]), name: toTitleCaseWineSmart(words[1]) };
+        // Only split a 2-word title if the 2nd word is an explicit wine classification or appellation (e.g. "Beringer Reserva"), otherwise keep 2-word brand/producer names ("Garland Crest", "Cloudy Bay", "Louis Jadot") intact!
+        if (EXPLICIT_CUVEE_OR_APP_RE.test(words[1])) {
+          return { producer: toTitleCaseWineSmart(words[0]), name: toTitleCaseWineSmart(words[1]) };
+        }
+        return { producer: toTitleCaseWineSmart(t), name: appInTitle?.appellation || "" };
       }
-      return { producer: toTitleCaseWineSmart(t), name: "" };
+      return { producer: toTitleCaseWineSmart(t), name: appInTitle?.appellation || "" };
+    }
+
+    // =========================================================================
+    // VIVINO OFFICIAL ALGOLIA CATALOG API (CORS-native JSON, ~40ms, no proxy needed)
+    // =========================================================================
+    const VIVINO_ALGOLIA_APP_ID = "9TAKGWJUXL";
+    const VIVINO_ALGOLIA_API_KEY = "60c11b2f1068885161d95ca068d3a6ae";
+    const VIVINO_COUNTRY_MAP_RU = {
+      FR: "Франция", IT: "Италия", ES: "Испания", DE: "Германия", PT: "Португалия",
+      US: "США", CL: "Чили", AR: "Аргентина", ZA: "ЮАР", AU: "Австралия",
+      NZ: "Новая Зеландия", AT: "Австрия", GE: "Грузия", RU: "Россия", CH: "Швейцария",
+      GR: "Греция", HU: "Венгрия", UY: "Уругвай", MD: "Молдова", AM: "Армения"
+    };
+
+    function normalizeVivinoAlgoliaHit(rawHit, preferredVintageId = null, preferredYear = null) {
+      if (!rawHit || typeof rawHit !== "object") return null;
+      const wineId = Number(rawHit.id || rawHit.objectID) || null;
+      if (!wineId) return null;
+      const wineryName = String(rawHit.winery?.name || "").trim();
+      const wineName = String(rawHit.name || "").trim();
+      const seoName = String(rawHit.seo_name || "").trim();
+      const regionName = String(rawHit.region?.name_en || rawHit.region?.name || "").trim();
+      const countryCode = String(rawHit.region?.country || "").toUpperCase();
+      const countryRu = VIVINO_COUNTRY_MAP_RU[countryCode] || countryCode || "";
+      const typeId = Number(rawHit.type_id || 1);
+      const style = typeId === 3 ? "sparkling" : (typeId === 2 ? "white" : "red");
+      const vintages = Array.isArray(rawHit.vintages) ? rawHit.vintages : [];
+
+      let matchedVintage = null;
+      if (preferredVintageId) {
+        matchedVintage = vintages.find(v => String(v.id) === String(preferredVintageId)) || null;
+      }
+      if (!matchedVintage && preferredYear && /^(19\d{2}|20\d{2})$/.test(String(preferredYear))) {
+        matchedVintage = vintages.find(v => String(v.year) === String(preferredYear)) || null;
+      }
+
+      const rawAvg = Number(
+        (matchedVintage && matchedVintage.statistics?.ratings_average > 0 ? matchedVintage.statistics.ratings_average : null) ??
+        rawHit.statistics?.ratings_average ??
+        0
+      );
+      const ratingsCount = Number(
+        (matchedVintage && matchedVintage.statistics?.ratings_count > 0 ? matchedVintage.statistics.ratings_count : null) ??
+        rawHit.statistics?.ratings_count ??
+        0
+      );
+      const ratingAvg = rawAvg > 0 ? rawAvg.toFixed(1) : null;
+      const vintageId = matchedVintage?.id ? Number(matchedVintage.id) : (preferredVintageId ? Number(preferredVintageId) : null);
+      const year = matchedVintage?.year && String(matchedVintage.year) !== "U.V." ? String(matchedVintage.year) : (preferredYear || null);
+
+      let imageUrl = String(rawHit.image?.variations?.bottle_medium || rawHit.image?.variations?.bottle_large || rawHit.image?.location || "").trim();
+      if (imageUrl.startsWith("//")) imageUrl = "https:" + imageUrl;
+
+      const vivinoUrl = seoName
+        ? `https://www.vivino.com/${seoName}/w/${wineId}${year && /^\d{4}$/.test(year) ? "?year=" + year : ""}`
+        : `https://www.vivino.com/w/${wineId}`;
+
+      return {
+        wineId,
+        vintageId,
+        year,
+        wineryName,
+        wineName,
+        seoName,
+        regionName,
+        countryCode,
+        countryRu,
+        style,
+        ratingAvg,
+        ratingsCount,
+        imageUrl,
+        vivinoUrl,
+        vintages
+      };
+    }
+
+    async function queryVivinoAlgoliaCatalog(queryStr, limit = 6, preferredVintageId = null, preferredYear = null) {
+      const q = translateRussianGrapesToLatin(String(queryStr || "").trim());
+      if (!q || q.length < 2) return [];
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 3500);
+        const url = `https://9takgwjuxl-dsn.algolia.net/1/indexes/WINES_prod/query?x-algolia-application-id=${VIVINO_ALGOLIA_APP_ID}&x-algolia-api-key=${VIVINO_ALGOLIA_API_KEY}`;
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: q, hitsPerPage: limit }),
+          signal: ctrl.signal
+        });
+        clearTimeout(timer);
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        const hits = Array.isArray(data?.hits) ? data.hits : [];
+        return hits
+          .map(h => normalizeVivinoAlgoliaHit(h, preferredVintageId, preferredYear))
+          .filter(Boolean);
+      } catch (_) {
+        return [];
+      }
+    }
+
+    async function fetchVivinoAlgoliaWineById(wineId, preferredVintageId = null, preferredYear = null) {
+      const cleanId = String(wineId || "").replace(/\D/g, "");
+      if (!cleanId) return null;
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 3500);
+        const url = `https://9takgwjuxl-dsn.algolia.net/1/indexes/WINES_prod/${encodeURIComponent(cleanId)}?x-algolia-application-id=${VIVINO_ALGOLIA_APP_ID}&x-algolia-api-key=${VIVINO_ALGOLIA_API_KEY}`;
+        const resp = await fetch(url, { signal: ctrl.signal });
+        clearTimeout(timer);
+        if (!resp.ok) return null;
+        const rawHit = await resp.json();
+        return normalizeVivinoAlgoliaHit(rawHit, preferredVintageId, preferredYear);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    // Resolve a Vivino mobile share URL (/wines/53228131 or /w/3889388) to its exact Algolia record
+    async function resolveVivinoUrlToHit(vivinoUrl, contextHint = "") {
+      const urlStr = String(vivinoUrl || "").trim();
+      const explicitYear = (urlStr.match(/[?&]year=(19\d{2}|20\d{2})\b/i) || [])[1] || null;
+
+      // Case A: URL already contains /w/<wine_id>
+      const wIdMatch = urlStr.match(/\/w\/(\d{4,10})\b/i);
+      if (wIdMatch) {
+        const directHit = await fetchVivinoAlgoliaWineById(wIdMatch[1], null, explicitYear);
+        if (directHit) return directHit;
+      }
+
+      // Case B: URL is a short mobile share link /wines/<vintage_id> (e.g. https://www.vivino.com/wines/53228131)
+      const vintageIdMatch = urlStr.match(/\/wines\/(\d{4,10})\b/i);
+      const vintageId = vintageIdMatch ? vintageIdMatch[1] : null;
+
+      // 1. Check if current form / context text already finds the wine in Algolia with this vintageId
+      const formHint = `${contextHint} ${document.getElementById("inProducer")?.value || ""} ${document.getElementById("inName")?.value || ""}`.trim();
+      if (vintageId && formHint.length >= 3) {
+        const candHits = await queryVivinoAlgoliaCatalog(formHint, 8, vintageId, explicitYear);
+        const exactVintageHit = candHits.find(h => h.vintages.some(v => String(v.id) === String(vintageId)));
+        if (exactVintageHit) return exactVintageHit;
+      }
+
+      // 2. Resolve the /wines/<vintage_id> redirect via r.jina.ai JSON reader (CORS-enabled for https://aezaigrin88.github.io)
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 5500);
+        const jinaResp = await fetch(`https://r.jina.ai/${urlStr}`, {
+          headers: { "Accept": "application/json" },
+          signal: ctrl.signal
+        });
+        clearTimeout(timer);
+        if (jinaResp.ok) {
+          const jinaJson = await jinaResp.json();
+          const finalUrl = String(jinaJson?.data?.url || "");
+          const pageTitle = String(jinaJson?.data?.title || "")
+            .replace(/\s*[|·-]\s*Vivino.*$/i, "")
+            .replace(/^Buy\s+/i, "")
+            .trim();
+          const redirWineId = (finalUrl.match(/\/w\/(\d{4,10})\b/i) || [])[1];
+          if (redirWineId) {
+            const hitById = await fetchVivinoAlgoliaWineById(redirWineId, vintageId, explicitYear);
+            if (hitById) return hitById;
+          }
+          const slugMatch = finalUrl.match(/vivino\.com\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?([a-z0-9-]+)\/w\//i);
+          const searchStr = pageTitle || (slugMatch ? slugMatch[1].replace(/-/g, " ") : "");
+          if (searchStr) {
+            const hits = await queryVivinoAlgoliaCatalog(searchStr, 6, vintageId, explicitYear);
+            const exact = (vintageId && hits.find(h => h.vintages.some(v => String(v.id) === String(vintageId)))) || hits[0];
+            if (exact) return exact;
+          }
+        }
+      } catch (_) {}
+
+      // 3. Fallback: extract slug from URL if present
+      const fallbackSlug = (urlStr.match(/vivino\.com\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?([a-z0-9-]{4,})\/w/i) || [])[1];
+      if (fallbackSlug) {
+        const hits = await queryVivinoAlgoliaCatalog(fallbackSlug.replace(/-/g, " "), 5, vintageId, explicitYear);
+        if (hits.length > 0) return hits[0];
+      }
+      return null;
+    }
+
+    // Apply a structured Vivino Algolia hit to the Add Bottle Form
+    function applyVivinoHitToForm(hit, options = {}) {
+      if (!hit) return;
+      const inProdEl = document.getElementById("inProducer");
+      const inNameEl = document.getElementById("inName");
+      const inVintageEl = document.getElementById("inVintage");
+      const inStyleEl = document.getElementById("inStyle");
+      const inRegionEl = document.getElementById("inRegion");
+      const inCommuneEl = document.getElementById("inCommune");
+      const inSoilEl = document.getElementById("inSoil");
+      const inGrapesEl = document.getElementById("inGrapes");
+      const inVivinoEl = document.getElementById("inVivinoId");
+      const inLatEl = document.getElementById("inLat");
+      const inLonEl = document.getElementById("inLon");
+
+      // 1. Producer & Cuvée
+      const ocrAppInfo = window.accumulatedSmartOcrText ? extractUniversalAppellationInfo(window.accumulatedSmartOcrText) : null;
+      const effectiveRegionName = (ocrAppInfo && ocrAppInfo.appellation) ? ocrAppInfo.appellation : hit.regionName;
+      const effectiveCountryRu = (ocrAppInfo && ocrAppInfo.country) ? ocrAppInfo.country : hit.countryRu;
+
+      const wineryClean = hit.wineryName ? toTitleCaseWineSmart(hit.wineryName) : "";
+      const wineClean = hit.wineName ? toTitleCaseWineSmart(hit.wineName) : "";
+      const strippedCuvee = stripPureGrapeSuffixFromCuvee(stripProducerFromWineTitle(wineClean, wineryClean));
+
+      if (wineryClean && strippedCuvee && !normalizeSearchText(wineryClean).includes(normalizeSearchText(strippedCuvee))) {
+        inProdEl.value = `${wineryClean} · ${strippedCuvee}`;
+      } else if (wineryClean) {
+        inProdEl.value = wineryClean;
+      }
+
+      if (strippedCuvee && !isPureGrapeVarietyName(strippedCuvee)) {
+        inNameEl.value = effectiveRegionName && !normalizeSearchText(strippedCuvee).includes(normalizeSearchText(effectiveRegionName))
+          ? `${strippedCuvee} · ${effectiveRegionName}`
+          : strippedCuvee;
+      } else if (effectiveRegionName) {
+        inNameEl.value = effectiveRegionName;
+      } else if (wineClean) {
+        inNameEl.value = wineClean;
+      }
+
+      // 2. Style & Vintage
+      if (hit.style) {
+        inStyleEl.value = hit.style;
+      }
+      if (hit.year && /^\d{4}$/.test(String(hit.year))) {
+        inVintageEl.value = String(hit.year);
+        inVintageEl.dataset.hasExplicitYear = "1";
+      }
+
+      // 3. Grapes from wineName
+      const gExt = extractGrapesFromText(`${hit.wineName} ${hit.seoName.replace(/-/g, " ")}`);
+      if (gExt && inGrapesEl) {
+        const curG = inGrapesEl.value.trim();
+        const abvInCur = (curG.match(/\b(\d{1,2}[.,]\d%\s*об\.?)/i) || [])[1] || "";
+        inGrapesEl.value = deduplicateDotParts([gExt.grapesStr, abvInCur, hit.style === "sparkling" ? "брют" : "сухое"]);
+      }
+
+      // 4. Region & Terroir (respecting physical bottle label appellation if read via OCR)
+      const regionCombined = `${effectiveRegionName || ""} ${effectiveCountryRu || ""}`.trim();
+      const appInfo = ocrAppInfo || extractUniversalAppellationInfo(regionCombined);
+      const regObj = inferWorldRegionFromGrapeAndContext(gExt, regionCombined);
+
+      if (regObj) {
+        applyWorldRegionToForm(regObj, effectiveRegionName ? `${effectiveRegionName} (${effectiveCountryRu || regObj.country_label})` : undefined);
+      } else if (appInfo) {
+        inRegionEl.value = deduplicateDotParts([effectiveCountryRu || appInfo.country || "Франция", effectiveRegionName || appInfo.macro_region || appInfo.appellation]);
+        inCommuneEl.value = appInfo.commune || `${effectiveRegionName || appInfo.appellation} (${effectiveCountryRu || appInfo.country || ""})`;
+        if (Number.isFinite(appInfo.lat) && Number.isFinite(appInfo.lon)) {
+          inLatEl.value = Number(appInfo.lat).toFixed(4);
+          inLonEl.value = Number(appInfo.lon).toFixed(4);
+        }
+        if (inSoilEl && (!inSoilEl.value.trim() || options.chosenByUser)) {
+          inSoilEl.value = `${appInfo.appellation} · винодельческий регион (${effectiveCountryRu || appInfo.country || "Франция"})`;
+        }
+      } else if (effectiveCountryRu || effectiveRegionName) {
+        inRegionEl.value = deduplicateDotParts([effectiveCountryRu, effectiveRegionName]);
+        inCommuneEl.value = effectiveRegionName ? `${effectiveRegionName} (${effectiveCountryRu})` : effectiveCountryRu;
+      }
+
+      // 5. Vivino ID, Rating & URL
+      if (inVivinoEl) {
+        inVivinoEl.value = String(hit.vintageId || hit.wineId || "");
+      }
+      window.lastEnrichedWebMeta = {
+        ...(window.lastEnrichedWebMeta || {}),
+        wine_id: hit.wineId,
+        vivino_id: hit.vintageId || hit.wineId,
+        vivino_avg: hit.ratingAvg || null,
+        vivino_url: hit.vivinoUrl,
+        appellation_rank: effectiveRegionName || inRegionEl.value.trim(),
+        domain_history: `Винодельческое хозяйство ${wineryClean || inProdEl.value.trim()} (${deduplicateDotParts([effectiveCountryRu, effectiveRegionName])}).`,
+        climat_dossier: `Терруар и регион: ${deduplicateDotParts([effectiveCountryRu, effectiveRegionName])}.`
+      };
+
+      const ratingBadge = hit.ratingAvg
+        ? `Vivino ★ ${hit.ratingAvg}${hit.ratingsCount ? " (" + hit.ratingsCount + " оц.)" : ""}`
+        : `Vivino ID ${hit.wineId}`;
+      document.getElementById("smartPhotoStatusTitle").textContent =
+        `✓ Найдено в Vivino (${ratingBadge}): ${inProdEl.value} · ${inNameEl.value}`;
+      const subEl = document.getElementById("smartPhotoStatusSub");
+      if (subEl) {
+        subEl.textContent = deduplicateDotParts([inRegionEl.value, inGrapesEl?.value || "", hit.vivinoUrl]);
+      }
+      smartStatusText.textContent =
+        `Карточка заполнена из базы Vivino (${ratingBadge}): ${inProdEl.value} · ${inNameEl.value} (${inRegionEl.value})`;
+      smartStatusText.style.color = "var(--color-verdigris)";
+      if (options.chosenByUser) {
+        showToast(`Выбрано вино Vivino: ${inProdEl.value} (${ratingBadge})`);
+      }
+    }
+
+    function renderVivinoHitsDropdown(vivinoHits, extraHtml = "") {
+      if ((!vivinoHits || vivinoHits.length === 0) && !extraHtml) {
+        smartSuggestionsBox.classList.remove("visible");
+        return;
+      }
+      const vivHtml = (vivinoHits || []).map((h, idx) => {
+        const starStr = h.ratingAvg ? `★ ${h.ratingAvg} (${h.ratingsCount})` : "Без рейтинга";
+        const locStr = deduplicateDotParts([h.countryRu, h.regionName]);
+        return `
+          <div class="smart-suggestion-item" data-vivino-hit-idx="${idx}" style="border-left:3px solid #A82024;">
+            <span>
+              <strong>${escapeHtml(h.wineryName || "Винодельня")}</strong> · ${escapeHtml(h.wineName)}
+              ${locStr ? `<span style="color:var(--color-ink-secondary);font-size:0.76rem;"> (${escapeHtml(locStr)})</span>` : ""}
+            </span>
+            <span class="num" style="color:#A82024;font-weight:700;font-size:0.78rem;white-space:nowrap;">Vivino ${escapeHtml(starStr)}</span>
+          </div>
+        `;
+      }).join("");
+
+      smartSuggestionsBox.innerHTML = vivHtml + extraHtml;
+      smartSuggestionsBox.classList.add("visible");
+      smartSuggestionsBox.querySelectorAll("[data-vivino-hit-idx]").forEach(el => {
+        el.addEventListener("click", () => {
+          const hit = vivinoHits[Number(el.getAttribute("data-vivino-hit-idx"))];
+          if (hit) {
+            applyVivinoHitToForm(hit, { chosenByUser: true });
+            smartSuggestionsBox.classList.remove("visible");
+          }
+        });
+      });
     }
 
     // Registry of Major Russian & European Wine Stores (URL & Title Cleaning Rules)
@@ -8052,7 +8283,6 @@
       if (splitRes.name && !isPureGrapeVarietyName(splitRes.name)) {
         inNameEl.value = splitRes.name;
       } else if (!inNameEl.value.trim() || isPureGrapeVarietyName(inNameEl.value) || inNameEl.value.trim().toLowerCase() === splitRes.producer.toLowerCase()) {
-        // Infer default Cuvée / Appellation if user only entered Producer name (never put a grape variety into #inName!)
         if (document.getElementById("inStyle").value === "sparkling" || /шампан/i.test(existingRegionVal)) {
           inNameEl.value = /экстра\s*брют|extra\s*brut/i.test(combinedLower) ? "Extra Brut" : "Brut";
         }
@@ -8072,7 +8302,7 @@
       try {
         u = new URL(rawUrl);
       } catch (_) {
-        return;
+        return false;
       }
       const host = u.hostname.replace(/^www\./i, "");
 
@@ -8089,11 +8319,12 @@
         .replace(/[-_+]+/g, " ");
 
       const nonNumericSegments = rawSegments.filter(s =>
-        !/^(catalog|product|products|wine|wines|vino|vins|weine|vini|shampanskoe|igristoe|krasnoe|beloe|alkogol|collection|item|find|produits|acheter-vin|p|w|i|ru|en|fr|it|es|de|pt|uk|us)$/i.test(s) &&
+        !/^(catalog|product|products|wine|wines|vino|vins|weine|vini|shampanskoe|igristoe|krasnoe|beloe|alkogol|collection|item|find|produits|acheter-vin|qr|code|s|p|w|i|ru|en|fr|it|es|de|pt|uk|us)$/i.test(s) &&
         !/^\d+$/.test(s) &&
-        !/^(19[5-9]\d|20[0-2]\d)$/.test(s)
+        !/^(19[5-9]\d|20[0-2]\d)$/.test(s) &&
+        !/^[a-f0-9]{8,}$/i.test(s)
       );
-      const rawSlug = (nonNumericSegments[nonNumericSegments.length - 1] || rawSegments[rawSegments.length - 1] || "")
+      const rawSlug = (nonNumericSegments[nonNumericSegments.length - 1] || "")
         .replace(/\.(html?|php|aspx?|htm)$/i, "")
         .replace(/--\d+$/g, "")
         .replace(/-P\d+$/i, "")
@@ -8105,63 +8336,21 @@
       const yearInPath = rawSegments.find(s => /^(19[5-9]\d|20[0-2]\d)$/.test(s)) || queryYear;
       const fullUrlContext = `${urlCategoryContext} ${yearInPath}`.trim();
 
-      if (rawSlug) {
+      if (rawSlug && rawSlug.length >= 4) {
         const titleCasedSlug = rawSlug.replace(/\b[a-z]/g, c => c.toUpperCase());
         await applyParsedWineTitleToForm(
           yearInPath && !titleCasedSlug.includes(yearInPath) ? `${titleCasedSlug} ${yearInPath}` : titleCasedSlug,
           host,
           fullUrlContext
         );
+        return true;
       }
-
-      const proxyCandidates = [
-        `https://api.allorigins.win/get?url=${encodeURIComponent(rawUrl)}`,
-        `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`
-      ];
-      for (const proxyUrl of proxyCandidates) {
-        try {
-          const ctrl = new AbortController();
-          const timer = setTimeout(() => ctrl.abort(), 2800);
-          const resp = await fetch(proxyUrl, { signal: ctrl.signal });
-          clearTimeout(timer);
-          if (!resp.ok) continue;
-          const rawText = await resp.text();
-          let htmlStr = rawText;
-          if (proxyUrl.includes("allorigins.win")) {
-            try { htmlStr = JSON.parse(rawText).contents || ""; } catch (_) {}
-          }
-          if (!htmlStr || /Attention Required|Cloudflare|Just a moment|Access Denied|403 Forbidden/i.test(htmlStr)) continue;
-
-          const headSlice = htmlStr.slice(0, 90000);
-          const ogTitle = (headSlice.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) || [])[1]
-            || (headSlice.match(/<h1[^>]*>([\s\S]{2,140}?)<\/h1>/i) || [])[1]?.replace(/<[^>]+>/g, " ").trim()
-            || (headSlice.match(/<title[^>]*>([\s\S]{2,140}?)<\/title>/i) || [])[1]?.replace(/<[^>]+>/g, " ").trim()
-            || "";
-          const ogImg = (headSlice.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) || [])[1] || "";
-
-          if (ogTitle && ogTitle.length > 3) {
-            await applyParsedWineTitleToForm(ogTitle.trim(), host, fullUrlContext);
-          }
-          if (ogImg && /^https?:\/\//i.test(ogImg)) {
-            if (!window.pendingSmartPhotos || window.pendingSmartPhotos.length === 0) {
-              window.pendingSmartPhotos = [{ dataUrl: ogImg, name: host }];
-              renderPendingSmartPhotosUI();
-            }
-            document.getElementById("smartPhotoStatusTitle").textContent = `Фото бутылки загружено с ${host}`;
-            document.getElementById("smartPhotoStatusSub").textContent = ogTitle || rawSlug;
-          }
-          showToast(`Карточка вина распознана по ссылке ${host}`);
-          return;
-        } catch (_) {}
-      }
-      if (rawSlug) {
-        showToast(`Данные распознаны из ссылки ${host}`);
-      }
+      return false;
     }
 
     // =========================================================================
-    // STAGE 3: DEEP WEB BOTTLE SEARCH & FULL CONTENT ENRICHMENT PIPELINE
-    // (Этап 1: OCR этикетки -> Этап 2: Дозаполнение -> Этап 3: Поиск бутылки в сети и финальное заполнение полного контента)
+    // STAGE 3: VIVINO ALGOLIA + OPENFOODFACTS BOTTLE SEARCH & VERIFICATION
+    // (No fake Vivino ratings, no hardcoded regional Reserva/Gran Reserva essays)
     // =========================================================================
     window.lastEnrichedWebMeta = null;
     let activeStage3RunId = 0;
@@ -8185,20 +8374,18 @@
       const ocrRaw = (window.accumulatedSmartOcrText || "").slice(0, 4000);
       const ocrFacts = extractStructuredWineFacts(ocrRaw) || {};
 
-      // Stage 2 Synchronization: If user typed into #smartQuickSearchInput but #inProducer is empty, parse it first
+      // Synchronize search input -> Producer/Cuvée if #inProducer is still empty
       const quickVal = (smartQuickSearchInput?.value || "").trim();
-      if (!inProdEl.value.trim() && quickVal && !/^https?:\/\//i.test(quickVal) && !/^\d{8,14}$/.test(quickVal)) {
+      if (!inProdEl.value.trim() && quickVal && !/https?:\/\//i.test(quickVal) && !/^\d{8,14}$/.test(quickVal)) {
         const sp = splitProducerAndCuvee(quickVal);
         if (sp.producer) inProdEl.value = sp.producer;
         if (sp.name && !inNameEl.value.trim()) inNameEl.value = sp.name;
       }
 
-      // Infer Cuvée / Classification from Stage 1 OCR or Style if user only provided Producer in Stage 2 (NEVER put a grape variety into #inName!)
-      let rawProdInput = inProdEl.value.trim();
-      let curProd = toTitleCaseWineSmart(rawProdInput);
+      let curProd = toTitleCaseWineSmart(inProdEl.value.trim());
       if (curProd) inProdEl.value = curProd;
 
-      // If #inName previously held a pure grape variety name (e.g. "Каберне Совиньон"), rescue that grape into #inGrapes and clear #inName so it gets a real Cuvée / Appellation
+      // Rescue grape variety from #inName if user or OCR placed it there
       const rawNameInput = inNameEl.value.trim();
       if (rawNameInput && isPureGrapeVarietyName(rawNameInput)) {
         if (inGrapesEl && !inGrapesEl.value.trim()) {
@@ -8218,6 +8405,7 @@
       const curReg = inRegionEl?.value.trim() || "";
       const curStyle = inStyleEl?.value || "";
       const curGrapes = inGrapesEl?.value.trim() || "";
+      const curYear = inVintageEl?.value.trim() || "";
 
       const isChampagneContext = curReg
         ? /шампан|champagne/i.test(curReg)
@@ -8227,704 +8415,129 @@
         const cleanOcrCuvee = stripPureGrapeSuffixFromCuvee(ocrFacts.detectedCuvee || "");
         if (cleanOcrCuvee && !isPureGrapeVarietyName(cleanOcrCuvee) && cleanOcrCuvee.toLowerCase() !== curProd.toLowerCase()) {
           curName = cleanOcrCuvee;
-        } else if (isChampagneContext || curStyle === "sparkling" || /шампан|champagne|cr[ée]mant|креман|cava|кава|prosecco|просекко/i.test(`${curReg} ${curProd}`)) {
-          curName = /экстра\s*брют|extra\s*brut/i.test(`${curGrapes} ${ocrRaw}`)
-            ? "Extra Brut"
-            : (/полусух|demi[-\s]*sec/i.test(`${curGrapes} ${ocrRaw}`) ? "Demi-Sec" : (/розе|ros[ée]/i.test(`${curGrapes} ${ocrRaw}`) ? "Brut Rosé" : "Brut"));
+        } else if (ocrFacts.detectedAppellation) {
+          curName = ocrFacts.detectedAppellation;
+        } else if (isChampagneContext || curStyle === "sparkling") {
+          curName = /экстра\s*брют|extra\s*brut/i.test(`${curGrapes} ${ocrRaw}`) ? "Extra Brut" : "Brut";
         }
         if (curName) inNameEl.value = curName;
       }
 
-      // Ensure N.V. is set for non-vintage sparkling / Champagne
       if (!inVintageEl.dataset.hasExplicitYear && (isChampagneContext || curStyle === "sparkling")) {
         inVintageEl.value = "N.V.";
       }
 
-      // Detect grape from #inGrapes, rawNameInput, or OCR so we can include its Latin name in the Vivino / web search query without putting it into #inName
       const preDetectedGrape = extractGrapesFromText(`${curGrapes} ${rawNameInput} ${ocrRaw}`) || ocrFacts.grapeInfo;
 
-      // Construct exact bottle search query for Stage 3 Web Search (both display and international Latin query for Vivino / OpenFoodFacts / Wikipedia)
+      // Build clean search query for Vivino Algolia
       const bottleQueryParts = [];
-      if (curProd && curProd !== "Вино") bottleQueryParts.push(curProd);
-      if (curName && !isPureGrapeVarietyName(curName) && !curProd.toLowerCase().includes(curName.toLowerCase())) bottleQueryParts.push(curName);
-      if (preDetectedGrape && preDetectedGrape.shortName) bottleQueryParts.push(preDetectedGrape.shortName);
-      const bottleCoreQuery = bottleQueryParts.join(" ").trim() || quickVal;
-      if (!bottleCoreQuery || bottleCoreQuery.length < 3) return false;
+      if (curProd && curProd !== "Вино") bottleQueryParts.push(curProd.split("·").pop().trim());
+      const cleanNameForSearch = curName
+        .replace(/\b(Vin\s+de\s+France|IGP\s+Pays\s+d['’\s]?Oc|AOC|AOP|DOC|DOCG|DOCa|DO|W\.O\.)\b/gi, "")
+        .trim();
+      if (cleanNameForSearch && !isPureGrapeVarietyName(cleanNameForSearch) && !curProd.toLowerCase().includes(cleanNameForSearch.toLowerCase())) {
+        bottleQueryParts.push(cleanNameForSearch);
+      }
+      if (preDetectedGrape && preDetectedGrape.shortName) {
+        bottleQueryParts.push(preDetectedGrape.shortName);
+      }
+      const bottleCoreQuery = bottleQueryParts.join(" ").replace(/\s{2,}/g, " ").trim() || quickVal;
+      if (!bottleCoreQuery || bottleCoreQuery.length < 2) return false;
 
-      const webSearchQuery = isChampagneContext && !/champagne/i.test(bottleCoreQuery)
-        ? `Champagne ${bottleCoreQuery}`
-        : bottleCoreQuery;
-      const latinProdOnlyQuery = translateRussianGrapesToLatin(curProd && curProd !== "Вино" ? curProd : "");
-      const latinWebSearchQuery = translateRussianGrapesToLatin(webSearchQuery);
-
-      if (smartQuickSearchInput && (!smartQuickSearchInput.value.trim() || !/^https?:\/\//i.test(smartQuickSearchInput.value))) {
-        smartQuickSearchInput.value = webSearchQuery;
+      const latinWebSearchQuery = translateRussianGrapesToLatin(bottleCoreQuery);
+      if (smartQuickSearchInput && (!smartQuickSearchInput.value.trim() || !/https?:\/\//i.test(smartQuickSearchInput.value))) {
+        smartQuickSearchInput.value = bottleCoreQuery;
       }
 
-      // Update status to show Stage 3 Web Search in progress
       document.getElementById("smartPhotoStatusTitle").textContent =
-        `Этап 3/3 · Проверка на Vivino и в сети: ${curProd || webSearchQuery}...`;
+        `Ищем в каталоге Vivino: ${latinWebSearchQuery}...`;
       smartStatusText.textContent =
-        `Этап 3/3: Ищем «${latinWebSearchQuery}» на Vivino, OpenFoodFacts и в мировых каталогах для заполнения аппелласьона и места производства...`;
+        `Проверяем «${latinWebSearchQuery}» в глобальной базе Vivino...`;
       smartStatusText.style.color = "var(--color-terracotta)";
 
-      // Identify primary distinctive token from Producer FIRST (excluding generic wine words and all grape variety names!)
       const NON_DISTINCTIVE = new Set([
         "wine", "vino", "wines", "vinho", "wein", "champagne", "шампанское", "игристое", "вино",
         "domaine", "chateau", "bodega", "bodegas", "maison", "weingut", "schloss", "tenuta", "cantina", "castello", "quinta", "vina",
         "brut", "extra", "nature", "zero", "dosage", "demi", "rouge", "blanc", "blancs", "noirs", "rose", "tinto", "blanco", "bianco", "rosso",
         "grand", "premier", "vieilles", "vignes", "reserva", "riserva", "crianza", "classico", "superiore", "trocken",
-        "robert", "jean", "pierre", "louis", "michel", "paul", "charles", "henri", "francois", "antoine", "nicolas", "philippe", "bernard",
         "france", "italia", "espana", "argentina", "chile", "deutschland"
       ]);
-      const prodTokens = normalizeSearchText(latinProdOnlyQuery)
-        .split(/\s+/)
-        .filter(tok => tok.length >= 3 && !NON_DISTINCTIVE.has(tok) && !isPureGrapeVarietyName(tok) && !/^\d+$/.test(tok))
-        .sort((a, b) => b.length - a.length);
       const distTokens = normalizeSearchText(latinWebSearchQuery)
         .split(/\s+/)
-        .filter(tok => tok.length >= 3 && !NON_DISTINCTIVE.has(tok) && !isPureGrapeVarietyName(tok) && !/^\d+$/.test(tok))
-        .sort((a, b) => b.length - a.length);
-      const primaryToken = prodTokens[0] || distTokens[0] || normalizeSearchText(latinProdOnlyQuery).split(/\s+/)[0] || "";
+        .filter(tok => tok.length >= 3 && !NON_DISTINCTIVE.has(tok) && !isPureGrapeVarietyName(tok) && !/^\d+$/.test(tok));
+      const primaryToken = distTokens[0] || "";
 
-      const collectedWebSnippets = [];
-      let foundWebSources = [];
-      let webVivinoRating = null;
-      let webVivinoId = inVivinoEl?.value.trim() || "";
-      let webVivinoWinery = "";
-      let webVivinoRegionText = "";
-      let webVivinoCuveeName = "";
-      let webParentWinery = "";
-      let webWikiLat = null;
-      let webWikiLon = null;
-      let webAgingExact = "";
-      let webTastingSnippet = "";
-      let webPairingSnippet = "";
-      let webAbvExact = ocrFacts.abvStr || "";
+      const existingVivinoId = (inVivinoEl?.value || "").replace(/\D/g, "");
 
-      // Fast concurrent CORS proxy racer (races 4 CORS proxies in parallel via Promise.any, caps at 95KB, strips scripts/styles)
-      const fetchViaCorsProxyLight = async (targetUrl, timeoutMs = 4800) => {
-        const proxyBuilders = [
-          { url: `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`, isJsonWrap: false },
-          { url: `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, isJsonWrap: false },
-          { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`, isJsonWrap: false },
-          { url: `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`, isJsonWrap: true }
-        ];
-        const controllers = [];
-        try {
-          return await Promise.any(
-            proxyBuilders.map(async ({ url: pUrl, isJsonWrap }) => {
-              const ctrl = new AbortController();
-              controllers.push(ctrl);
-              const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-              try {
-                const r = await fetch(pUrl, { signal: ctrl.signal });
-                clearTimeout(timer);
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                const raw = await r.text();
-                let contents = raw;
-                if (isJsonWrap) {
-                  const j = JSON.parse(raw);
-                  contents = (j && j.contents) || "";
-                }
-                if (!contents || contents.length < 140) throw new Error("Empty proxy payload");
-                return contents
-                  .slice(0, 95000)
-                  .replace(/<script[\s\S]*?<\/script>/gi, " ")
-                  .replace(/<style[\s\S]*?<\/style>/gi, " ")
-                  .replace(/<svg[\s\S]*?<\/svg>/gi, " ");
-              } finally {
-                clearTimeout(timer);
-              }
-            })
-          );
-        } catch (_) {
-          return "";
-        } finally {
-          controllers.forEach(c => {
-            try { c.abort(); } catch (_) {}
-          });
-        }
-      };
+      // 1. Query Vivino Official Algolia Catalog (`WINES_prod`)
+      let vivinoHits = await queryVivinoAlgoliaCatalog(latinWebSearchQuery, 6, existingVivinoId || null, curYear);
+      if (vivinoHits.length === 0 && curProd && curProd !== "Вино") {
+        vivinoHits = await queryVivinoAlgoliaCatalog(translateRussianGrapesToLatin(curProd), 6, existingVivinoId || null, curYear);
+      }
 
-      // Run parallel live web enrichment (Vivino Search, OpenFoodFacts Search-a-licious + CGI, Bing/DDG site:vivino.com, Wikipedia Full Extracts + Coordinates, Wikidata)
-      await Promise.allSettled([
-        // 3A. Direct Vivino Wine Search (supports both HTML cards and data-preloaded-state JSON)
-        (async () => {
-          if (primaryToken.length < 3) return;
-          const vivUrl = `https://www.vivino.com/search/wines?q=${encodeURIComponent(latinWebSearchQuery)}`;
-          const vivHtml = await fetchViaCorsProxyLight(vivUrl, 4800);
-          if (!vivHtml) return;
-          const vivUnescaped = vivHtml
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;|&apos;/g, "'")
-            .replace(/&amp;/g, "&");
-          const normViv = normalizeSearchText(vivUnescaped.replace(/<[^>]+>/g, " "));
-          if (!hasWholeWord(normViv, primaryToken)) return;
-
-          const idMatch =
-            vivUnescaped.match(/\/w(?:ines)?\/(\d{4,9})\b/i) ||
-            vivUnescaped.match(/"wine"\s*:\s*\{\s*"id"\s*:\s*(\d{4,9})\b/i);
-          if (idMatch) {
-            webVivinoId = idMatch[1];
-            if (inVivinoEl) inVivinoEl.value = webVivinoId;
-          }
-          const ratingMatch =
-            vivUnescaped.match(/average__number[^>]*>\s*([2-4][.,]\d)\s*</i) ||
-            vivUnescaped.match(/"ratings_average"\s*:\s*([2-4]\.\d{1,2})\b/i);
-          if (ratingMatch) {
-            webVivinoRating = Number(ratingMatch[1].replace(",", ".")).toFixed(1);
-          }
-          const wineryMatch =
-            vivUnescaped.match(/wine-card__winery[^>]*>[\s\S]{0,120}?<a[^>]*>([^<]{2,60})<\/a>/i) ||
-            vivUnescaped.match(/"winery"\s*:\s*\{[^}]{0,220}?"name"\s*:\s*"([^"]{2,60})"/i);
-          if (wineryMatch) {
-            webVivinoWinery = wineryMatch[1].trim();
-          }
-          const regLinks = [...vivUnescaped.matchAll(/wine-card__region[^>]*>[\s\S]{0,160}?<a[^>]*>([^<]{2,50})<\/a>/gi)].map(m => m[1].trim());
-          if (regLinks.length > 0) {
-            webVivinoRegionText = regLinks.slice(0, 3).join(" · ");
-          } else {
-            const jsonRegMatch = vivUnescaped.match(/"region"\s*:\s*\{[^}]{0,260}?"name"\s*:\s*"([^"]{2,60})"[\s\S]{0,360}?"country"\s*:\s*\{[^}]{0,220}?"name"\s*:\s*"([^"]{2,50})"/i);
-            if (jsonRegMatch) {
-              webVivinoRegionText = `${jsonRegMatch[1].trim()} · ${jsonRegMatch[2].trim()}`;
-            }
-          }
-          const cardNameMatch =
-            vivUnescaped.match(/wine-card__name[^>]*>[\s\S]{0,160}?<a[^>]*>([\s\S]{3,120}?)<\/a>/i) ||
-            vivUnescaped.match(/"wine"\s*:\s*\{[^}]{0,220}?"name"\s*:\s*"([^"]{2,90})"/i);
-          if (cardNameMatch) {
-            const cleanCardName = cardNameMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-            webVivinoCuveeName = cleanCardName;
-          }
-          if (!foundWebSources.includes("Vivino")) foundWebSources.push("Vivino");
-          collectedWebSnippets.push(`${webVivinoWinery} ${webVivinoCuveeName} ${webVivinoRegionText}`.trim());
-        })(),
-
-        // 3B. OpenFoodFacts Global Bottle Search (Fast Search-a-licious ElasticSearch API + CGI fallback)
-        (async () => {
-          if (primaryToken.length < 3) return;
-          const queriesToTry = [latinWebSearchQuery];
-          if (latinProdOnlyQuery && latinProdOnlyQuery.toLowerCase() !== latinWebSearchQuery.toLowerCase()) {
-            queriesToTry.push(latinProdOnlyQuery);
-          }
-          const processOffHit = (hit) => {
-            if (!foundWebSources.includes("OpenFoodFacts")) foundWebSources.push("OpenFoodFacts");
-            const rawBrands = String(hit.brands || "").split(",").map(s => s.trim()).filter(Boolean);
-            const brandPrimary = rawBrands[0] || "";
-            const brandCombined = rawBrands.length >= 2 ? `${rawBrands[0]} · ${rawBrands[1]}` : brandPrimary;
-            const pName = String(hit.product_name_fr || hit.product_name_en || hit.product_name || hit.generic_name || "").trim();
-            if (brandCombined && !webParentWinery && rawBrands.length >= 2) {
-              webParentWinery = toTitleCaseWineSmart(brandCombined);
-            } else if (brandPrimary && (!inProdEl.value.trim() || inProdEl.value.trim() === "Вино")) {
-              inProdEl.value = toTitleCaseWineSmart(brandPrimary);
-            }
-            if (pName && (!inNameEl.value.trim() || isPureGrapeVarietyName(inNameEl.value) || inNameEl.value.trim().toLowerCase() === inProdEl.value.trim().toLowerCase())) {
-              const stripped = stripPureGrapeSuffixFromCuvee(stripProducerFromWineTitle(pName, inProdEl.value || brandPrimary));
-              if (stripped && !isPureGrapeVarietyName(stripped)) inNameEl.value = toTitleCaseWineSmart(stripped);
-            }
-            const alc = hit.nutriments?.alcohol_100g || hit.nutriments?.alcohol;
-            if (alc && !webAbvExact) {
-              webAbvExact = `${Number(alc).toFixed(1)}% об.`;
-            }
-            const countriesStr = Array.isArray(hit.countries_tags) ? hit.countries_tags.join(" ") : (hit.countries || "");
-            const originsStr = Array.isArray(hit.origins_tags) ? hit.origins_tags.join(" ") : (hit.origins || "");
-            const labelsStr = Array.isArray(hit.labels_tags) ? hit.labels_tags.join(" ") : (hit.labels || "");
-            collectedWebSnippets.push(
-              `${rawBrands.join(" ")} ${pName} ${hit.generic_name_fr || ""} ${originsStr} ${hit.manufacturing_places || ""} ${countriesStr} ${labelsStr} ${hit.categories || ""}`.slice(0, 750)
-            );
-          };
-
-          for (const qTry of queriesToTry) {
-            try {
-              const ctrl = new AbortController();
-              const timer = setTimeout(() => ctrl.abort(), 3500);
-              const fastOffUrl = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(qTry)}&page_size=8&fields=code,product_name,product_name_en,product_name_fr,generic_name,generic_name_fr,brands,countries,countries_tags,origins,origins_tags,labels,labels_tags,manufacturing_places,categories,nutriments`;
-              const resp = await fetch(fastOffUrl, { signal: ctrl.signal });
-              clearTimeout(timer);
-              if (resp.ok) {
-                const data = await resp.json();
-                const hits = Array.isArray(data?.hits) ? data.hits : [];
-                const hit = hits.find(p => {
-                  const hay = normalizeSearchText(`${p.brands || ""} ${p.product_name_fr || ""} ${p.product_name_en || ""} ${p.product_name || ""} ${p.generic_name || ""}`);
-                  return hasWholeWord(hay, primaryToken);
-                });
-                if (hit) {
-                  processOffHit(hit);
-                  return;
-                }
-              }
-            } catch (_) {}
-
-            try {
-              const ctrl = new AbortController();
-              const timer = setTimeout(() => ctrl.abort(), 4200);
-              const cgiOffUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(qTry)}&search_simple=1&action=process&json=1&page_size=6`;
-              const resp = await fetch(cgiOffUrl, { signal: ctrl.signal });
-              clearTimeout(timer);
-              if (!resp.ok) continue;
-              const data = await resp.json();
-              const products = Array.isArray(data?.products) ? data.products : [];
-              const hit = products.find(p => {
-                const hay = normalizeSearchText(`${p.brands || ""} ${p.product_name_fr || ""} ${p.product_name || ""} ${p.generic_name || ""}`);
-                return hasWholeWord(hay, primaryToken);
-              });
-              if (hit) {
-                processOffHit(hit);
-                return;
-              }
-            } catch (_) {}
-          }
-        })(),
-
-        // 3C. Search Engine site:vivino.com + Global Wine Catalogs (Bing + DuckDuckGo concurrent snippet extraction)
-        (async () => {
-          if (primaryToken.length < 3) return;
-          const searchUrls = [
-            `https://www.bing.com/search?q=${encodeURIComponent(latinWebSearchQuery + " site:vivino.com")}`,
-            `https://html.duckduckgo.com/html/?q=${encodeURIComponent(latinWebSearchQuery + " vivino wine region")}`
-          ];
-          const htmlPages = await Promise.all(searchUrls.map(u => fetchViaCorsProxyLight(u, 4500)));
-          const combinedHtml = htmlPages.filter(Boolean).join("\n");
-          if (!combinedHtml) return;
-
-          const vIdMatch = combinedHtml.match(/vivino\.com\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?(?:[^"'\s<>]*\/)?w(?:ines)?\/(\d{4,9})\b/i);
-          if (vIdMatch && !webVivinoId) {
-            webVivinoId = vIdMatch[1];
-            if (inVivinoEl) inVivinoEl.value = webVivinoId;
-            if (!foundWebSources.includes("Vivino")) foundWebSources.push("Vivino");
-          }
-          const plainText = combinedHtml
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;|&apos;/g, "'")
-            .replace(/&amp;/g, "&")
-            .replace(/<[^>]+>/g, " ")
-            .replace(/\s+/g, " ")
-            .slice(0, 18000);
-          if (!hasWholeWord(normalizeSearchText(plainText), primaryToken)) return;
-
-          if (!foundWebSources.includes("Винные каталоги сети")) foundWebSources.push("Винные каталоги сети");
-          collectedWebSnippets.push(plainText.slice(0, 1800));
-
-          if (!webVivinoRating) {
-            const snippetRatingMatch =
-              plainText.match(/(?:Rating|Рейтинг|★|⭐|\bscore\b)[^0-9]{0,20}([2-4][.,]\d)\s*(?:\/\s*5|out of 5|🌟|★|\s*\(\d)/i) ||
-              plainText.match(/\b([34][.,]\d)\s*\/\s*5\b/);
-            if (snippetRatingMatch) {
-              webVivinoRating = Number(snippetRatingMatch[1].replace(",", ".")).toFixed(1);
-              if (!foundWebSources.includes("Vivino")) foundWebSources.push("Vivino");
-            }
-          }
-          const vivRegionFromPhrase = plainText.match(/\b(?:Red|White|Sparkling|Rosé|Rose|Dessert|Fortified)\s+wine\s+from\s+([A-ZÀ-ÿ][A-Za-zÀ-ÿ\s.-]{2,40},\s*[A-ZÀ-ÿ][A-Za-zÀ-ÿ\s.-]{2,30})/i);
-          if (vivRegionFromPhrase && !webVivinoRegionText) {
-            webVivinoRegionText = vivRegionFromPhrase[1].trim();
-          }
-
-          const ageMatch = plainText.match(/\b(\d{1,2})\s*(?:месяц|мес\.|months|mois)\b/i);
-          if (ageMatch && !webAgingExact) {
-            webAgingExact = `${ageMatch[1]} мес.`;
-          }
-          const tasteSent = plainText.match(/(?:аромат|вкус|букет|тона|ноты|aromas?\s+of|notes?\s+of|flavou?rs?\s+of)[^.!?;]{15,160}/i);
-          if (tasteSent && !webTastingSnippet) {
-            webTastingSnippet = tasteSent[0].trim();
-          }
-          const pairSent = plainText.match(/(?:сочетается|подавать|гастроном|аперитив|pairs?\s+well\s+with|serve\s+with)[^.!?;]{12,130}/i);
-          if (pairSent && !webPairingSnippet) {
-            webPairingSnippet = pairSent[0].trim();
-          }
-        })(),
-
-        // 3D. Wikipedia Multi-Language Search + Full Intro Extract & Coordinates (Native CORS JSON across EN, ES, FR, RU in parallel)
-        (async () => {
-          if (primaryToken.length < 3) return;
-          const wikiApis = [
-            "https://en.wikipedia.org/w/api.php",
-            "https://es.wikipedia.org/w/api.php",
-            "https://fr.wikipedia.org/w/api.php",
-            "https://ru.wikipedia.org/w/api.php"
-          ];
-          const wikiQuery = latinProdOnlyQuery || latinWebSearchQuery;
-          await Promise.allSettled(
-            wikiApis.map(async (apiBase) => {
-              const ctrl = new AbortController();
-              const timer = setTimeout(() => ctrl.abort(), 3200);
-              const url = `${apiBase}?action=query&list=search&srsearch=${encodeURIComponent(wikiQuery + " wine")}&utf8=1&format=json&origin=*`;
-              const resp = await fetch(url, { signal: ctrl.signal });
-              clearTimeout(timer);
-              if (!resp.ok) return;
-              const data = await resp.json();
-              const hits = (data?.query?.search || []).filter(h => {
-                const hay = normalizeSearchText(`${h.title || ""} ${(h.snippet || "").replace(/<[^>]+>/g, " ")}`);
-                return hasWholeWord(hay, primaryToken);
-              });
-              if (hits.length === 0) return;
-
-              if (!foundWebSources.includes("Wikipedia")) foundWebSources.push("Wikipedia");
-              const topHits = hits.slice(0, 2);
-              const snip = topHits.map(h => `${h.title}: ${h.snippet.replace(/<[^>]+>/g, " ")}`).join(" · ");
-              collectedWebSnippets.push(snip.slice(0, 600));
-
-              // Fetch full article intro extract + coordinates for the matched pageids so parent winery pages yield country, valleys, and winery name
-              const pageIds = topHits.map(h => h.pageid).filter(Boolean);
-              if (pageIds.length > 0) {
-                const ctrl2 = new AbortController();
-                const timer2 = setTimeout(() => ctrl2.abort(), 3200);
-                const extUrl = `${apiBase}?action=query&prop=extracts|coordinates&exintro=1&explaintext=1&exchars=1200&pageids=${pageIds.join("|")}&format=json&origin=*`;
-                const resp2 = await fetch(extUrl, { signal: ctrl2.signal });
-                clearTimeout(timer2);
-                if (resp2.ok) {
-                  const extData = await resp2.json();
-                  const pagesObj = extData?.query?.pages || {};
-                  for (const pid of Object.keys(pagesObj)) {
-                    const p = pagesObj[pid];
-                    if (!p) continue;
-                    const extText = String(p.extract || "").replace(/\s+/g, " ").trim();
-                    if (extText) {
-                      collectedWebSnippets.push(`${p.title || ""}: ${extText}`);
-                    }
-                    // If the Wikipedia article is a parent winery whose snippet matched our brand token, record the parent winery!
-                    if (
-                      p.title &&
-                      !webParentWinery &&
-                      /winery|vineyard|vino|wine|bodega|viña|vina|champagne|domaine|château|chateau|cooperative|cellar|producer/i.test(`${p.title} ${extText}`) &&
-                      !hasWholeWord(normalizeSearchText(p.title), primaryToken) &&
-                      curProd &&
-                      curProd.length >= 3
-                    ) {
-                      const cleanWikiTitle = p.title.replace(/\s*\([^)]*\)\s*$/, "").trim();
-                      if (cleanWikiTitle.length >= 3 && cleanWikiTitle.length <= 42) {
-                        webParentWinery = `${cleanWikiTitle} · ${toTitleCaseWineSmart(curProd)}`;
-                      }
-                    }
-                    if (Array.isArray(p.coordinates) && p.coordinates[0] && !Number.isFinite(webWikiLat)) {
-                      webWikiLat = Number(p.coordinates[0].lat);
-                      webWikiLon = Number(p.coordinates[0].lon);
-                    }
-                  }
-                }
-              }
-            })
-          );
-        })(),
-
-        // 3E. Wikidata Global Entity Search (Native CORS JSON — resolves wine brands, producers, and appellations)
-        (async () => {
-          if (primaryToken.length < 3) return;
-          const wdQuery = latinProdOnlyQuery || latinWebSearchQuery;
-          try {
-            const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 3000);
-            const wdUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(wdQuery)}&language=en&limit=5&format=json&origin=*`;
-            const resp = await fetch(wdUrl, { signal: ctrl.signal });
-            clearTimeout(timer);
-            if (!resp.ok) return;
-            const data = await resp.json();
-            const entities = (data?.search || []).filter(e => {
-              const hay = normalizeSearchText(`${e.label || ""} ${e.description || ""}`);
-              return hasWholeWord(hay, primaryToken) && /wine|winery|vineyard|champagne|appellation|bodega|producer|brand/i.test(hay);
-            });
-            if (entities.length > 0) {
-              if (!foundWebSources.includes("Wikidata")) foundWebSources.push("Wikidata");
-              collectedWebSnippets.push(entities.map(e => `${e.label}: ${e.description || ""}`).join(" · "));
-            }
-          } catch (_) {}
-        })()
-      ]);
-
-      // If a newer Stage 3 run started while we were waiting, abort quietly
       if (myRunId !== activeStage3RunId) return false;
 
-      // Combine all Stage 1 (OCR) + Stage 2 (Form) + Stage 3 (Web) text (capped at 4500 chars) to finalize every field
-      const allCombinedText = `${curProd} ${curName} ${latinWebSearchQuery} ${ocrRaw} ${collectedWebSnippets.join(" ")}`.slice(0, 4500);
-      const webFacts = extractStructuredWineFacts(allCombinedText) || {};
+      // Filter hits that share at least one distinctive brand/producer token
+      const verifiedVivinoHits = vivinoHits.filter(h => {
+        if (!primaryToken) return true;
+        const hay = normalizeSearchText(`${h.wineryName} ${h.wineName} ${h.seoName.replace(/-/g, " ")}`);
+        return distTokens.some(tok => hasWholeWord(hay, tok));
+      });
 
-      // Resolve synchronous iconic terroir match strictly from the bottle's own label/form identity (never from web snippets that may mention sibling brands!)
-      const bottleOwnIdentity = `${curProd} ${curName} ${ocrRaw}`;
-      const syncTerroir = matchWorldTerroirSynchronously(bottleOwnIdentity)
-        || (curProd ? matchWorldTerroirSynchronously(curProd) : null)
-        || ocrFacts.matchedSyncTerroir
-        || null;
-      const webRegionSync = matchWorldTerroirSynchronously(allCombinedText) || webFacts.matchedSyncTerroir || null;
-
-      // 1. Finalize Producer (including parent winery discovered from Vivino, OpenFoodFacts, or Wikipedia)
-      let finalProd = toTitleCaseWineSmart(inProdEl.value.trim() || webVivinoWinery || webFacts.detectedProducer || ocrFacts.detectedProducer || "Вино");
-      if (webParentWinery && (!finalProd || !normalizeSearchText(finalProd).includes(normalizeSearchText(webParentWinery.split("·")[0])))) {
-        finalProd = webParentWinery;
-      } else if (
-        webVivinoWinery &&
-        finalProd &&
-        !normalizeSearchText(finalProd).includes(normalizeSearchText(webVivinoWinery)) &&
-        !normalizeSearchText(webVivinoWinery).includes(normalizeSearchText(finalProd))
-      ) {
-        finalProd = `${toTitleCaseWineSmart(webVivinoWinery)} · ${finalProd}`;
-      }
-      if (syncTerroir && syncTerroir.type === "iconic" && syncTerroir.entry) {
-        if (!syncTerroir.isUmbrella && syncTerroir.entry.producer) {
-          finalProd = syncTerroir.entry.producer;
-        } else if (syncTerroir.resolvedProducer) {
-          finalProd = syncTerroir.resolvedProducer;
-        }
-      }
-      if (isChampagneContext && finalProd && !/^(champagne|шампанское|domaine|maison)\b/i.test(finalProd)) {
-        finalProd = `Champagne ${finalProd}`;
-      }
-      if (finalProd) {
-        inProdEl.value = finalProd;
-      }
-
-      // 2. Finalize Place of Production: Region, Commune, Soil, Coordinates & Vivino ID / Rating
-      const detectedGrapes = extractGrapesFromText(allCombinedText) || preDetectedGrape || ocrFacts.grapeInfo;
-      let regObj = syncTerroir?.reg
-        || inferWorldRegionFromGrapeAndContext(detectedGrapes, `${finalProd} ${curName} ${webVivinoRegionText} ${allCombinedText}`)
-        || webRegionSync?.reg
-        || WORLD_WINE_REGIONS.find(r =>
-          (inRegionEl.value.trim() && normalizeSearchText(`${inRegionEl.value} ${inCommuneEl.value}`).includes(normalizeSearchText(r.macro_region))) ||
-          (inRegionEl.value.trim() && normalizeSearchText(`${inRegionEl.value} ${inCommuneEl.value}`).includes(normalizeSearchText(r.country_label || r.country)))
-        )
-        || null;
-
-      if (syncTerroir && syncTerroir.type === "iconic" && syncTerroir.entry) {
-        const entry = syncTerroir.entry;
-        inRegionEl.value = deduplicateDotParts([
-          entry.region || (regObj ? `${regObj.country_label || regObj.country} · ${regObj.macro_region}` : (entry.country || ""))
-        ]);
-        inCommuneEl.value = ocrFacts.detectedCommune || webFacts.detectedCommune || entry.commune || regObj?.commune || "";
-        inSoilEl.value = entry.soil || (regObj ? `${regObj.elevation ? regObj.elevation + " · " : ""}${regObj.soil || ""}` : "");
-        const targetLat = Number.isFinite(ocrFacts.explicitLat) ? ocrFacts.explicitLat : (Number.isFinite(webFacts.explicitLat) ? webFacts.explicitLat : Number(entry.lat));
-        const targetLon = Number.isFinite(ocrFacts.explicitLon) ? ocrFacts.explicitLon : (Number.isFinite(webFacts.explicitLon) ? webFacts.explicitLon : Number(entry.lon));
-        if (Number.isFinite(targetLat) && Number.isFinite(targetLon)) {
-          inLatEl.value = targetLat.toFixed(4);
-          inLonEl.value = targetLon.toFixed(4);
-          if (typeof map !== "undefined" && map && !document.getElementById("addBottleDrawer")?.classList.contains("open")) {
-            map.setView([targetLat, targetLon], 11, { animate: false });
-          }
-        }
-        if (entry.vivino_id && !webVivinoId) {
-          webVivinoId = String(entry.vivino_id);
-          if (inVivinoEl) inVivinoEl.value = webVivinoId;
-        }
-        if (entry.vivino_avg && !webVivinoRating) {
-          webVivinoRating = String(entry.vivino_avg);
-        }
-        if (webVivinoId && !foundWebSources.includes("Vivino")) {
-          foundWebSources.unshift("Vivino");
-        }
-      } else {
-        if (regObj) {
-          applyWorldRegionToForm(regObj);
-        } else if (!inRegionEl.value.trim() && webVivinoRegionText) {
-          inRegionEl.value = webVivinoRegionText;
-        }
-        const resolvedPostal = webFacts.postalCommune || ocrFacts.postalCommune || null;
-        if (resolvedPostal) {
-          inCommuneEl.value = resolvedPostal.commune;
-          inSoilEl.value = resolvedPostal.soil;
-          inLatEl.value = Number(resolvedPostal.lat).toFixed(4);
-          inLonEl.value = Number(resolvedPostal.lon).toFixed(4);
-        } else {
-          if (ocrFacts.detectedCommune || webFacts.detectedCommune) {
-            inCommuneEl.value = ocrFacts.detectedCommune || webFacts.detectedCommune;
-          } else if (!inCommuneEl.value.trim() && regObj) {
-            inCommuneEl.value = regObj.commune || regObj.sub_region || regObj.macro_region;
-          }
-          if (!inSoilEl.value.trim() && regObj) {
-            inSoilEl.value = `${regObj.elevation ? regObj.elevation + " · " : ""}${regObj.soil || ""}`;
-          }
-          const explicitLat = Number.isFinite(ocrFacts.explicitLat)
-            ? ocrFacts.explicitLat
-            : (Number.isFinite(webFacts.explicitLat) ? webFacts.explicitLat : (Number.isFinite(webWikiLat) ? webWikiLat : (regObj ? Number(regObj.lat) : NaN)));
-          const explicitLon = Number.isFinite(ocrFacts.explicitLon)
-            ? ocrFacts.explicitLon
-            : (Number.isFinite(webFacts.explicitLon) ? webFacts.explicitLon : (Number.isFinite(webWikiLon) ? webWikiLon : (regObj ? Number(regObj.lon) : NaN)));
-          if (Number.isFinite(explicitLat) && Number.isFinite(explicitLon)) {
-            inLatEl.value = explicitLat.toFixed(4);
-            inLonEl.value = explicitLon.toFixed(4);
-            if (typeof map !== "undefined" && map && !document.getElementById("addBottleDrawer")?.classList.contains("open")) {
-              map.setView([explicitLat, explicitLon], 9, { animate: false });
-            }
-          }
+      // If we found verified Vivino hits, apply the best hit and show all options in the dropdown so the user can also pick manually
+      if (verifiedVivinoHits.length > 0) {
+        const bestHit = (existingVivinoId && verifiedVivinoHits.find(h => String(h.wineId) === existingVivinoId || String(h.vintageId) === existingVivinoId))
+          || verifiedVivinoHits[0];
+        applyVivinoHitToForm(bestHit, { chosenByUser: false });
+        if (verifiedVivinoHits.length > 1 && options.showSuggestions !== false) {
+          renderVivinoHitsDropdown(verifiedVivinoHits);
         }
       }
 
-      // 3. Finalize Cuvée / Appellation (#inName) — NEVER allow a pure grape variety in #inName!
-      let finalName = stripPureGrapeSuffixFromCuvee(inNameEl.value.trim());
-      const iconicAppellationName = syncTerroir?.resolvedEntryName || "";
-      const cleanWebCuvee = stripPureGrapeSuffixFromCuvee(webFacts.detectedCuvee || ocrFacts.detectedCuvee || "");
-      const cleanVivinoCuvee = stripPureGrapeSuffixFromCuvee(stripProducerFromWineTitle(webVivinoCuveeName, finalProd));
-
-      if (
-        !finalName ||
-        isPureGrapeVarietyName(finalName) ||
-        finalName.toLowerCase() === finalProd.toLowerCase() ||
-        finalName.toLowerCase() === finalProd.replace(/^champagne\s+/i, "").toLowerCase()
-      ) {
-        finalName = iconicAppellationName
-          || (cleanWebCuvee && !isPureGrapeVarietyName(cleanWebCuvee) ? cleanWebCuvee : "")
-          || (cleanVivinoCuvee && !isPureGrapeVarietyName(cleanVivinoCuvee) ? cleanVivinoCuvee : "")
-          || (isChampagneContext ? "Brut · Champagne AOC" : "")
-          || (regObj ? (regObj.sub_region ? regObj.sub_region.split("·")[0].trim() : regObj.macro_region) : "")
-          || inCommuneEl.value.trim();
-      } else if (
-        iconicAppellationName &&
-        iconicAppellationName.length > finalName.length &&
-        normalizeSearchText(iconicAppellationName).includes(normalizeSearchText(finalName.split("·")[0].trim()))
-      ) {
-        finalName = iconicAppellationName;
-      }
-      if (finalName) {
-        inNameEl.value = finalName;
+      // 2. Finalize Grapes, ABV & Sugar from OCR/Form without inventing fake ratings or overwriting user notes
+      const detectedGrapes = preDetectedGrape || extractGrapesFromText(`${inGrapesEl?.value || ""} ${inNameEl?.value || ""} ${ocrRaw}`);
+      const formAbvMatch = (inGrapesEl?.value || "").match(/\b(\d{1,2}[.,]\d)\s*%/);
+      const finalAbv = ocrFacts.abvStr || (formAbvMatch ? `${formAbvMatch[1].replace(",", ".")}% об.` : "");
+      const finalSugar = ocrFacts.sugarStr || (inStyleEl.value === "sparkling" ? "брют" : "сухое");
+      if (detectedGrapes && inGrapesEl) {
+        inGrapesEl.value = deduplicateDotParts([detectedGrapes.grapesStr, finalAbv, finalSugar]);
+      } else if (inGrapesEl && finalAbv && !inGrapesEl.value.includes("%")) {
+        inGrapesEl.value = deduplicateDotParts([inGrapesEl.value.trim(), finalAbv, finalSugar]);
       }
 
-      // 4. Finalize Complete Grape Composition, Blend %, ABV & Dosage (#inGrapes)
-      const formAbvMatch = !/\d[–-]\d/.test(curGrapes) ? curGrapes.match(/\b(\d{1,2}[.,]\d)\s*%/) : null;
-      const formAbvExact = formAbvMatch ? `${formAbvMatch[1].replace(",", ".")}% об.` : "";
-      const finalAbv = ocrFacts.abvStr || formAbvExact || webAbvExact || webFacts.abvStr || regObj?.abv || (isChampagneContext ? "12.0% об." : "13.5% об.");
-      const finalSugar = ocrFacts.sugarStr || webFacts.sugarStr || (isChampagneContext || /\bbrut\b/i.test(finalName) ? "Брют (Brut, дозаж 8–10 г/л)" : "сухое");
-
-      let finalGrapesLine = "";
-      if (isChampagneContext) {
-        if (/blanc\s+de\s+blancs|блан\s+де\s+блан/i.test(`${finalName} ${allCombinedText}`)) {
-          finalGrapesLine = "Шардоне (100% Blanc de Blancs)";
-        } else if (/blanc\s+de\s+noirs|блан\s+де\s+нуар/i.test(`${finalName} ${allCombinedText}`)) {
-          finalGrapesLine = "Пино Нуар и Пино Менье (100% Blanc de Noirs)";
-        } else if (detectedGrapes && detectedGrapes.list.length >= 2) {
-          finalGrapesLine = detectedGrapes.grapesStr;
-        } else {
-          finalGrapesLine = "Пино Нуар (40%), Пино Менье (40%), Шардоне (20%)";
-        }
-      } else if (detectedGrapes) {
-        finalGrapesLine = detectedGrapes.grapesStr;
-      } else if (regObj && regObj.grapes) {
-        finalGrapesLine = regObj.grapes;
-      } else {
-        finalGrapesLine = "Купаж автохтонных и классических сортов аппелласьона";
-      }
-      inGrapesEl.value = deduplicateDotParts([finalGrapesLine, finalAbv, finalSugar]);
-
-      // 5. Finalize Vines Age, Fermentation Method & Aging Duration (#inVinesAging)
-      const finalStyle = (detectedGrapes && detectedGrapes.style) || webFacts.detectedStyle || ocrFacts.detectedStyle || syncTerroir?.entry?.style || inStyleEl.value || (isChampagneContext ? "sparkling" : "red");
-      inStyleEl.value = finalStyle;
-      if (isChampagneContext) {
-        const leesMonths = webAgingExact || "15–24 мес.";
-        inVinesEl.value = `Лозы 25–35 лет · Традиционный метод (Méthode Champenoise), выдержка на тонком дрожжевом осадке в меловых погребах (${inCommuneEl.value || "Шампань"}) ${leesMonths}`;
-      } else if (finalStyle === "sparkling") {
-        inVinesEl.value = deduplicateDotParts([
-          ocrFacts.vineStr || webFacts.vineStr || regObj?.vine_age || "Лозы 20–30 лет",
-          webAgingExact ? `Выдержка на осадке ${webAgingExact}` : (ocrFacts.agingStr || webFacts.agingStr || regObj?.aging || "Вторичная ферментация и выдержка на тонком дрожжевом осадке")
-        ]);
-      } else {
-        inVinesEl.value = deduplicateDotParts([
-          ocrFacts.vineStr || webFacts.vineStr || regObj?.vine_age || "Лозы 25–40 лет",
-          webAgingExact ? `Выдержка ${webAgingExact} (дуб / сталь)` : (ocrFacts.agingStr || webFacts.agingStr || regObj?.aging || "Термоконтролируемая винификация и выдержка на тонком осадке")
-        ]);
+      // 3. Only populate #inVinesAging if actual vine age or aging was read from the bottle's label (never copy regional Reserva/Gran Reserva rules!)
+      if (inVinesEl && (ocrFacts.vineStr || ocrFacts.agingStr) && !inVinesEl.value.trim()) {
+        inVinesEl.value = deduplicateDotParts([ocrFacts.vineStr || "", ocrFacts.agingStr || ""]);
       }
 
-      // 6. Synthesize Complete Bottle Dossier (#inNotes + window.lastEnrichedWebMeta)
-      const nmCodeMatch = ocrRaw.match(/\b(NM|RM|CM|RC|SR|ND|MA)\s*[-–.]?\s*(\d{3})\s*[-–.]?\s*(\d{3})\b/i);
-      const nmCodeStr = nmCodeMatch ? `${nmCodeMatch[1].toUpperCase()}-${nmCodeMatch[2]}-${nmCodeMatch[3]}` : "";
-      const communeDisplay = inCommuneEl.value.trim() || regObj?.commune || "историческая коммуна аппелласьона";
-      const regionDisplay = inRegionEl.value.trim() || (regObj ? `${regObj.country_label} · ${regObj.macro_region}` : "Европа");
-      const soilDisplay = inSoilEl.value.trim() || regObj?.soil || "известняково-глинистые и меловые почвы";
-      const vintageDisplay = inVintageEl.value.trim() || "N.V.";
-      const labelTastingRu = ocrFacts.backLabelTastingRu || webFacts.backLabelTastingRu || "";
-      const labelPairingRu = ocrFacts.backLabelPairingRu || webFacts.backLabelPairingRu || null;
-
-      let organolepticProfile = "";
-      let domainHistoryText = "";
-      let climatDossierText = "";
-      let servingTempStr = "10–12 °C";
-      let drinkingWindowStr = "Сейчас – 2029";
-      let glasswareStr = "Универсальный бокал для белого и игристого вина (тюльпан)";
-      let foodPairingArr = [];
-      let appellationRankStr = syncTerroir?.entry?.appellation_rank || (isChampagneContext ? "AOC Champagne" : (regObj?.appellation_rank || regObj?.sub_region || regionDisplay));
-
-      if (isChampagneContext) {
-        organolepticProfile = webTastingSnippet || labelTastingRu
-          ? `${webTastingSnippet || labelTastingRu}. Тонкий устойчивый перляж, ноты белых цветов, печёного яблока, груши Конференц, цитрусовой цедры, бриоши и меловая минеральность в долгом освежающем послевкусии.`
-          : `Утончённый букет с тонами белых цветов, спелого жёлтого яблока, груши, цитрусовой цедры, миндаля и тёплой сливочной бриоши. Во вкусе — живая, кристаллическая кислотность, мелкий кремовый мусс и характерная солоновато-меловая минеральность финала.`;
-        domainHistoryText = `${finalProd} — классический шампанский дом / негоциант-манипулянт (${nmCodeStr || "традиционная школа ассамбляжа"}), базирующийся в сердце столицы Шампани — коммуне ${communeDisplay}. Ассамбляж создаётся из урожая ключевых крю долины Марны и Кот-де-Блан с длительной выдержкой в глубоких меловых галереях (crayères).`;
-        climatDossierText = `Терруар ${communeDisplay} (${regionDisplay}): ${soilDisplay}. Белемнитовый мел верхнего мела работает как природный терморегулятор и дренаж, сообщая кюве ${finalName} фирменную вертикальную свежесть и тонкую минеральную натянутость.`;
-        servingTempStr = "8–10 °C";
-        drinkingWindowStr = vintageDisplay === "N.V." ? "Сейчас – 2028 (оптимальная свежесть)" : `${vintageDisplay} – ${Number(vintageDisplay) + 10}`;
-        glasswareStr = "Тюльпановидный бокал для шампанского (Lehmann Jamesse / Riedel Veritas Champagne)";
-        foodPairingArr = labelPairingRu || (webPairingSnippet
-          ? [webPairingSnippet, "Устрицы Фин де Клер и морские гребешки", "Тартар из белой рыбы и выдержанный Конте"]
-          : ["Устрицы Фин де Клер и морские гребешки", "Тартар из дорадо с цитрусовым маслом", "Сыры Бри де Мо, Шаурс и выдержанный Конте"]);
-      } else if (finalStyle === "red") {
-        const isMalbec = /мальбек|malbec|мендос|mendoza/i.test(`${finalGrapesLine} ${regionDisplay}`);
-        const isCabernet = /каберне|cabernet/i.test(finalGrapesLine);
-        organolepticProfile = labelTastingRu || webTastingSnippet
-          ? `${labelTastingRu || webTastingSnippet}. Бархатистая танинная структура, сбалансированная кислотность и продолжительное пряно-ягодное послевкусие.`
-          : (isMalbec
-            ? `Насыщенный рубиново-фиолетовый цвет. В аромате — спелая чёрная слива, ежевика, горная фиалка, какао-бобы и тонкие дымно-пряные нюансы. Во вкусе — сочное, полнотелое, с бархатистыми зрелыми танинами и долгим фруктово-пряным послевкусием.`
-            : (isCabernet
-              ? `Глубокий рубиновый цвет. В аромате — спелая чёрная смородина (кассис), тёмная вишня, ежевика, лист смородины, благородный кедр и пряные нюансы. Во вкусе — гармоничная структура, зрелые округлые танины и сочное ягодно-пряное послевкусие.`
-              : `Выразительный букет спелых тёмных и красных ягод (вишня, чёрная смородина, ежевика), благородных специй и подлеска. Во вкусе — гармоничная структура, шелковистые танины и минерально-пряный финал.`));
-        domainHistoryText = `${finalProd} — винодельческое хозяйство региона ${regionDisplay} (${communeDisplay}), сочетающее бережную работу с виноградниками и точную винификацию с сохранением сортовой чистоты.`;
-        climatDossierText = `Терруар ${communeDisplay} (${regionDisplay}): ${soilDisplay}. ${regObj?.microclimate || "Контраст дневных и ночных температур обеспечивает медленное накопление полифенолов и сохранение природной свежести."}`;
-        servingTempStr = "16–18 °C";
-        drinkingWindowStr = "Сейчас – 2030";
-        glasswareStr = "Большой бокал для красных вин (Bordeaux / Cabernet-Malbec stem)";
-        foodPairingArr = labelPairingRu || (isMalbec
-          ? ["Стейк рибай и говядина на открытом огне (Asado)", "Каре ягнёнка с розмарином", "Твёрдые выдержанные сыры и эмпанадас"]
-          : ["Стейк на гриле и ростбиф из говядины", "Каре ягнёнка с пряными травами", "Выдержанные твёрдые сыры"]);
-      } else {
-        const isChenin = /шенен|chenin/i.test(`${finalGrapesLine} ${finalName}`);
-        organolepticProfile = labelTastingRu || webTastingSnippet
-          ? `${labelTastingRu || webTastingSnippet}. Чистая минеральная линия, освежающая кислотность и долгий фруктово-цветочный финал.`
-          : (isChenin
-            ? `Яркий фруктово-минеральный профиль Шенен Блан с оттенками спелых косточковых и тропических фруктов (белый персик, абрикос, айва, жёлтая груша), медовых цветов и хрустящей цитрусовой кислотностью.`
-            : `Чистый, элегантный букет с тонами белых цветов, груши, белого персика, цитрусовых и тонкой минеральной нотой. Во вкусе — освежающий баланс, живая кислотность и объёмное послевкусие.`);
-        domainHistoryText = `${finalProd} — винодельческий проект региона ${regionDisplay} (${communeDisplay}), ориентированный на экспрессивный терруарный стиль с выдержкой на тонком дрожжевом осадке.`;
-        climatDossierText = `Терруар ${communeDisplay} (${regionDisplay}): ${soilDisplay}. ${regObj?.microclimate || "Прохладное влияние морских бризов и древних почв формирует точный кислотный каркас и минеральное послевкусие."}`;
-        servingTempStr = "9–11 °C";
-        drinkingWindowStr = "Сейчас – 2029";
-        glasswareStr = "Бокал для белых терруарных вин (Universal White / Chenin-Chardonnay stem)";
-        foodPairingArr = labelPairingRu || ["Морская рыба и морепродукты на гриле", "Паста или ризотто в сливочном соусе", "Козьи и полутвёрдые сыры"];
+      // 4. Only populate #inNotes if back-label tasting notes were actually read from the bottle and #inNotes is empty
+      if (inNotesEl && ocrFacts.backLabelTastingRu && !inNotesEl.value.trim()) {
+        inNotesEl.value = ocrFacts.backLabelTastingRu;
       }
 
-      const resolvedVivinoAvg = webVivinoRating || (syncTerroir?.entry?.vivino_avg ? String(syncTerroir.entry.vivino_avg) : (isChampagneContext ? "3.8" : "3.9"));
-      const vivinoLine = `Vivino: ★ ${resolvedVivinoAvg}${webVivinoId ? " (ID " + webVivinoId + ")" : ""} · Аппелласьон: ${appellationRankStr}.`;
-
-      const fullDossierText = [
-        `Дегустация: ${organolepticProfile}`,
-        `Производитель и терруар: ${domainHistoryText} Почвы: ${soilDisplay}. ${vivinoLine}`,
-        `Подача и гастропара: ${servingTempStr} · Потенциал: ${drinkingWindowStr} · Гастрономия: ${foodPairingArr.join(", ")}.`
-      ].join("\n");
-
-      if (inNotesEl) {
-        inNotesEl.value = fullDossierText;
+      // 5. If no Vivino hit was found, report honestly (NEVER fabricate "Vivino ★ 3.9" or "4.0"!)
+      if (verifiedVivinoHits.length === 0) {
+        const finalProd = inProdEl.value.trim() || "Вино";
+        const finalName = inNameEl.value.trim() || "";
+        const regDisplay = inRegionEl.value.trim() || "Регион не указан";
+        const fallbackExploreUrl = `https://www.vivino.com/en/explore?search_term=${encodeURIComponent(latinWebSearchQuery)}`;
+        window.lastEnrichedWebMeta = {
+          appellation_rank: ocrFacts.detectedAppellation || regDisplay,
+          domain_history: `Винодельческое хозяйство ${finalProd} (${regDisplay}).`,
+          climat_dossier: inSoilEl.value.trim() || `Терруар: ${regDisplay}.`,
+          vivino_avg: null,
+          wine_id: null,
+          vivino_id: existingVivinoId ? Number(existingVivinoId) : null,
+          vivino_url: fallbackExploreUrl
+        };
+        document.getElementById("smartPhotoStatusTitle").textContent =
+          `Данные с этикетки заполнены: ${finalProd}${finalName ? " · " + finalName : ""} (в базе Vivino точного совпадения нет)`;
+        smartStatusText.textContent =
+          `По запросу «${latinWebSearchQuery}» точной карточки в Vivino не найдено. Вы можете уточнить запрос в строке поиска выше и нажать «🔍 Найти в Vivino».`;
+        smartStatusText.style.color = "var(--color-ink-secondary)";
+        return false;
       }
 
-      window.lastEnrichedWebMeta = {
-        appellation_rank: appellationRankStr,
-        domain_history: domainHistoryText,
-        climat_dossier: climatDossierText,
-        drinking_window: drinkingWindowStr,
-        serving_temp: servingTempStr,
-        glassware: glasswareStr,
-        food_pairing: foodPairingArr,
-        vivino_avg: resolvedVivinoAvg,
-        vivino_id: webVivinoId || null,
-        vivino_url: webVivinoId
-          ? `https://www.vivino.com/wines/${webVivinoId}`
-          : `https://www.vivino.com/search/wines?q=${encodeURIComponent(latinWebSearchQuery)}`
-      };
-
-      const vivinoVerifyBadge = `Vivino ★ ${resolvedVivinoAvg}${webVivinoId ? " · ID " + webVivinoId : ""}`;
-      const sourceBadge = foundWebSources.length > 0
-        ? `${vivinoVerifyBadge} · ${foundWebSources.join(", ")}`
-        : vivinoVerifyBadge;
-
-      document.getElementById("smartPhotoStatusTitle").textContent =
-        `✓ Проверено (${vivinoVerifyBadge}): ${finalProd}${finalName ? " · " + finalName : ""} (${vintageDisplay})`;
-      const subEl = document.getElementById("smartPhotoStatusSub");
-      if (subEl) {
-        subEl.textContent = deduplicateDotParts([regionDisplay, communeDisplay, inGrapesEl.value]);
-      }
-      smartStatusText.textContent =
-        `Полный контент и терруар заполнены (${sourceBadge}): ${finalProd}${finalName ? " · " + finalName : ""} · ${regionDisplay} (${communeDisplay})`;
-      smartStatusText.style.color = "var(--color-verdigris)";
       return true;
     }
 
@@ -8932,157 +8545,201 @@
       const q = (rawInput || "").trim();
       if (!q) return;
 
+      // 1. Pure 8–14 digit barcode
       if (/^\d{8,14}$/.test(q.replace(/\s+/g, ""))) {
         await lookupBarcodeInOpenFoodFacts(q.replace(/\s+/g, ""));
-        await runStage3DeepWebBottleEnrichment({ sourceLabel: "штрих-кода" });
+        await runStage3DeepWebBottleEnrichment({ sourceLabel: "штрих-кода", showSuggestions: true });
         return;
       }
 
-      if (/^https?:\/\//i.test(q)) {
-        if (q.includes("vivino.com")) {
-          const vMatch = q.match(/wines\/(\d+)/) || q.match(/(\d{6,10})/);
-          if (vMatch) document.getElementById("inVivinoId").value = vMatch[1];
+      // 2. Extract URL from ANYWHERE inside the string (handles mobile share text like "Check out this wine. I scanned it with the @Vivino app: https://www.vivino.com/wines/53228131")
+      const urlMatch = q.match(/https?:\/\/[^\s"'<>]+/i);
+      if (urlMatch) {
+        const extractedUrl = urlMatch[0].replace(/[.,;!?)]+$/, "");
+        const surroundingText = q
+          .replace(urlMatch[0], " ")
+          .replace(/check\s+out\s+this\s+wine\.?|i\s+scanned\s+it\s+with\s+the\s+@?vivino\s+app\s*:?/gi, " ")
+          .replace(/\s{2,}/g, " ")
+          .trim();
+
+        if (/vivino\.com/i.test(extractedUrl)) {
+          document.getElementById("smartPhotoStatusTitle").textContent = "Загружаем карточку вина по ссылке Vivino...";
+          smartStatusText.textContent = `Разрешаем ссылку ${extractedUrl} через каталог Vivino...`;
+          smartStatusText.style.color = "var(--color-terracotta)";
+
+          const vIdMatch = extractedUrl.match(/\/w(?:ines)?\/(\d{4,10})\b/i);
+          if (vIdMatch && document.getElementById("inVivinoId")) {
+            document.getElementById("inVivinoId").value = vIdMatch[1];
+          }
+          const resolvedHit = await resolveVivinoUrlToHit(extractedUrl, surroundingText);
+          if (resolvedHit) {
+            applyVivinoHitToForm(resolvedHit, { chosenByUser: true });
+            const siblingHits = await queryVivinoAlgoliaCatalog(`${resolvedHit.wineryName} ${resolvedHit.wineName}`.trim(), 5, resolvedHit.vintageId, resolvedHit.year);
+            if (siblingHits.length > 1) {
+              renderVivinoHitsDropdown(siblingHits);
+            }
+            return;
+          }
+          if (surroundingText.length >= 3) {
+            await applyParsedWineTitleToForm(surroundingText, "Vivino");
+            return;
+          }
+          smartStatusText.textContent = `Ссылка Vivino (${extractedUrl}) сохранена, но сервер Vivino не отдал название автоматически. Допишите название вина в строку поиска и нажмите «🔍 Найти в Vivino».`;
+          return;
         }
-        await parseStoreUrlMetadata(q);
-        await runStage3DeepWebBottleEnrichment({ sourceLabel: "ссылки магазина" });
+
+        const parsedStoreOk = await parseStoreUrlMetadata(extractedUrl);
+        if (parsedStoreOk) {
+          await runStage3DeepWebBottleEnrichment({ sourceLabel: "ссылки магазина", showSuggestions: true });
+        } else if (surroundingText.length >= 3) {
+          await applyParsedWineTitleToForm(surroundingText, "ссылки");
+        }
         return;
       }
 
-      await applyParsedWineTitleToForm(q, "автопоиска");
+      // 3. Manual text query: parse into form AND show matching Vivino bottles in dropdown
+      await applyParsedWineTitleToForm(q, "ручного поиска");
     }
 
-    let autoSmartSearchDebounceTimer = null;
+    // Live autocomplete dropdown in #smartQuickSearchInput (NEVER overwrites form inputs while typing; only shows clickable suggestions!)
+    let liveSuggestDebounceTimer = null;
     smartQuickSearchInput.addEventListener("input", e => {
       const rawVal = e.target.value.trim();
       const q = rawVal.toLowerCase();
-      if (autoSmartSearchDebounceTimer) clearTimeout(autoSmartSearchDebounceTimer);
+      if (liveSuggestDebounceTimer) clearTimeout(liveSuggestDebounceTimer);
 
-      if (q.length < 2) {
+      if (q.length < 2 || /^\d+$/.test(q)) {
         smartSuggestionsBox.classList.remove("visible");
         return;
       }
 
-      // Automatic debounced search (no need to click "Найти / заполнить" manually)
-      if (rawVal.length >= 3) {
-        autoSmartSearchDebounceTimer = setTimeout(() => {
+      // If user pasted a full Vivino share message or URL, resolve it immediately
+      if (/https?:\/\/(?:www\.)?vivino\.com\/w(?:ines)?\/\d+/i.test(rawVal)) {
+        liveSuggestDebounceTimer = setTimeout(() => {
           parseSmartTextOrUrl(rawVal);
-        }, 600);
+        }, 180);
+        return;
+      }
+      if (q.includes("http")) {
+        smartSuggestionsBox.classList.remove("visible");
+        return;
       }
 
-      if (/^\d+$/.test(q) || q.includes("http")) {
-        smartSuggestionsBox.classList.remove("visible");
-        return;
-      }
-      const normQ = normalizeSearchText(q);
-      const iconicMatches = ICONIC_WINE_INDEX.filter(entry =>
-        normalizeSearchText(`${entry.producer || ""} ${entry.name || ""} ${(entry.patterns || []).join(" ")}`).includes(normQ)
-      ).slice(0, 4);
-      const regionMatches = WORLD_WINE_REGIONS.filter(r =>
-        normalizeSearchText(`${r.country} ${r.macro_region} ${r.sub_region} ${r.commune} ${(r.keywords || []).join(" ")}`).includes(normQ)
-      ).slice(0, 5);
-      const climatMatches = cadastralSearchIndex.filter(c => c.searchKey.includes(q)).slice(0, 6);
-      if (iconicMatches.length === 0 && regionMatches.length === 0 && climatMatches.length === 0) {
-        smartSuggestionsBox.classList.remove("visible");
-        return;
-      }
-      const iconicHtml = iconicMatches.map((entry, iIdx) => `
-        <div class="smart-suggestion-item" data-iconic-idx="${iIdx}">
-          <span><strong>${escapeHtml(entry.producer || entry.name)}</strong> · ${escapeHtml(entry.name || entry.commune || "")}</span>
-          <span class="num" style="color:var(--color-verdigris);font-size:0.76rem;">Винодельня · ${escapeHtml(entry.commune || "")}</span>
-        </div>
-      `).join("");
-      const regHtml = regionMatches.map((r, rIdx) => `
-        <div class="smart-suggestion-item" data-world-reg-idx="${rIdx}">
-          <span><strong>${escapeHtml(r.country_label || r.country)} · ${escapeHtml(r.macro_region)}</strong> · ${escapeHtml(r.sub_region)}</span>
-          <span class="num" style="color:#A82024;font-size:0.76rem;">Терруар · ${r.lat.toFixed(2)}°</span>
-        </div>
-      `).join("");
-      const climHtml = climatMatches.map((m, idx) => `
-        <div class="smart-suggestion-item" data-climat-idx="${idx}">
-          <span><strong>${escapeHtml(m.name)}</strong> · ${escapeHtml(m.commune)} (${escapeHtml(m.region)})</span>
-          <span class="num" style="color:var(--color-crimson);font-size:0.76rem;">${m.lat.toFixed(4)}° N, ${m.lon.toFixed(4)}° E</span>
-        </div>
-      `).join("");
-      smartSuggestionsBox.innerHTML = iconicHtml + regHtml + climHtml;
-      smartSuggestionsBox.classList.add("visible");
-      smartSuggestionsBox.querySelectorAll("[data-iconic-idx]").forEach(el => {
-        el.addEventListener("click", () => {
-          const entry = iconicMatches[Number(el.getAttribute("data-iconic-idx"))];
-          if (entry) {
-            const qStr = `${entry.producer || ""} ${entry.name || ""}`.trim();
-            smartQuickSearchInput.value = qStr;
-            applyParsedWineTitleToForm(qStr, "каталога виноделен");
-            smartSuggestionsBox.classList.remove("visible");
-          }
+      liveSuggestDebounceTimer = setTimeout(async () => {
+        const normQ = normalizeSearchText(q);
+        const vivinoHits = rawVal.length >= 3 ? await queryVivinoAlgoliaCatalog(rawVal, 5) : [];
+        const iconicMatches = ICONIC_WINE_INDEX.filter(entry =>
+          normalizeSearchText(`${entry.producer || ""} ${entry.name || ""} ${(entry.patterns || []).join(" ")}`).includes(normQ)
+        ).slice(0, 3);
+        const regionMatches = WORLD_WINE_REGIONS.filter(r =>
+          normalizeSearchText(`${r.country} ${r.macro_region} ${r.sub_region} ${r.commune} ${(r.keywords || []).join(" ")}`).includes(normQ)
+        ).slice(0, 3);
+        const climatMatches = cadastralSearchIndex.filter(c => c.searchKey.includes(q)).slice(0, 4);
+
+        const iconicHtml = iconicMatches.map((entry, iIdx) => `
+          <div class="smart-suggestion-item" data-iconic-idx="${iIdx}">
+            <span><strong>${escapeHtml(entry.producer || entry.name)}</strong> · ${escapeHtml(entry.name || entry.commune || "")}</span>
+            <span class="num" style="color:var(--color-verdigris);font-size:0.76rem;">Винодельня · ${escapeHtml(entry.commune || "")}</span>
+          </div>
+        `).join("");
+        const regHtml = regionMatches.map((r, rIdx) => `
+          <div class="smart-suggestion-item" data-world-reg-idx="${rIdx}">
+            <span><strong>${escapeHtml(r.country_label || r.country)} · ${escapeHtml(r.macro_region)}</strong> · ${escapeHtml(r.sub_region)}</span>
+            <span class="num" style="color:#A82024;font-size:0.76rem;">Терруар · ${r.lat.toFixed(2)}°</span>
+          </div>
+        `).join("");
+        const climHtml = climatMatches.map((m, idx) => `
+          <div class="smart-suggestion-item" data-climat-idx="${idx}">
+            <span><strong>${escapeHtml(m.name)}</strong> · ${escapeHtml(m.commune)} (${escapeHtml(m.region)})</span>
+            <span class="num" style="color:var(--color-crimson);font-size:0.76rem;">${m.lat.toFixed(4)}° N, ${m.lon.toFixed(4)}° E</span>
+          </div>
+        `).join("");
+
+        renderVivinoHitsDropdown(vivinoHits, iconicHtml + regHtml + climHtml);
+
+        smartSuggestionsBox.querySelectorAll("[data-iconic-idx]").forEach(el => {
+          el.addEventListener("click", () => {
+            const entry = iconicMatches[Number(el.getAttribute("data-iconic-idx"))];
+            if (entry) {
+              const qStr = `${entry.producer || ""} ${entry.name || ""}`.trim();
+              smartQuickSearchInput.value = qStr;
+              applyParsedWineTitleToForm(qStr, "каталога виноделен");
+              smartSuggestionsBox.classList.remove("visible");
+            }
+          });
         });
-      });
-      smartSuggestionsBox.querySelectorAll("[data-world-reg-idx]").forEach(el => {
-        el.addEventListener("click", () => {
-          const reg = regionMatches[Number(el.getAttribute("data-world-reg-idx"))];
-          if (reg) {
-            applyWorldRegionToForm(reg);
-            smartSuggestionsBox.classList.remove("visible");
-          }
+        smartSuggestionsBox.querySelectorAll("[data-world-reg-idx]").forEach(el => {
+          el.addEventListener("click", () => {
+            const reg = regionMatches[Number(el.getAttribute("data-world-reg-idx"))];
+            if (reg) {
+              applyWorldRegionToForm(reg);
+              smartSuggestionsBox.classList.remove("visible");
+            }
+          });
         });
-      });
-      smartSuggestionsBox.querySelectorAll("[data-climat-idx]").forEach(el => {
-        el.addEventListener("click", () => {
-          const item = climatMatches[Number(el.getAttribute("data-climat-idx"))];
-          if (item) applyClimatMatchToForm(item);
+        smartSuggestionsBox.querySelectorAll("[data-climat-idx]").forEach(el => {
+          el.addEventListener("click", () => {
+            const item = climatMatches[Number(el.getAttribute("data-climat-idx"))];
+            if (item) applyClimatMatchToForm(item);
+          });
         });
-      });
+      }, 280);
     });
 
     smartQuickSearchInput.addEventListener("keydown", e => {
       if (e.key === "Enter") {
         e.preventDefault();
-        if (autoSmartSearchDebounceTimer) clearTimeout(autoSmartSearchDebounceTimer);
+        if (liveSuggestDebounceTimer) clearTimeout(liveSuggestDebounceTimer);
         smartSuggestionsBox.classList.remove("visible");
         if (smartQuickSearchInput.value.trim()) {
           parseSmartTextOrUrl(smartQuickSearchInput.value);
         } else {
-          runStage3DeepWebBottleEnrichment({ sourceLabel: "ручного запуска" });
+          runStage3DeepWebBottleEnrichment({ sourceLabel: "ручного запуска", showSuggestions: true });
         }
       }
     });
 
+    // Manual button: "✏️ Из полей" — builds search query from current form fields so user can edit/supplement it before searching Vivino
+    document.getElementById("syncQueryFromFormBtn")?.addEventListener("click", () => {
+      const prod = document.getElementById("inProducer")?.value.trim() || "";
+      const name = document.getElementById("inName")?.value.trim() || "";
+      const gr = (document.getElementById("inGrapes")?.value || "").split("·")[0].trim();
+      const vint = document.getElementById("inVintage")?.value.trim() || "";
+      const parts = [];
+      if (prod && prod !== "Вино") parts.push(prod);
+      if (name && !prod.toLowerCase().includes(name.toLowerCase())) parts.push(name);
+      if (gr && !/кюве/i.test(gr) && !parts.join(" ").toLowerCase().includes(gr.toLowerCase())) parts.push(gr);
+      if (vint && /^\d{4}$/.test(vint)) parts.push(vint);
+      const built = parts.join(" ").replace(/\s{2,}/g, " ").trim();
+      if (built) {
+        smartQuickSearchInput.value = built;
+      }
+      smartQuickSearchInput.focus();
+      smartQuickSearchInput.select();
+      showToast("Запрос собран из полей — отредактируйте при необходимости и нажмите «🔍 Найти в Vivino»");
+    });
+
     document.getElementById("smartParseBtn").addEventListener("click", async () => {
-      if (autoSmartSearchDebounceTimer) clearTimeout(autoSmartSearchDebounceTimer);
-      smartSuggestionsBox.classList.remove("visible");
+      if (liveSuggestDebounceTimer) clearTimeout(liveSuggestDebounceTimer);
       const qVal = smartQuickSearchInput.value.trim();
-      const prodVal = document.getElementById("inProducer")?.value.trim() || "";
-      if (qVal && (!prodVal || !qVal.toLowerCase().includes(prodVal.toLowerCase()))) {
+      if (qVal) {
         await parseSmartTextOrUrl(qVal);
       } else {
-        await runStage3DeepWebBottleEnrichment({ sourceLabel: "кнопки поиска" });
+        await runStage3DeepWebBottleEnrichment({ sourceLabel: "кнопки поиска", showSuggestions: true });
       }
     });
 
     const runStage3WebBtnEl = document.getElementById("runStage3WebBtn");
     if (runStage3WebBtnEl) {
       runStage3WebBtnEl.addEventListener("click", async () => {
-        await runStage3DeepWebBottleEnrichment({ sourceLabel: "повторного веб-поиска" });
+        const qVal = smartQuickSearchInput?.value.trim() || "";
+        if (qVal && /https?:\/\//i.test(qVal)) {
+          await parseSmartTextOrUrl(qVal);
+        } else {
+          await runStage3DeepWebBottleEnrichment({ sourceLabel: "повторного поиска в Vivino", showSuggestions: true });
+        }
       });
     }
-
-    // Stage 2 -> Stage 3: Automatic wine completion when user supplements Producer (#inProducer) or Cuvée (#inName)
-    let producerInputDebounceTimer = null;
-    ["inProducer", "inName"].forEach(fieldId => {
-      const el = document.getElementById(fieldId);
-      if (!el) return;
-      const triggerStage3FromUserInput = (delayMs = 600) => {
-        if (producerInputDebounceTimer) clearTimeout(producerInputDebounceTimer);
-        const prodVal = document.getElementById("inProducer")?.value.trim() || "";
-        const nameVal = document.getElementById("inName")?.value.trim() || "";
-        if (prodVal.length < 3 && nameVal.length < 3) return;
-        producerInputDebounceTimer = setTimeout(async () => {
-          await runStage3DeepWebBottleEnrichment({ sourceLabel: "дозаполнения пользователем" });
-        }, delayMs);
-      };
-      el.addEventListener("input", () => triggerStage3FromUserInput(600));
-      el.addEventListener("change", () => triggerStage3FromUserInput(80));
-      el.addEventListener("blur", () => triggerStage3FromUserInput(80));
-    });
 
     // =========================================================================
     // UNIVERSAL iOS SAFARI / ANDROID / DESKTOP QR + BARCODE + MULTI-PHOTO OCR
@@ -9118,28 +8775,27 @@
       } catch (_) {}
     }
 
-    // GS1 EAN-13 Country Prefix -> Country & Default Wine Terroir Region Resolver (systematic fallback for any barcode worldwide)
+    // GS1 EAN-13 Country Prefix -> Country Resolver (NOTE: GS1 prefix is company registration country, so multi-region countries return regionId: null instead of forcing Rioja or Burgundy!)
     function resolveCountryFromGs1BarcodePrefix(barcodeStr) {
       const code = String(barcodeStr || "").replace(/\D/g, "");
       if (code.length < 8) return null;
       const p3 = Number(code.slice(0, 3));
       if (p3 === 779) return { country: "Аргентина", regionId: "mendoza" };
       if (p3 === 780) return { country: "Чили", regionId: "maipo_colchagua_coastal" };
-      if (p3 >= 300 && p3 <= 379) return { country: "Франция", regionId: "burgundy" };
-      if (p3 >= 400 && p3 <= 440) return { country: "Германия", regionId: "mosel" };
+      if (p3 >= 300 && p3 <= 379) return { country: "Франция", regionId: null };
+      if (p3 >= 400 && p3 <= 440) return { country: "Германия", regionId: null };
       if (p3 >= 460 && p3 <= 469) return { country: "Россия", regionId: "kuban_don" };
       if (p3 === 486) return { country: "Грузия", regionId: "georgia_terroirs" };
       if (p3 === 560) return { country: "Португалия", regionId: "douro" };
       if (p3 >= 600 && p3 <= 601) return { country: "ЮАР", regionId: "south_africa_terroirs" };
-      if (p3 >= 800 && p3 <= 839) return { country: "Италия", regionId: "tuscany" };
-      if (p3 >= 840 && p3 <= 849) return { country: "Испания", regionId: "rioja" };
+      if (p3 >= 800 && p3 <= 839) return { country: "Италия", regionId: null };
+      if (p3 >= 840 && p3 <= 849) return { country: "Испания", regionId: null };
       if (p3 >= 900 && p3 <= 919) return { country: "Австрия", regionId: "austria_terroirs" };
       if (p3 >= 930 && p3 <= 939) return { country: "Австралия", regionId: "australia_terroirs" };
       if (p3 >= 940 && p3 <= 949) return { country: "Новая Зеландия", regionId: "new_zealand_terroirs" };
-      // Note: 060xxxx in 13-digit representation of 12-digit UPC-A (60xxxx) is frequently used by South African & international exporters
       if (code.length === 13 && code.startsWith("060")) return { country: "ЮАР", regionId: "south_africa_terroirs" };
       if (code.length === 12 && code.startsWith("60")) return { country: "ЮАР", regionId: "south_africa_terroirs" };
-      if (p3 >= 0 && p3 <= 139) return { country: "США", regionId: "napa_sonoma" };
+      if (p3 >= 0 && p3 <= 139) return { country: "США", regionId: null };
       return null;
     }
 
@@ -9394,12 +9050,13 @@
     async function handleDecodedCodeResult(rawVal, fallbackImageEl, options = {}) {
       const code = String(rawVal || "").trim();
       if (!code) return false;
-      if (!smartQuickSearchInput.value.trim()) {
+      const isUrlCode = /^https?:\/\//i.test(code) || /^(www\.|[a-z0-9-]+\.(ru|com|fr|it|de|es|org|net|wine|eu|io|ch|at|pt|cl|ar|za)\/)/i.test(code);
+      if (!smartQuickSearchInput.value.trim() && (!isUrlCode || /vivino\./i.test(code))) {
         smartQuickSearchInput.value = code;
       }
 
       // Case 1: URL inside QR code (including GS1 Digital Link /01/<GTIN>, Vivino, store links, or winery e-labels)
-      if (/^https?:\/\//i.test(code) || /^(www\.|[a-z0-9-]+\.(ru|com|fr|it|de|es|org|net|wine|eu|io|ch|at|pt|cl|ar|za)\/)/i.test(code)) {
+      if (isUrlCode) {
         const fullUrl = /^https?:\/\//i.test(code) ? code : `https://${code}`;
         document.getElementById("smartPhotoStatusTitle").textContent = `✓ QR-код считан с фото: ${fullUrl.slice(0, 56)}`;
         smartStatusText.textContent = `QR-код распознан (${fullUrl}) — извлекаем данные бутылки...`;
@@ -9407,11 +9064,16 @@
 
         // Check if QR URL embeds a GS1 Digital Link GTIN (/01/03258691701124 or ?gtin=...)
         const digitalLinkGtin = fullUrl.match(/\/01\/0?(\d{12,13})\b/) || fullUrl.match(/[?&](?:gtin|ean|barcode)=0?(\d{8,14})\b/i);
+        let foundViaGtin = false;
         if (digitalLinkGtin) {
-          await lookupBarcodeInOpenFoodFacts(digitalLinkGtin[1], options);
+          foundViaGtin = await lookupBarcodeInOpenFoodFacts(digitalLinkGtin[1], options);
         }
 
         await parseSmartTextOrUrl(fullUrl);
+        const prodAfterUrl = document.getElementById("inProducer")?.value.trim() || "";
+        if (!foundViaGtin && (!prodAfterUrl || prodAfterUrl === "Вино") && fallbackImageEl && !options.skipAutoOcr) {
+          await runAutomaticLabelOcr(fallbackImageEl);
+        }
         return true;
       }
 
@@ -9683,22 +9345,37 @@
             cleanedUpperLines.push(cl);
           }
         }
-        // Merge split 2-line ALL-CAPS headers (e.g. "THE ..." + "<NOUN>" -> 2-line title)
+        const HEADER_STOP_RE = /\b(WINE\s+OF|ORIGIN|WESTERN\s+CA[PF\?]E|SOUTH\s+AFRICA|CONTAINS|T?NTAINS|SULPHITES|SULFITES|ALCOHOL|REDUCES|DRIVING|ABILITY|A8IUTY|ABIUTY|DON['’]?T|DRINK|AND\s+DRIVE|APPELLATION|CONTROLEE|PROTEGEE|DENOMINACION|DENOMINAZIONE|PRODUIT|PRODUCT\s+OF|PRODUCE\s+OF|MIS\s+EN|BOUTEILLE|ALC\b|ALE\b|VOL\b|ML\b|CL\b|CHENIN|BLAN[CEGKS]|HENIN|CABERNET|SAUVIGNON|PINOT|CHARDONNAY|MERLOT|SYRAH|SHIRAZ|MALBEC|RIESLING|PINOTAGE|TEMPRANILLO|SANGIOVESE|NEBBIOLO|GARNACHA|ВИНО|РОССИЙСКАЯ|ФЕДЕРАЦИЯ|СОДЕРЖИТ|ДИОКСИД|СЕРЫ|УПОТРЕБЛЕНИЕ|АЛКОГОЛЯ|ВРЕДИТ|ЗДОРОВЬЮ|ГОСТ|УРОЖАЙ|ВИНОГРАД|КРЕПОСТЬ|ОБЪЕМ|ОБЪЁМ|ИЗГОТОВИТЕЛЬ|ИМПОРТЕР|FRANCE|ITALIA|ESPANA|ARGENTINA|MENDOZA|CHILE|CHAMPAGNE|BOURGOGNE|VIN\s+DE\s+FRANCE)\b/i;
+
+        // Merge split 2-line ALL-CAPS headers (both "THE ..." + "<NOUN>" and two consecutive 1-word ALL-CAPS brand words like "GARLAND" + "CREST" or "CLOUDY" + "BAY")
         const mergedHeaderLines = [];
         for (let i = 0; i < cleanedUpperLines.length; i++) {
           const cur = cleanedUpperLines[i];
           const nxt = cleanedUpperLines[i + 1] || "";
           const isCurUpper = /^[A-ZА-ЯЁ][A-ZА-ЯЁ\s'’\-]{2,30}$/.test(cur);
           const isNxtUpper = /^[A-ZА-ЯЁ][A-ZА-ЯЁ\s'’\-]{2,20}$/.test(nxt);
-          if (isCurUpper && isNxtUpper && (/['’]S$/i.test(cur) || /\b(THE|OF|DE|LA|AND|&)$/i.test(cur)) && nxt.split(/\s+/).length <= 2) {
+          const curWords = cur.split(/\s+/).filter(Boolean);
+          const nxtWords = nxt.split(/\s+/).filter(Boolean);
+          const isParticleJoin = isCurUpper && isNxtUpper && (/['’]S$/i.test(cur) || /\b(THE|OF|DE|LA|AND|&)$/i.test(cur)) && nxtWords.length <= 2;
+          const isTwoSingleWordBrand =
+            isCurUpper &&
+            isNxtUpper &&
+            curWords.length === 1 &&
+            nxtWords.length === 1 &&
+            cur.length >= 4 &&
+            nxt.length >= 3 &&
+            !HEADER_STOP_RE.test(cur) &&
+            !HEADER_STOP_RE.test(nxt) &&
+            !isPureGrapeVarietyName(toTitleCaseWineSmart(cur)) &&
+            !isPureGrapeVarietyName(toTitleCaseWineSmart(nxt)) &&
+            !/^(RESERVA|RISERVA|CRIANZA|BRUT|GRAND|PREMIER|CLASSICO|SUPERIORE)$/i.test(nxt);
+          if (isParticleJoin || isTwoSingleWordBrand) {
             mergedHeaderLines.push(`${cur} ${nxt}`);
             i++;
           } else {
             mergedHeaderLines.push(cur);
           }
         }
-
-        const HEADER_STOP_RE = /\b(WINE\s+OF|ORIGIN|WESTERN\s+CA[PF\?]E|SOUTH\s+AFRICA|CONTAINS|T?NTAINS|SULPHITES|SULFITES|ALCOHOL|REDUCES|DRIVING|ABILITY|A8IUTY|ABIUTY|DON['’]?T|DRINK|AND\s+DRIVE|APPELLATION|CONTROLEE|PROTEGEE|DENOMINACION|DENOMINAZIONE|PRODUIT|PRODUCT\s+OF|PRODUCE\s+OF|MIS\s+EN|BOUTEILLE|ALC\b|ALE\b|VOL\b|ML\b|CL\b|CHENIN|BLAN[CEGKS]|HENIN|CABERNET|SAUVIGNON|PINOT|CHARDONNAY|MERLOT|SYRAH|SHIRAZ|MALBEC|RIESLING|PINOTAGE|TEMPRANILLO|SANGIOVESE|NEBBIOLO|GARNACHA|ВИНО|РОССИЙСКАЯ|ФЕДЕРАЦИЯ|СОДЕРЖИТ|ДИОКСИД|СЕРЫ|УПОТРЕБЛЕНИЕ|АЛКОГОЛЯ|ВРЕДИТ|ЗДОРОВЬЮ|ГОСТ|УРОЖАЙ|ВИНОГРАД|КРЕПОСТЬ|ОБЪЕМ|ОБЪЁМ|ИЗГОТОВИТЕЛЬ|ИМПОРТЕР|FRANCE|ITALIA|ESPANA|ARGENTINA|MENDOZA|CHILE|CHAMPAGNE|BOURGOGNE)\b/i;
 
         const validAllCapsHeaders = [];
         for (const hl of mergedHeaderLines) {
@@ -9919,7 +9596,8 @@
         const nm = document.getElementById("inName").value || "";
         const gr = document.getElementById("inGrapes")?.value || "";
         const reg = document.getElementById("inRegion").value || "";
-        const autoSearchVal = `${prod !== "Вино" ? prod : ""} ${nm}`.trim();
+        const grapeCore = (gr.split("·")[0] || "").replace(/^\d+%\s*/, "").replace(/\([^)]*\)/g, "").trim();
+        const autoSearchVal = [prod !== "Вино" ? prod : "", nm, grapeCore].filter(Boolean).join(" ").trim();
         if (autoSearchVal) {
           smartQuickSearchInput.value = autoSearchVal;
         }
@@ -10308,13 +9986,15 @@
         }
       }
 
-      // 4. Stage 3: Automatically run deep web bottle search & full content enrichment using extracted Producer / Cuvée / Region / OCR text
+      // 4. Stage 3: Automatically run deep web bottle search & Vivino Algolia enrichment using extracted Producer / Cuvée / Grape / OCR text
       const prodNow = document.getElementById("inProducer")?.value.trim() || "";
       const nameNow = document.getElementById("inName")?.value.trim() || "";
-      const autoSearchQuery = `${prodNow !== "Вино" ? prodNow : ""} ${nameNow}`.trim();
+      const grapesRawNow = document.getElementById("inGrapes")?.value.trim() || "";
+      const grapeCoreNow = (grapesRawNow.split("·")[0] || "").replace(/^\d+%\s*/, "").replace(/\([^)]*\)/g, "").trim();
+      const autoSearchQuery = [prodNow !== "Вино" ? prodNow : "", nameNow, grapeCoreNow].filter(Boolean).join(" ").trim();
       if (autoSearchQuery.length >= 4) {
         smartQuickSearchInput.value = autoSearchQuery;
-        await runStage3DeepWebBottleEnrichment({ sourceLabel: anyCodeDecoded ? "QR/штрих-кода с фото + веб-обогащения" : "OCR + веб-обогащения" });
+        await runStage3DeepWebBottleEnrichment({ sourceLabel: anyCodeDecoded ? "QR/штрих-кода с фото + Vivino" : "OCR + Vivino" });
         return;
       }
       if (anyCodeDecoded) {
