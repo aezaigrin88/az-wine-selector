@@ -2,9 +2,9 @@
 
 > **Anti-Compaction Ledger**: этот журнал защищает контекст диалога от потери при `/compact`. Записи только дописываются (`append-only`), никогда не удаляются. При продолжении работы или после `/compact` агент обязан сначала прочитать разделы 1–3 и последние записи раздела 5.
 
-- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#93`)
+- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#94`)
 - **Проект**: **[`🍷 Wine`](file:///G:/My%20Drive/az-AI/Wine)** ([Сводный WORKLOG проекта](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md) · [GEMINI.md](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md))
-- **Период**: `2026-10-30 18:25` → `2026-11-09 17:48` · **Зафиксировано запросов в реестре**: `93`
+- **Период**: `2026-10-30 18:25` → `2026-11-09 18:13` · **Зафиксировано запросов в реестре**: `94`
 - **Рабочая область**: `["file:///G:/My%20Drive/az-AI/Wine", "file:///home/antigravity/aezaigrin88/az-wine-selector"]`
 - **Продуктовая ссылка (GitHub Pages)**: [`https://aezaigrin88.github.io/az-wine-selector/`](https://aezaigrin88.github.io/az-wine-selector/)
 
@@ -1049,4 +1049,24 @@
   > Проверен статус удалённого репозитория [`aezaigrin88/az-wine-selector`](https://github.com/aezaigrin88/az-wine-selector) и деплоя GitHub Pages:
   > - Коммит [`16c07e314fb0db5d260878c326498a6e356c2900`](https://github.com/aezaigrin88/az-wine-selector/commit/16c07e314fb0db5d260878c326498a6e356c2900) (`Complete Zero-Patch refactoring (#92: declarative wines_data.json, canonical terroir tiers, dynamic Taste Compass)`, 8 файлов) запушен в ветку `main` (`2026-11-09 14:33:58 UTC`).
   > - Сборка GitHub Pages (`pages build and deployment`, run `42635936322`) успешно завершилась со статусом `completed / success` (`2026-11-09 14:36:15 UTC`), обновление опубликовано на https://aezaigrin88.github.io/az-wine-selector/ и синхронизировано с Google Drive (`G:\My Drive\az-AI\Wine`).
+
+---
+
+#### #94 [✓] `2026-11-09 17:56` — «Qr штрих код тоже может быть с фотографии, в не онлайн »
+
+- **Точный запрос пользователя**: «Qr штрих код тоже может быть с фотографии, в не онлайн »
+- **Статус черновика / промоушена**: `promoted` (synced to Google Drive `G:\My Drive\az-AI\Wine` and GitHub `aezaigrin88/az-wine-selector`)
+- **Замеры и проверки (`checks run`)**: `Node VM syntax check on index.html (10511 lines OK)`, `Node verification of ZXing.RGBLuminanceSource + GlobalHistogramBinarizer + HybridBinarizer + jsQR + isValidGs1Checksum` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html), [`WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > 1. **Причина сбоев при чтении QR / штрих-кода с фотографии (`с фотографии, а не онлайн`)**:
+  >    - В UI кнопка «Штрих-код / QR / Камера» открывала только живой видеопоток камеры (`getUserMedia`) без кнопки выбора готового фото с кодом из галереи.
+  >    - При загрузке фото через `downscaleImageFileToDataUrl()` кадр сначала сжимался до `920px` JPEG `0.82`, а затем в `decodeCodesFromCanvasOrImage()` повторно сжимался до `720px` JPEG `0.84` и проверялся только целиком (`0°` и `90°`), из-за чего мелкие QR-коды и узкие полосы EAN-13 в углу контрэтикетки размывались и теряли читаемость.
+  > 2. **Реализованное системное решение в [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html)**:
+  >    - **Явная кнопка «🖼 QR / штрих-код с фото» (`#smartCodePhotoInput`)**: добавлена как в основную полосу распознавания рядом с «📷 Фото этикетки / контрэтикетки» и «📹 Сканер камерой», так и внутрь панели камеры («🖼 Выбрать фото с QR / штрих-кодом»).
+  >    - **Декодирование QR и штрих-кодов напрямую с полноразмерного исходного фото до сжатия (100% локально / офлайн)**: внутри `downscaleImageFileToDataUrl()` `decodeCodesFromCanvasOrImage(rawImg, { isStaticPhoto: true })` запускается по полному изображению до его уменьшения до `920px` и немедленно освобождает рабочий холст (`workCanvas.width = 0`).
+  >    - **10-зонный безпотерьный сканер (`decodeCodesFromCanvasOrImage`)**: проверяет полный кадр, нижнюю половину, центр, правый/левый нижние углы, верхнюю половину и вертикальные боковые полосы (`0°`, `90°`, `270°`) через `BarcodeDetector`, `jsQR` (`attemptBoth`) и прямой `ZXing.MultiFormatReader` поверх `ZXing.RGBLuminanceSource` (`GlobalHistogramBinarizer` + `HybridBinarizer` + инверсия `lum.invert()` + растяжение контраста для затенённых фото) без промежуточного JPEG-сжатия.
+  >    - **Математический экстрактор цифр штрих-кода из OCR по контрольной сумме GS1 Modulo-10 (`isValidGs1Checksum` + `extractValidGs1BarcodesFromOcrText`)**: если сами полоски штрих-кода искажены изгибом бутылки, но цифры под штрих-кодом (`0 608051 090829`, `4 603928 005162` и т.п.) прочитаны OCR, код валидируется по контрольному разряду GS1 Modulo-10 и автоматически обрабатывается как считанный штрих-код.
+  >    - **Офлайн и онлайн разрешение (`lookupBarcodeInOpenFoodFacts` + `handleDecodedCodeResult`)**: поддерживает локальный кеш `learnedMap`, поиск по существующим бутылкам дневника `atlasData.wines`, разбор GS1 Digital Link QR (`/01/<GTIN>`), кодов «Честный ЗНАК» (`010<GTIN>`), текстовых/URL QR-кодов и GS1-страны без необходимости постоянного онлайна.
+
 

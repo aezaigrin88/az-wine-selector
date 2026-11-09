@@ -2860,23 +2860,28 @@
         <button type="button" class="btn" id="closeAddDrawerBtn" style="padding:4px 10px;font-size:0.80rem;">Закрыть</button>
       </div>
 
-      <!-- Smart 4-in-1 Recognition Strip: Photo Camera, Barcode/QR Scanner, 4507-Climat Search & Vivino Link -->
+      <!-- Smart 4-in-1 Recognition Strip: Photo Camera, Barcode/QR (Photo or Live Camera), 4507-Climat Search & Vivino Link -->
       <div class="smart-add-strip">
         <div class="smart-add-actions">
           <label class="btn btn-primary" for="smartCameraInput" style="cursor:pointer;">
-            Фото этикетки / контрэтикетки (можно несколько)
+            📷 Фото этикетки / контрэтикетки (можно несколько)
           </label>
           <input id="smartCameraInput" type="file" accept="image/*" multiple style="display:none;" />
 
-          <button type="button" class="btn" id="startBarcodeScanBtn">
-            Штрих-код / QR / Камера
+          <label class="btn" for="smartCodePhotoInput" style="cursor:pointer;" title="Считать QR-код, DataMatrix или штрих-код EAN-13 напрямую с фотографии из галереи (работает и офлайн)">
+            🖼 QR / штрих-код с фото
+          </label>
+          <input id="smartCodePhotoInput" type="file" accept="image/*" multiple style="display:none;" />
+
+          <button type="button" class="btn" id="startBarcodeScanBtn" title="Включить живое сканирование QR и штрих-кодов камерой">
+            📹 Сканер камерой
           </button>
 
           <button type="button" class="btn" id="configAiKeyBtn" style="display:none;" title="Настроить ключ Gemini Vision для автоматического чтения этикеток по фото">
             Ключ Gemini API
           </button>
           <span id="smartStatusText" style="font-size:0.80rem;color:var(--color-ink-secondary);">
-            Прикрепите одно или сразу несколько фото (этикетка + контрэтикетка), отсканируйте код или вставьте ссылку
+            Прикрепите фото этикетки / контрэтикетки / QR или штрих-кода (считывается прямо с фотографии, в том числе без интернета)
           </span>
         </div>
 
@@ -2890,8 +2895,9 @@
         <div class="barcode-scanner-box" id="barcodeScannerBox">
           <video id="barcodeVideo" class="barcode-video" playsinline muted></video>
           <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:6px;">
-            <span id="barcodeScanHint" style="font-size:0.80rem;width:100%;text-align:center;">Наведите камеру на QR-код, штрих-код или текст контрэтикетки...</span>
-            <button type="button" class="btn btn-primary" id="captureVideoFrameOcrBtn" style="padding:5px 12px;">Считать кадр (текст этикетки / код)</button>
+            <span id="barcodeScanHint" style="font-size:0.80rem;width:100%;text-align:center;">Наведите камеру на QR-код, штрих-код или текст контрэтикетки, либо выберите готовое фото с кодом...</span>
+            <button type="button" class="btn btn-primary" id="captureVideoFrameOcrBtn" style="padding:5px 12px;">Считать кадр с камеры</button>
+            <label for="smartCodePhotoInput" class="btn" style="padding:5px 12px;cursor:pointer;background:#F6F0DF;color:var(--color-ink);">🖼 Выбрать фото с QR / штрих-кодом</label>
             <button type="button" class="btn" id="stopBarcodeScanBtn" style="padding:5px 10px;">Закрыть камеру</button>
           </div>
         </div>
@@ -5341,8 +5347,18 @@
         }
         const objUrl = URL.createObjectURL(file);
         const rawImg = new Image();
-        rawImg.onload = () => {
+        rawImg.onload = async () => {
           try {
+            // Decode QR / DataMatrix / EAN-13 / UPC-A directly from the full-resolution lossless image BEFORE downscaling to 920px JPEG
+            let detectedCodes = [];
+            if (typeof decodeCodesFromCanvasOrImage === "function") {
+              try {
+                detectedCodes = await decodeCodesFromCanvasOrImage(rawImg, { isStaticPhoto: true });
+              } catch (_) {
+                detectedCodes = [];
+              }
+            }
+
             const w = rawImg.naturalWidth || rawImg.width || 800;
             const h = rawImg.naturalHeight || rawImg.height || 1000;
             const scale = Math.min(1, maxDim / Math.max(w, h));
@@ -5360,8 +5376,8 @@
             URL.revokeObjectURL(objUrl);
 
             const smallImg = new Image();
-            smallImg.onload = () => resolve({ dataUrl: compressed, imgEl: smallImg, name: file.name || "Фото" });
-            smallImg.onerror = () => resolve({ dataUrl: compressed, imgEl: null, name: file.name || "Фото" });
+            smallImg.onload = () => resolve({ dataUrl: compressed, imgEl: smallImg, name: file.name || "Фото", detectedCodes });
+            smallImg.onerror = () => resolve({ dataUrl: compressed, imgEl: null, name: file.name || "Фото", detectedCodes });
             smallImg.src = compressed;
           } catch (_) {
             URL.revokeObjectURL(objUrl);
@@ -6682,7 +6698,16 @@
       // Automatically extract facts from the newly attached photo(s) and supplement the wine in-place
       for (const item of decodedImgs) {
         if (!item.imgEl) continue;
-        await supplementExistingWineFromImage(w, item.imgEl, item.dataUrl);
+        try {
+          await supplementExistingWineFromImage(w, item.imgEl, item.dataUrl, item.detectedCodes);
+        } finally {
+          try {
+            item.imgEl.onload = null;
+            item.imgEl.onerror = null;
+            item.imgEl.src = "";
+            item.imgEl = null;
+          } catch (_) {}
+        }
       }
       enrichWineMetadata(w);
       saveAtlasState();
@@ -7325,65 +7350,157 @@
       }
     }
 
-    async function lookupBarcodeInOpenFoodFacts(barcode) {
+    async function lookupBarcodeInOpenFoodFacts(barcode, options = {}) {
       const cleanCode = String(barcode).replace(/\D/g, "");
       if (cleanCode.length < 8) return false;
       window.lastScannedBarcodeDigits = cleanCode;
+
+      const candidateCodes = [cleanCode];
+      if (cleanCode.length === 12) candidateCodes.push("0" + cleanCode);
+      if (cleanCode.length === 13 && cleanCode.startsWith("0")) candidateCodes.push(cleanCode.slice(1));
+
+      // 1. Local / Offline lookup in learned barcode cache and existing diary bottles (works 100% offline!)
       const learnedMap = typeof getLearnedBarcodeMap === "function" ? getLearnedBarcodeMap() : {};
-      if (learnedMap[cleanCode]) {
-        const kb = learnedMap[cleanCode];
-        document.getElementById("inProducer").value = kb.producer;
-        document.getElementById("inName").value = kb.name;
-        document.getElementById("inVintage").value = kb.vintage;
-        document.getElementById("inStyle").value = kb.style;
-        if (kb.grapes && document.getElementById("inGrapes")) {
-          document.getElementById("inGrapes").value = kb.grapes;
-        }
-        if (kb.vines && document.getElementById("inVinesAging")) {
-          document.getElementById("inVinesAging").value = kb.vines;
-        }
-        await resolveWineTerroirFromText(kb.query);
-        smartStatusText.textContent = `Штрих-код ${cleanCode} распознан: ${kb.producer} · ${kb.name}`;
-        smartStatusText.style.color = "var(--color-verdigris)";
-        showToast(`Найден штрих-код ${cleanCode}`);
-        return true;
-      }
-      smartStatusText.textContent = `Поиск штрих-кода ${cleanCode} в базе OpenFoodFacts...`;
-      try {
-        const resp = await fetch(`https://world.openfoodfacts.org/api/v2/product/${cleanCode}.json`);
-        if (!resp.ok) throw new Error("HTTP " + resp.status);
-        const data = await resp.json();
-        if (data && data.status === 1 && data.product) {
-          const prod = data.product;
-          const brand = prod.brands || prod.Winery || "";
-          const title = prod.product_name_fr || prod.product_name || prod.generic_name || "";
-          if (brand) document.getElementById("inProducer").value = brand.split(",")[0].trim();
-          if (title) document.getElementById("inName").value = title.trim();
-          const yearMatch = (title + " " + (prod.Categories || "")).match(/\b(19\d{2}|20[0-2]\d)\b/);
-          if (yearMatch) document.getElementById("inVintage").value = yearMatch[1];
-          if (prod.image_front_url && (!window.pendingSmartPhotos || window.pendingSmartPhotos.length === 0)) {
-            window.pendingSmartPhotos = [{ dataUrl: prod.image_front_url, name: `EAN ${cleanCode}` }];
-            renderPendingSmartPhotosUI();
-            document.getElementById("smartPhotoStatusTitle").textContent = `Найдено по штрих-коду ${cleanCode}`;
-            document.getElementById("smartPhotoStatusSub").textContent = `${brand} · ${title}`;
+      for (const cand of candidateCodes) {
+        if (learnedMap[cand]) {
+          const kb = learnedMap[cand];
+          if (kb.producer) document.getElementById("inProducer").value = kb.producer;
+          if (kb.name && !isPureGrapeVarietyName(kb.name)) document.getElementById("inName").value = kb.name;
+          if (kb.vintage) document.getElementById("inVintage").value = kb.vintage;
+          if (kb.style) document.getElementById("inStyle").value = kb.style;
+          if (kb.grapes && document.getElementById("inGrapes")) {
+            document.getElementById("inGrapes").value = kb.grapes;
           }
-          await resolveWineTerroirFromText(`${brand} ${title} ${prod.origins || ""}`);
-          smartStatusText.textContent = `Штрих-код ${cleanCode} распознан: ${brand} ${title}`;
+          if (kb.vines && document.getElementById("inVinesAging")) {
+            document.getElementById("inVinesAging").value = kb.vines;
+          }
+          await resolveWineTerroirFromText(kb.query);
+          document.getElementById("smartPhotoStatusTitle").textContent = `✓ Штрих-код ${cleanCode} распознан с фото: ${kb.producer} · ${kb.name}`;
+          smartStatusText.textContent = `Штрих-код ${cleanCode} распознан (из локальной базы): ${kb.producer} · ${kb.name}`;
           smartStatusText.style.color = "var(--color-verdigris)";
           showToast(`Найден штрих-код ${cleanCode}`);
           return true;
         }
-      } catch (err) {}
+      }
+
+      if (atlasData && Array.isArray(atlasData.wines)) {
+        const diaryHit = atlasData.wines.find(w =>
+          candidateCodes.some(c => String(w.barcode || "") === c || String(w.notes || "").includes(c))
+        );
+        if (diaryHit) {
+          document.getElementById("inProducer").value = diaryHit.producer || "";
+          document.getElementById("inName").value = diaryHit.name || "";
+          document.getElementById("inVintage").value = diaryHit.vintage || "";
+          if (diaryHit.style) document.getElementById("inStyle").value = diaryHit.style;
+          if (diaryHit.grapes && document.getElementById("inGrapes")) {
+            document.getElementById("inGrapes").value = `${diaryHit.grapes}${diaryHit.abv ? " · " + diaryHit.abv : ""}`;
+          }
+          await resolveWineTerroirFromText(`${diaryHit.producer} ${diaryHit.name} ${diaryHit.commune || ""} ${diaryHit.macro_region || ""}`);
+          document.getElementById("smartPhotoStatusTitle").textContent = `✓ Штрих-код ${cleanCode} найден в дневнике: ${diaryHit.producer} · ${diaryHit.name}`;
+          smartStatusText.textContent = `Штрих-код ${cleanCode} распознан по дневнику: ${diaryHit.producer} · ${diaryHit.name}`;
+          smartStatusText.style.color = "var(--color-verdigris)";
+          showToast(`Найден штрих-код ${cleanCode}`);
+          return true;
+        }
+      }
+
+      const applyProductRecordFromBarcode = async (brandRaw, titleRaw, originsRaw, categoriesRaw, frontImgUrl) => {
+        const brand = (brandRaw || "").split(",")[0].trim();
+        const rawTitle = (titleRaw || "").trim();
+        const combinedText = `${brand} ${rawTitle} ${originsRaw || ""} ${categoriesRaw || ""}`.trim();
+        const inProdEl = document.getElementById("inProducer");
+        const inNameEl = document.getElementById("inName");
+        if (brand && (!inProdEl.value.trim() || inProdEl.value.trim() === "Вино")) {
+          inProdEl.value = toTitleCaseWineSmart(brand);
+        }
+        const gFound = extractGrapesFromText(combinedText);
+        if (gFound && document.getElementById("inGrapes") && !document.getElementById("inGrapes").value.trim()) {
+          document.getElementById("inGrapes").value = `${gFound.grapesStr} · сухое`;
+        }
+        if (rawTitle) {
+          const stripped = stripPureGrapeSuffixFromCuvee(stripProducerFromWineTitle(rawTitle, inProdEl.value || brand));
+          if (stripped && !isPureGrapeVarietyName(stripped) && (!inNameEl.value.trim() || isPureGrapeVarietyName(inNameEl.value))) {
+            inNameEl.value = toTitleCaseWineSmart(stripped);
+          } else if (!inProdEl.value.trim()) {
+            const sp = splitProducerAndCuvee(rawTitle);
+            if (sp.producer) inProdEl.value = sp.producer;
+            if (sp.name && !isPureGrapeVarietyName(sp.name)) inNameEl.value = sp.name;
+          }
+        }
+        const yearMatch = combinedText.match(/\b(19[89]\d|20[0-2]\d)\b/);
+        if (yearMatch) document.getElementById("inVintage").value = yearMatch[1];
+        if (frontImgUrl && (!window.pendingSmartPhotos || window.pendingSmartPhotos.length === 0)) {
+          window.pendingSmartPhotos = [{ dataUrl: frontImgUrl, name: `EAN ${cleanCode}` }];
+          renderPendingSmartPhotosUI();
+        }
+        await resolveWineTerroirFromText(combinedText);
+        const dispProd = inProdEl.value || brand || "Вино";
+        const dispName = inNameEl.value || rawTitle || "";
+        document.getElementById("smartPhotoStatusTitle").textContent = `✓ Найдено по штрих-коду ${cleanCode}: ${dispProd}${dispName ? " · " + dispName : ""}`;
+        document.getElementById("smartPhotoStatusSub").textContent = `${dispProd} · ${dispName}`;
+        smartStatusText.textContent = `Штрих-код ${cleanCode} распознан: ${dispProd} ${dispName}`.trim();
+        smartStatusText.style.color = "var(--color-verdigris)";
+        showToast(`Найден штрих-код ${cleanCode}`);
+      };
+
+      // 2. Online OpenFoodFacts Product v2 & ElasticSearch API (with fast timeout so offline mode never hangs)
+      smartStatusText.textContent = `Штрих-код ${cleanCode} считан — проверяем карточку бутылки...`;
+      for (const cand of candidateCodes) {
+        try {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 2800);
+          const resp = await fetch(`https://world.openfoodfacts.org/api/v2/product/${cand}.json`, { signal: ctrl.signal });
+          clearTimeout(timer);
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && data.status === 1 && data.product) {
+              const prod = data.product;
+              const brand = prod.brands || prod.Winery || "";
+              const title = prod.product_name_fr || prod.product_name || prod.generic_name || "";
+              if (brand || title) {
+                await applyProductRecordFromBarcode(brand, title, prod.origins || prod.countries || "", prod.categories || prod.labels || "", prod.image_front_url);
+                return true;
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      try {
+        const sCtrl = new AbortController();
+        const sTimer = setTimeout(() => sCtrl.abort(), 2600);
+        const sResp = await fetch(`https://search.openfoodfacts.org/search?q=${encodeURIComponent(cleanCode)}&page_size=3&fields=code,product_name,product_name_fr,product_name_en,brands,categories,origins,countries,labels,image_front_url`, { signal: sCtrl.signal });
+        clearTimeout(sTimer);
+        if (sResp.ok) {
+          const sData = await sResp.json();
+          const hits = Array.isArray(sData?.hits) ? sData.hits : [];
+          const hit = hits.find(h => candidateCodes.includes(String(h.code || "").replace(/\D/g, ""))) || hits[0];
+          if (hit && (hit.brands || hit.product_name_fr || hit.product_name)) {
+            const brand = Array.isArray(hit.brands) ? hit.brands[0] : (hit.brands || "");
+            const title = hit.product_name_fr || hit.product_name || hit.product_name_en || "";
+            await applyProductRecordFromBarcode(brand, title, `${hit.origins || ""} ${hit.countries || ""}`, `${hit.categories || ""} ${hit.labels || ""}`, hit.image_front_url);
+            return true;
+          }
+        }
+      } catch (_) {}
+
+      const notesEl = document.getElementById("inNotes");
+      if (notesEl && !notesEl.value.includes(cleanCode)) {
+        notesEl.value = (notesEl.value ? notesEl.value + " · " : "") + `EAN: ${cleanCode}`;
+      }
+
       const gs1Fallback = resolveCountryFromGs1BarcodePrefix(cleanCode);
-      if (gs1Fallback && gs1Fallback.regionId && !document.getElementById("inRegion").value.trim()) {
+      if (!options.deferGs1RegionFallback && gs1Fallback && gs1Fallback.regionId && !document.getElementById("inRegion").value.trim()) {
         const defReg = WORLD_WINE_REGIONS.find(r => r.id === gs1Fallback.regionId);
         if (defReg) applyWorldRegionToForm(defReg);
       }
-      smartStatusText.textContent = `Штрих-код ${cleanCode} записан в заметку (в открытой базе нет карточки · читаем текст этикетки...)`;
-      const notesEl = document.getElementById("inNotes");
-      if (!notesEl.value.includes(cleanCode)) {
-        notesEl.value = (notesEl.value ? notesEl.value + " · " : "") + `EAN: ${cleanCode}`;
-      }
+
+      const countryHint = gs1Fallback ? ` (${gs1Fallback.country})` : "";
+      document.getElementById("smartPhotoStatusTitle").textContent =
+        `✓ Штрих-код ${cleanCode}${countryHint} считан с фото`;
+      smartStatusText.textContent =
+        `Штрих-код ${cleanCode}${countryHint} считан с фотографии и сохранён в карточку (дополняем данными с этикетки...)`;
+      smartStatusText.style.color = "var(--color-verdigris)";
       return false;
     }
 
@@ -9026,149 +9143,287 @@
       return null;
     }
 
-    // Universal Cross-Browser Code Decoder (iOS Safari jsQR + ZXing + Chromium BarcodeDetector, with strict canvas cleanup for iOS WebKit memory safety)
-    async function decodeCodesFromCanvasOrImage(sourceEl) {
+    // Exact GS1 Modulo-10 Check-Digit Validator for EAN-13, UPC-A (12), EAN-8, and GTIN-14
+    function isValidGs1Checksum(digits) {
+      const s = String(digits || "").replace(/\D/g, "");
+      if (![8, 12, 13, 14].includes(s.length)) return false;
+      if (/^0+$/.test(s)) return false;
+      let sum = 0;
+      for (let i = 0; i < s.length; i++) {
+        const d = Number(s[i]);
+        const weight = ((s.length - 1 - i) % 2 === 1) ? 3 : 1;
+        sum += d * weight;
+      }
+      return (sum % 10) === 0;
+    }
+
+    // Extract human-readable EAN-13 / UPC-A barcodes printed below barcode bars on photos (verified by GS1 Modulo-10 check digit)
+    function extractValidGs1BarcodesFromOcrText(rawText) {
+      const found = [];
+      if (!rawText) return found;
+      const cleaned = String(rawText)
+        .replace(/[|!lI]/g, "1")
+        .replace(/(\d)[Oo](\d)/g, "$10$2");
+      const patterns = [
+        /\b(\d[\s>»\-]*\d{6}[\s>»\-]*\d{6})\b/g,
+        /\b(\d[\s>»\-]*\d{5}[\s>»\-]*\d{5}[\s>»\-]*\d)\b/g,
+        /\b(\d{12,14})\b/g
+      ];
+      for (const re of patterns) {
+        for (const m of cleaned.matchAll(re)) {
+          const digits = m[1].replace(/\D/g, "");
+          if ((digits.length === 12 || digits.length === 13 || digits.length === 14) && isValidGs1Checksum(digits)) {
+            if (!found.includes(digits)) found.push(digits);
+          }
+        }
+      }
+      return found;
+    }
+
+    // Universal Cross-Browser Code Decoder (works 100% locally on photos & video frames via jsQR + lossless ZXing RGBLuminanceSource + BarcodeDetector)
+    async function decodeCodesFromCanvasOrImage(sourceEl, options = {}) {
       const results = [];
       if (!sourceEl) return results;
       const srcW = sourceEl.videoWidth || sourceEl.naturalWidth || sourceEl.width || 640;
       const srcH = sourceEl.videoHeight || sourceEl.naturalHeight || sourceEl.height || 480;
       if (!srcW || !srcH) return results;
 
-      const allocatedCanvases = [];
-      const freeAllCanvases = () => {
-        for (const cv of allocatedCanvases) {
-          try { cv.width = 0; cv.height = 0; } catch (_) {}
-        }
-        allocatedCanvases.length = 0;
-      };
+      const isStaticPhoto = Boolean(options.isStaticPhoto || !(sourceEl instanceof HTMLVideoElement));
+      const workCanvas = document.createElement("canvas");
+      const workCtx = workCanvas.getContext("2d", { willReadFrequently: true });
 
-      const buildRotatedCanvas = (angleDeg, maxDim = 760) => {
-        const scale = Math.min(1, maxDim / Math.max(srcW, srcH));
-        const w = Math.max(1, Math.round(srcW * scale));
-        const h = Math.max(1, Math.round(srcH * scale));
-        const c = document.createElement("canvas");
-        allocatedCanvases.push(c);
+      let zxingReader = null;
+      if (window.ZXing && window.ZXing.MultiFormatReader) {
+        try {
+          zxingReader = new window.ZXing.MultiFormatReader();
+          const hints = new Map();
+          if (window.ZXing.DecodeHintType) {
+            hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
+            if (window.ZXing.BarcodeFormat) {
+              hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+                window.ZXing.BarcodeFormat.QR_CODE,
+                window.ZXing.BarcodeFormat.DATA_MATRIX,
+                window.ZXing.BarcodeFormat.EAN_13,
+                window.ZXing.BarcodeFormat.EAN_8,
+                window.ZXing.BarcodeFormat.UPC_A,
+                window.ZXing.BarcodeFormat.UPC_E,
+                window.ZXing.BarcodeFormat.CODE_128,
+                window.ZXing.BarcodeFormat.PDF_417
+              ]);
+            }
+          }
+          zxingReader.setHints(hints);
+        } catch (_) {
+          zxingReader = null;
+        }
+      }
+
+      let nativeDetector = null;
+      if ("BarcodeDetector" in window) {
+        try {
+          nativeDetector = new window.BarcodeDetector({
+            formats: ["qr_code", "ean_13", "ean_8", "upc_a", "upc_e", "code_128", "data_matrix", "pdf417"]
+          });
+        } catch (_) {
+          nativeDetector = null;
+        }
+      }
+
+      const drawRegionToWorkCanvas = (rx, ry, rw, rh, angleDeg = 0, maxDim = 1280) => {
+        const sx = Math.max(0, Math.round(srcW * rx));
+        const sy = Math.max(0, Math.round(srcH * ry));
+        const sw = Math.max(24, Math.min(srcW - sx, Math.round(srcW * rw)));
+        const sh = Math.max(24, Math.min(srcH - sy, Math.round(srcH * rh)));
+        const scale = Math.min(1, maxDim / Math.max(1, sw, sh));
+        const dw = Math.max(24, Math.round(sw * scale));
+        const dh = Math.max(24, Math.round(sh * scale));
+
         if (angleDeg === 90 || angleDeg === 270) {
-          c.width = h;
-          c.height = w;
+          workCanvas.width = dh;
+          workCanvas.height = dw;
         } else {
-          c.width = w;
-          c.height = h;
+          workCanvas.width = dw;
+          workCanvas.height = dh;
         }
-        const ctx = c.getContext("2d", { willReadFrequently: true });
-        ctx.save();
+        workCtx.save();
         if (angleDeg === 90) {
-          ctx.translate(c.width, 0);
-          ctx.rotate(Math.PI / 2);
+          workCtx.translate(workCanvas.width, 0);
+          workCtx.rotate(Math.PI / 2);
         } else if (angleDeg === 270) {
-          ctx.translate(0, c.height);
-          ctx.rotate(-Math.PI / 2);
+          workCtx.translate(0, workCanvas.height);
+          workCtx.rotate(-Math.PI / 2);
+        } else if (angleDeg === 180) {
+          workCtx.translate(workCanvas.width, workCanvas.height);
+          workCtx.rotate(Math.PI);
         }
-        ctx.drawImage(sourceEl, 0, 0, w, h);
-        ctx.restore();
-        return { c, ctx };
+        workCtx.drawImage(sourceEl, sx, sy, sw, sh, 0, 0, dw, dh);
+        workCtx.restore();
       };
 
-      try {
-        const { c, ctx } = buildRotatedCanvas(0, 760);
+      const tryDecodeCurrentWorkCanvas = async () => {
+        const w = workCanvas.width;
+        const h = workCanvas.height;
+        if (w < 24 || h < 24) return null;
 
-        // 1. Native BarcodeDetector if available (0° and 90° for vertical wine label barcodes)
-        if ("BarcodeDetector" in window) {
+        // 1. Native BarcodeDetector
+        if (nativeDetector) {
           try {
-            const detector = new window.BarcodeDetector({
-              formats: ["qr_code", "ean_13", "ean_8", "upc_a", "upc_e", "code_128", "data_matrix", "pdf417"]
-            });
-            for (const angle of [0, 90]) {
-              const target = angle === 0 ? c : buildRotatedCanvas(90, 760).c;
-              const found = await detector.detect(target);
-              if (found && found.length > 0) {
-                found.forEach(item => { if (item.rawValue) results.push(item.rawValue.trim()); });
-                if (results.length > 0) return results;
+            const found = await nativeDetector.detect(workCanvas);
+            if (found && found.length > 0) {
+              for (const item of found) {
+                if (item.rawValue && item.rawValue.trim()) return item.rawValue.trim();
               }
             }
           } catch (_) {}
         }
 
-        // 2. jsQR on full frame + bottom-center QR region
+        // Pull lossless RGBA pixel buffer once for both jsQR and ZXing RGBLuminanceSource
+        let imgData = null;
+        try {
+          imgData = workCtx.getImageData(0, 0, w, h);
+        } catch (_) {
+          return null;
+        }
+        const rgba = imgData.data;
+
+        // 2. jsQR (fast QR decoder supporting both standard and inverted light-on-dark QR codes)
         if (typeof window.jsQR === "function") {
           try {
-            const fullData = ctx.getImageData(0, 0, c.width, c.height);
-            const qr1 = window.jsQR(fullData.data, fullData.width, fullData.height, { inversionAttempts: "attemptBoth" });
-            if (qr1 && qr1.data) {
-              results.push(qr1.data.trim());
-              return results;
-            }
-            const bx = Math.round(c.width * 0.18), by = Math.round(c.height * 0.38);
-            const bw = Math.round(c.width * 0.64), bh = Math.round(c.height * 0.56);
-            if (bw > 40 && bh > 40) {
-              const subData = ctx.getImageData(bx, by, bw, bh);
-              const qr2 = window.jsQR(subData.data, subData.width, subData.height, { inversionAttempts: "attemptBoth" });
-              if (qr2 && qr2.data) {
-                results.push(qr2.data.trim());
-                return results;
-              }
+            const qr = window.jsQR(rgba, w, h, { inversionAttempts: "attemptBoth" });
+            if (qr && qr.data && qr.data.trim()) {
+              return qr.data.trim();
             }
           } catch (_) {}
         }
 
-        // 3. ZXing MultiFormatReader (0° and 90° rotated for vertical EAN-13 barcodes on wine labels)
-        if (window.ZXing && window.ZXing.BrowserMultiFormatReader) {
+        // 3. Direct lossless ZXing MultiFormatReader via RGBLuminanceSource (no JPEG re-encoding, no extra DOM canvas)
+        if (zxingReader && window.ZXing.RGBLuminanceSource && window.ZXing.BinaryBitmap) {
           try {
-            const hints = new Map();
-            if (window.ZXing.DecodeHintType && window.ZXing.BarcodeFormat) {
-              hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
+            const len = w * h;
+            const gray = new Uint8ClampedArray(len);
+            let minL = 255, maxL = 0;
+            for (let i = 0, p = 0; i < len; i++, p += 4) {
+              const l = (306 * rgba[p] + 601 * rgba[p + 1] + 117 * rgba[p + 2] + 512) >> 10;
+              gray[i] = l;
+              if (l < minL) minL = l;
+              if (l > maxL) maxL = l;
             }
-            const reader = new window.ZXing.BrowserMultiFormatReader(hints);
-            for (const angle of [0, 90]) {
+            const lum = new window.ZXing.RGBLuminanceSource(gray, w, h);
+            const binarizers = [];
+            if (window.ZXing.GlobalHistogramBinarizer) {
+              binarizers.push(new window.ZXing.GlobalHistogramBinarizer(lum));
+            }
+            if (window.ZXing.HybridBinarizer) {
+              binarizers.push(new window.ZXing.HybridBinarizer(lum));
+              if (typeof lum.invert === "function") {
+                binarizers.push(new window.ZXing.HybridBinarizer(lum.invert()));
+              }
+            }
+            for (const bin of binarizers) {
               try {
-                const rotC = angle === 0 ? c : buildRotatedCanvas(angle, 720).c;
-                const dataUrl = rotC.toDataURL("image/jpeg", 0.84);
-                const tmpImg = new Image();
-                tmpImg.src = dataUrl;
-                await new Promise(r => { tmpImg.onload = r; tmpImg.onerror = r; });
-                const zRes = await reader.decodeFromImageElement(tmpImg);
-                tmpImg.onload = null;
-                tmpImg.onerror = null;
-                tmpImg.src = "";
-                if (zRes && zRes.getText()) {
-                  results.push(zRes.getText().trim());
-                  return results;
+                const zRes = zxingReader.decodeWithState(new window.ZXing.BinaryBitmap(bin));
+                if (zRes && zRes.getText && zRes.getText().trim()) {
+                  return zRes.getText().trim();
+                }
+              } catch (_) {}
+            }
+
+            // Contrast-stretched pass for low-contrast / shadowed photos of barcodes or QR codes
+            const span = maxL - minL;
+            if (isStaticPhoto && span >= 30 && span < 210) {
+              const stretched = new Uint8ClampedArray(len);
+              const invSpan = 255 / span;
+              for (let i = 0; i < len; i++) {
+                const v = Math.round((gray[i] - minL) * invSpan);
+                stretched[i] = v < 0 ? 0 : (v > 255 ? 255 : v);
+              }
+              const sLum = new window.ZXing.RGBLuminanceSource(stretched, w, h);
+              try {
+                const zRes2 = zxingReader.decodeWithState(new window.ZXing.BinaryBitmap(new window.ZXing.GlobalHistogramBinarizer(sLum)));
+                if (zRes2 && zRes2.getText && zRes2.getText().trim()) {
+                  return zRes2.getText().trim();
                 }
               } catch (_) {}
             }
           } catch (_) {}
         }
+
+        return null;
+      };
+
+      try {
+        // Multi-crop & multi-orientation scan schedule (high-res localized crops for photos, fast 3-pass for live video)
+        const scanRegions = isStaticPhoto
+          ? [
+              { rx: 0.0,  ry: 0.0,  rw: 1.0,  rh: 1.0,  angle: 0,   maxDim: 1380 }, // 1. Full photo 0°
+              { rx: 0.04, ry: 0.36, rw: 0.92, rh: 0.62, angle: 0,   maxDim: 1200 }, // 2. Lower half 0° (back-label QR / EAN-13 zone)
+              { rx: 0.12, ry: 0.18, rw: 0.76, rh: 0.68, angle: 0,   maxDim: 1100 }, // 3. Center zoom 0°
+              { rx: 0.34, ry: 0.40, rw: 0.64, rh: 0.58, angle: 0,   maxDim: 1000 }, // 4. Bottom-right corner QR / barcode
+              { rx: 0.02, ry: 0.40, rw: 0.64, rh: 0.58, angle: 0,   maxDim: 1000 }, // 5. Bottom-left corner QR / barcode
+              { rx: 0.05, ry: 0.02, rw: 0.90, rh: 0.56, angle: 0,   maxDim: 1100 }, // 6. Upper half 0° (neck / top QR stamp)
+              { rx: 0.0,  ry: 0.0,  rw: 1.0,  rh: 1.0,  angle: 90,  maxDim: 1280 }, // 7. Full photo 90° (vertical barcode)
+              { rx: 0.46, ry: 0.12, rw: 0.52, rh: 0.84, angle: 90,  maxDim: 1100 }, // 8. Right vertical edge barcode strip 90°
+              { rx: 0.02, ry: 0.12, rw: 0.52, rh: 0.84, angle: 90,  maxDim: 1100 }, // 9. Left vertical edge barcode strip 90°
+              { rx: 0.0,  ry: 0.0,  rw: 1.0,  rh: 1.0,  angle: 270, maxDim: 1200 }  // 10. Full photo 270°
+            ]
+          : [
+              { rx: 0.0,  ry: 0.0,  rw: 1.0,  rh: 1.0,  angle: 0,   maxDim: 800 },
+              { rx: 0.14, ry: 0.20, rw: 0.72, rh: 0.64, angle: 0,   maxDim: 720 },
+              { rx: 0.0,  ry: 0.0,  rw: 1.0,  rh: 1.0,  angle: 90,  maxDim: 760 }
+            ];
+
+        for (const reg of scanRegions) {
+          drawRegionToWorkCanvas(reg.rx, reg.ry, reg.rw, reg.rh, reg.angle, reg.maxDim);
+          const hit = await tryDecodeCurrentWorkCanvas();
+          if (hit) {
+            results.push(hit);
+            return results;
+          }
+        }
       } finally {
-        freeAllCanvases();
+        try {
+          workCanvas.width = 0;
+          workCanvas.height = 0;
+        } catch (_) {}
       }
 
       return results;
     }
 
-    // Smart handler for any decoded QR, DataMatrix, EGAIS, or EAN-13 code
-    async function handleDecodedCodeResult(rawVal, fallbackImageEl) {
+    // Smart handler for any decoded QR, DataMatrix, EGAIS, GS1 Digital Link, or EAN-13 code (from photo or live camera, online or offline)
+    async function handleDecodedCodeResult(rawVal, fallbackImageEl, options = {}) {
       const code = String(rawVal || "").trim();
       if (!code) return false;
       if (!smartQuickSearchInput.value.trim()) {
         smartQuickSearchInput.value = code;
       }
 
-      // Case 1: URL inside QR code (or domain/path without protocol)
-      if (/^https?:\/\//i.test(code) || /^(www\.|[a-z0-9-]+\.(ru|com|fr|it|de|es|org|net|wine)\/)/i.test(code)) {
+      // Case 1: URL inside QR code (including GS1 Digital Link /01/<GTIN>, Vivino, store links, or winery e-labels)
+      if (/^https?:\/\//i.test(code) || /^(www\.|[a-z0-9-]+\.(ru|com|fr|it|de|es|org|net|wine|eu|io|ch|at|pt|cl|ar|za)\/)/i.test(code)) {
         const fullUrl = /^https?:\/\//i.test(code) ? code : `https://${code}`;
-        smartStatusText.textContent = `QR-код распознан (${fullUrl}) — загружаем карточку вина...`;
+        document.getElementById("smartPhotoStatusTitle").textContent = `✓ QR-код считан с фото: ${fullUrl.slice(0, 56)}`;
+        smartStatusText.textContent = `QR-код распознан (${fullUrl}) — извлекаем данные бутылки...`;
         smartStatusText.style.color = "var(--color-verdigris)";
+
+        // Check if QR URL embeds a GS1 Digital Link GTIN (/01/03258691701124 or ?gtin=...)
+        const digitalLinkGtin = fullUrl.match(/\/01\/0?(\d{12,13})\b/) || fullUrl.match(/[?&](?:gtin|ean|barcode)=0?(\d{8,14})\b/i);
+        if (digitalLinkGtin) {
+          await lookupBarcodeInOpenFoodFacts(digitalLinkGtin[1], options);
+        }
+
         await parseSmartTextOrUrl(fullUrl);
         return true;
       }
 
-      // Case 2: Russian Честный ЗНАК / GS1 DataMatrix starting with 010<13-digit GTIN>
+      // Case 2: Russian Честный ЗНАК / GS1 DataMatrix starting with 010<13-digit GTIN> or 01<14-digit GTIN>
       const gs1Match = code.match(/^010?(\d{13})/);
       if (gs1Match) {
         const gtin13 = gs1Match[1];
-        smartStatusText.textContent = `Из кода маркировки извлечён EAN-13: ${gtin13}...`;
-        const ok = await lookupBarcodeInOpenFoodFacts(gtin13);
-        if (!ok && fallbackImageEl) {
+        document.getElementById("smartPhotoStatusTitle").textContent = `✓ Код маркировки считан с фото (EAN ${gtin13})`;
+        smartStatusText.textContent = `Из QR/DataMatrix кода маркировки извлечён EAN-13: ${gtin13}...`;
+        smartStatusText.style.color = "var(--color-verdigris)";
+        const ok = await lookupBarcodeInOpenFoodFacts(gtin13, options);
+        if (!ok && fallbackImageEl && !options.skipAutoOcr) {
           await runAutomaticLabelOcr(fallbackImageEl);
         }
         return true;
@@ -9177,8 +9432,8 @@
       // Case 3: Standard 8-14 digit EAN / UPC barcode
       const digitsOnly = code.replace(/\D/g, "");
       if (/^\d{8,14}$/.test(code) || (digitsOnly.length >= 8 && digitsOnly.length <= 14 && digitsOnly.length >= code.length * 0.7)) {
-        const ok = await lookupBarcodeInOpenFoodFacts(digitsOnly);
-        if (!ok && fallbackImageEl) {
+        const ok = await lookupBarcodeInOpenFoodFacts(digitsOnly, options);
+        if (!ok && fallbackImageEl && !options.skipAutoOcr) {
           await runAutomaticLabelOcr(fallbackImageEl);
         }
         return true;
@@ -9186,15 +9441,23 @@
 
       // Case 4: Russian EGAIS Federal Special Stamp
       if (code.length >= 20 && /[A-Z0-9]{15,}/i.test(code)) {
-        smartStatusText.textContent = "Считана федеральная специальная марка ЕГАИС — читаем название вина с этикетки...";
-        if (fallbackImageEl) {
-          await runAutomaticLabelOcr(fallbackImageEl);
-          return true;
+        const notesEl = document.getElementById("inNotes");
+        if (notesEl && !notesEl.value.includes(code.slice(0, 24))) {
+          notesEl.value = (notesEl.value ? notesEl.value + " · " : "") + `Акциз/ЕГАИС: ${code.slice(0, 28)}…`;
         }
+        document.getElementById("smartPhotoStatusTitle").textContent = "✓ Код акцизной марки ЕГАИС считан с фото";
+        smartStatusText.textContent = "Считана федеральная специальная марка ЕГАИС с фото — читаем название вина с этикетки...";
+        smartStatusText.style.color = "var(--color-verdigris)";
+        if (fallbackImageEl && !options.skipAutoOcr) {
+          await runAutomaticLabelOcr(fallbackImageEl);
+        }
+        return true;
       }
 
-      // Case 5: Plain text inside QR code
-      parseSmartTextOrUrl(code);
+      // Case 5: Plain text / JSON / wine card inside QR code (works 100% offline!)
+      document.getElementById("smartPhotoStatusTitle").textContent = `✓ QR-текст считан с фото: ${code.slice(0, 48)}`;
+      await parseOcrLabelTextToForm(code);
+      await parseSmartTextOrUrl(code);
       return true;
     }
 
@@ -9672,10 +9935,11 @@
       return matchedAny;
     }
 
-    // Supplement an already-saved bottle in-place when user attaches a new photo (e.g. back-label) via "+ Фото" in the Wine Passport
-    async function supplementExistingWineFromImage(w, imgEl, dataUrl) {
+    // Supplement an already-saved bottle in-place when user attaches a new photo (e.g. back-label / QR / barcode) via "+ Фото" in the Wine Passport
+    async function supplementExistingWineFromImage(w, imgEl, dataUrl, preDetectedCodes = []) {
       if (!w || !imgEl) return false;
       let updated = false;
+      let ocrRawCombined = "";
 
       // 1. Run OCR on the newly attached photo and merge extracted facts into `w` (single worker, <=860px JPEG crops, immediate canvas release)
       if (window.Tesseract) {
@@ -9706,8 +9970,9 @@
           chunks.push(c1?.data?.text || "");
           chunks.push(c2?.data?.text || "");
           chunks.push(c3?.data?.text || "");
+          ocrRawCombined = chunks.join("\n");
 
-          const facts = extractStructuredWineFacts(chunks.join("\n"));
+          const facts = extractStructuredWineFacts(ocrRawCombined);
           if (facts) {
             if (facts.grapeInfo && (!w.grapes || /кюве/i.test(w.grapes))) {
               w.grapes = facts.grapeInfo.grapesStr;
@@ -9756,8 +10021,13 @@
         }
       }
 
-      // 2. Check Barcode / QR on the newly attached photo (only applying GS1 country fallback if country wasn't resolved by OCR)
-      const codes = await decodeCodesFromCanvasOrImage(imgEl);
+      // 2. Check Barcode / QR on the newly attached photo (using full-resolution preDetectedCodes + OCR GS1 Modulo-10 numbers)
+      let codes = Array.isArray(preDetectedCodes) && preDetectedCodes.length > 0
+        ? preDetectedCodes
+        : await decodeCodesFromCanvasOrImage(imgEl, { isStaticPhoto: true });
+      if ((!codes || codes.length === 0) && ocrRawCombined) {
+        codes = extractValidGs1BarcodesFromOcrText(ocrRawCombined);
+      }
       if (codes && codes.length > 0) {
         const digits = String(codes[0]).replace(/\D/g, "");
         const learnedMap = typeof getLearnedBarcodeMap === "function" ? getLearnedBarcodeMap() : {};
@@ -9924,17 +10194,24 @@
       return false;
     }
 
-    // Multi-Photo Camera / Gallery Upload Handler (processes ALL uploaded photos with a SINGLE shared OCR worker & releases image bitmaps immediately)
-    async function handleMultipleSmartPhotoFiles(fileList) {
+    // Multi-Photo Camera / Gallery Upload Handler (decodes QR & Barcodes at full resolution directly from the photo + runs single-worker OCR)
+    async function handleMultipleSmartPhotoFiles(fileList, options = {}) {
       const files = Array.from(fileList || []).filter(Boolean);
       if (files.length === 0) return;
 
+      if (typeof stopLiveBarcodeScanner === "function") {
+        stopLiveBarcodeScanner();
+      }
+
+      const isCodePhotoMode = Boolean(options.codePhotoMode);
       document.getElementById("smartPhotoStatusTitle").textContent =
-        files.length > 1
-          ? `Загружаем и анализируем ${files.length} фото (этикетка + контрэтикетка)...`
-          : "Анализируем фото этикетки / контрэтикетки...";
+        isCodePhotoMode
+          ? "Считываем QR-код / штрих-код с выбранной фотографии..."
+          : (files.length > 1
+              ? `Загружаем и анализируем ${files.length} фото (этикетка + контрэтикетка + QR/штрих-код)...`
+              : "Анализируем фото этикетки / контрэтикетки / QR-кода...");
       document.getElementById("smartPhotoStatusSub").textContent = files.map(f => f.name).join(" · ");
-      smartStatusText.textContent = "Этап 1 (OCR): читаем текст этикетки, контрэтикетки и штрих-код...";
+      smartStatusText.textContent = "Считываем QR / штрих-код и текст этикетки прямо с фотографии...";
 
       const newlyAdded = [];
       for (const file of files) {
@@ -9947,7 +10224,28 @@
       }
       renderPendingSmartPhotosUI();
 
-      // 1. Run Automatic Label & Back-Label OCR across all uploaded photos using ONE shared Tesseract worker (prevents multiple WASM heap allocations on iOS Safari)
+      // 1. Process any QR / DataMatrix / EAN-13 codes already decoded from the full-resolution lossless photo inside downscaleImageFileToDataUrl
+      const preDecodedCodes = [];
+      for (const item of newlyAdded) {
+        if (Array.isArray(item.detectedCodes)) {
+          for (const c of item.detectedCodes) {
+            if (c && !preDecodedCodes.includes(c)) preDecodedCodes.push(c);
+          }
+        }
+      }
+
+      let anyCodeDecoded = false;
+      for (const codeVal of preDecodedCodes) {
+        try {
+          const okCode = await handleDecodedCodeResult(codeVal, null, {
+            deferGs1RegionFallback: true,
+            skipAutoOcr: true
+          });
+          if (okCode) anyCodeDecoded = true;
+        } catch (_) {}
+      }
+
+      // 2. Run Automatic Label & Back-Label OCR across all uploaded photos using ONE shared Tesseract worker (prevents multiple WASM heap allocations on iOS Safari)
       let anyOcrSuccess = false;
       let sharedWorker = null;
       try {
@@ -9970,13 +10268,16 @@
         }
       }
 
-      // 2. Check QR / Barcode decoding across all newly uploaded photos (without re-running OCR a second time!) and immediately free each image bitmap
+      // 3. Free image bitmaps and check fallback QR / Barcode decoding (including printed EAN-13 / UPC-A numbers verified by GS1 Modulo-10 checksum in OCR text!)
       for (const item of newlyAdded) {
         if (!item.imgEl) continue;
         try {
-          const codes = await decodeCodesFromCanvasOrImage(item.imgEl);
-          if (codes && codes.length > 0) {
-            await handleDecodedCodeResult(codes[0], null);
+          if (preDecodedCodes.length === 0) {
+            const codes = await decodeCodesFromCanvasOrImage(item.imgEl, { isStaticPhoto: true });
+            if (codes && codes.length > 0) {
+              await handleDecodedCodeResult(codes[0], null, { deferGs1RegionFallback: false, skipAutoOcr: true });
+              anyCodeDecoded = true;
+            }
           }
         } catch (_) {
         } finally {
@@ -9989,13 +10290,41 @@
         }
       }
 
-      // 3. Stage 3: Automatically run deep web bottle search & full content enrichment using extracted Producer / Cuvée / Region / OCR text
+      // 3B. If visual bar decoding missed a curved barcode on the bottle, extract printed EAN-13 / UPC-A digits with valid GS1 Modulo-10 check digit from OCR text!
+      if (!anyCodeDecoded && window.accumulatedSmartOcrText) {
+        const ocrBarcodes = extractValidGs1BarcodesFromOcrText(window.accumulatedSmartOcrText);
+        if (ocrBarcodes.length > 0) {
+          await handleDecodedCodeResult(ocrBarcodes[0], null, { deferGs1RegionFallback: false, skipAutoOcr: true });
+          anyCodeDecoded = true;
+        }
+      }
+
+      // 3C. If a barcode was scanned and #inRegion is still empty after OCR, apply the GS1 country prefix fallback now
+      if (window.lastScannedBarcodeDigits && !document.getElementById("inRegion")?.value.trim()) {
+        const gs1Fallback = resolveCountryFromGs1BarcodePrefix(window.lastScannedBarcodeDigits);
+        if (gs1Fallback && gs1Fallback.regionId) {
+          const defReg = WORLD_WINE_REGIONS.find(r => r.id === gs1Fallback.regionId);
+          if (defReg) applyWorldRegionToForm(defReg);
+        }
+      }
+
+      // 4. Stage 3: Automatically run deep web bottle search & full content enrichment using extracted Producer / Cuvée / Region / OCR text
       const prodNow = document.getElementById("inProducer")?.value.trim() || "";
       const nameNow = document.getElementById("inName")?.value.trim() || "";
       const autoSearchQuery = `${prodNow !== "Вино" ? prodNow : ""} ${nameNow}`.trim();
       if (autoSearchQuery.length >= 4) {
         smartQuickSearchInput.value = autoSearchQuery;
-        await runStage3DeepWebBottleEnrichment({ sourceLabel: "OCR + веб-обогащения" });
+        await runStage3DeepWebBottleEnrichment({ sourceLabel: anyCodeDecoded ? "QR/штрих-кода с фото + веб-обогащения" : "OCR + веб-обогащения" });
+        return;
+      }
+      if (anyCodeDecoded) {
+        const codeStr = window.lastScannedBarcodeDigits || smartQuickSearchInput.value.trim();
+        const gs1Info = window.lastScannedBarcodeDigits ? resolveCountryFromGs1BarcodePrefix(window.lastScannedBarcodeDigits) : null;
+        document.getElementById("smartPhotoStatusTitle").textContent =
+          `✓ Код с фотографии считан: ${codeStr}${gs1Info ? " (" + gs1Info.country + ")" : ""}`;
+        smartStatusText.textContent =
+          `Код ${codeStr}${gs1Info ? " (" + gs1Info.country + ")" : ""} успешно считан с фото и записан в карточку. При необходимости прикрепите фото передней этикетки или укажите Производителя.`;
+        smartStatusText.style.color = "var(--color-verdigris)";
         return;
       }
       if (anyOcrSuccess) {
@@ -10007,7 +10336,7 @@
         return;
       }
 
-      // 4. Fallback: check non-generic filenames
+      // 5. Fallback: check non-generic filenames
       for (const item of newlyAdded) {
         const cleanFileName = (item.file.name || "").replace(/\.[a-z0-9]+$/i, "").replace(/[_-]+/g, " ");
         if (cleanFileName && !/^(img|dsc|photo|image|pxl|whatsapp|media)/i.test(cleanFileName)) {
@@ -10020,12 +10349,17 @@
     }
 
     document.getElementById("smartCameraInput").addEventListener("change", async e => {
-      await handleMultipleSmartPhotoFiles(e.target.files);
+      await handleMultipleSmartPhotoFiles(e.target.files, { codePhotoMode: false });
+      e.target.value = "";
+    });
+
+    document.getElementById("smartCodePhotoInput")?.addEventListener("change", async e => {
+      await handleMultipleSmartPhotoFiles(e.target.files, { codePhotoMode: true });
       e.target.value = "";
     });
 
     document.getElementById("inPhoto").addEventListener("change", async e => {
-      await handleMultipleSmartPhotoFiles(e.target.files);
+      await handleMultipleSmartPhotoFiles(e.target.files, { codePhotoMode: false });
     });
 
     document.getElementById("configAiKeyBtn").addEventListener("click", () => {
