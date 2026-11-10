@@ -1146,3 +1146,20 @@ Check out this wine. I scanned it with the @Vivino app: https://www.vivino.com/w
   >    - **Белые на праздники**: **`2022 Domaine Xavier Monnot Monthélie «Les Duresses» Blanc`** (арт. `9901794`, **8 000 ₽**), **`2022 Domaine Xavier Monnot Bourgogne Chardonnay «Les Grandes Coutures»`** (арт. `9901793`, **4 300 ₽** — участок у границы Мерсо), **`2022 Les Terres de Philéandre (David Duband) Bourgogne Aligoté`** (арт. `9901331`, **3 600 ₽**) и **`2022 Mantlerhof Grüner Veltliner Bio 1,0 л`** (арт. `9902154`, **2 100 ₽** за литр).
   >    - **Красные на праздники**: **`2022 Domaine Xavier Monnot Bourgogne Pinot Noir`** (арт. `9901808`, **4 500 ₽**) и **`2023 The Bothey «Royal Bow» Grenache Noir`** (арт. `9902818`, **3 000 ₽**).
   > 3. **Чего избегать (антипрофиль)**: 4 позиции **Яна Дюрье (`Yann Durieux`: `LDX`, `Les Grands Ponts`, `Les Ponts`, `CR`, `15 000 – 35 000 ₽`)** — радикальная бессерная «натуралка» (`0 SO₂`) с высоким риском летучей кислотности и нестабильности бутылок.
+
+---
+
+#### #98 [✓] `2026-11-10 03:05` — «Собери в md файл»
+
+- **Точный запрос пользователя**: «Собери в md файл»
+- **Статус черновика / промоушена**: `promoted` (synced to Google Drive `G:\My Drive\az-AI\Wine` and GitHub `aezaigrin88/az-wine-selector`)
+- **Замеры и проверки (`checks run`)**: `Verified all 30 wine items (32 SKUs) + 3 Calvados/digestifs, uploaded new_year_wine_bank_selection.md to Google Drive (ID: 14x_C86s9bWled6mXHRG5IKEjpRYPAoOJ) and pushed to GitHub` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`new_year_wine_bank_selection.md`](file:///G:/My%20Drive/az-AI/Wine/new_year_wine_bank_selection.md), [`GEMINI.md`](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md), [`WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > Полный аналитический гид и матрица новогоднего отбора по прайсу **WINE BANK** (`IMG_0883.png` и `IMG_0884.png`) оформлены в отдельный Markdown-документ **[`new_year_wine_bank_selection.md`](file:///G:/My%20Drive/az-AI/Wine/new_year_wine_bank_selection.md)** (Drive ID: `14x_C86s9bWled6mXHRG5IKEjpRYPAoOJ`), включающий:
+  > 1. Вкусовой компас Артёма и Ани по 18 продегустированным винам из [`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json) и профилю Шампани [`champagne_analysis.md`](file:///G:/My%20Drive/az-AI/Wine/champagne_analysis.md).
+  > 2. Детальные карточки вин для вдумчивой новогодней дегустации (*2022 Xavier Monnot Meursault Les Chevalières*, вертикальная пара *2018 & 2013 Éric de Suremain Monthélie 1er Cru Sur la Velle*, *2022 Nicolas Burguet Gevrey-Chambertin Les Crais*, *2021 Château de Melin Gevrey-Chambertin & Chambolle-Musigny*, *2018 Charles Van Canneyt Châteauneuf-du-Pape*, *2020 Gran Enemigo Gualtallary*).
+  > 3. Подборку вин для питья дома на новогодних каникулах и праздничного стола (Шампань Grand Cru и 1er Cru Rosé, белые и красные на каждый день).
+  > 4. Разбор антипрофиля (*Yann Durieux 0 SO₂* и др.).
+  > 5. Полную сводную таблицу всех 30 винных позиций (32 артикулов) и 3 нормандских дижестивов *Domaine Dupont*, 3 готовых сета под заказ (`39 250 ₽`, `53 000 ₽`, `22 950 ₽`) и чек-лист вопросов менеджеру WINE BANK.
+
