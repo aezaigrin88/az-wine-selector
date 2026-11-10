@@ -2,9 +2,9 @@
 
 > **Anti-Compaction Ledger**: этот журнал защищает контекст диалога от потери при `/compact`. Записи только дописываются (`append-only`), никогда не удаляются. При продолжении работы или после `/compact` агент обязан сначала прочитать разделы 1–3 и последние записи раздела 5.
 
-- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#94`)
+- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#96`)
 - **Проект**: **[`🍷 Wine`](file:///G:/My%20Drive/az-AI/Wine)** ([Сводный WORKLOG проекта](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md) · [GEMINI.md](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md))
-- **Период**: `2026-10-30 18:25` → `2026-11-09 18:13` · **Зафиксировано запросов в реестре**: `94`
+- **Период**: `2026-10-30 18:25` → `2026-11-09 19:05` · **Зафиксировано запросов в реестре**: `96`
 - **Рабочая область**: `["file:///G:/My%20Drive/az-AI/Wine", "file:///home/antigravity/aezaigrin88/az-wine-selector"]`
 - **Продуктовая ссылка (GitHub Pages)**: [`https://aezaigrin88.github.io/az-wine-selector/`](https://aezaigrin88.github.io/az-wine-selector/)
 
@@ -1104,3 +1104,23 @@ Check out this wine. I scanned it with the @Vivino app: https://www.vivino.com/w
   > 5. **Ручное дозаполнение поискового запроса и выбор бутылки из списка Vivino (`✏️ Из полей` + `🔍 Найти в Vivino`)**:
   >    - Отключены агрессивные `600ms` таймеры на полях `#inProducer`, `#inName`, `#inRegion` и `#inCommune`, которые раньше перезаписывали форму прямо во время ручного ввода.
   >    - Рядом со строкой поиска добавлены кнопки **«✏️ Из полей»** (`#syncQueryFromFormBtn` — одним нажатием собирает запрос из введённых вручную полей «Производитель», «Кюве», «Сорт», «Год») и **«🔍 Найти в Vivino»** (`#smartParseBtn`), а при вводе в строку поиска открывается живой выпадающий список реальных бутылок из каталога Vivino с рейтингом, регионом и годом.
+
+---
+
+#### #96 [✓] `2026-11-09 19:05` — «То есть нужно сделать так - если у тебя не получается распознать — то говори что вивино не нашел, заполняй сам»
+
+- **Точный запрос пользователя**: «То есть нужно сделать так - если у тебя не получается распознать — то говори что вивино не нашел, заполняй сам»
+- **Статус черновика / промоушена**: `promoted` (synced to Google Drive `G:\My Drive\az-AI\Wine` and GitHub `aezaigrin88/az-wine-selector`)
+- **Замеры и проверки (`checks run`)**: `Node VM syntax check on index.html (0 syntax errors)`, `Audit of finishSave, enrichWineMetadata, selectWine, applyWorldRegionToForm, lookupBarcodeInOpenFoodFacts, parseStoreUrlMetadata, runStage3DeepWebBottleEnrichment, and handleMultipleSmartPhotoFiles` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html), [`WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > 1. **Честный ответ «На Vivino не найдено — заполните поля сами» при неудачном распознавании фото/QR/штрих-кода (`handleMultipleSmartPhotoFiles`, `runStage3DeepWebBottleEnrichment`, `lookupBarcodeInOpenFoodFacts`, `parseSmartTextOrUrl`)**:
+  >    - Если по фотографии, QR-коду или штрих-коду не удалось распознать бренд/название бутылки (`distTokens.length === 0`) или карточка не найдена в каталоге Vivino Algolia (`WINES_prod`), приложение больше **никогда** не подставляет случайную бутылку по одному сорту винограда, не угадывает регион по префиксу штрих-кода GS1 и не заполняет поля шаблонными значениями.
+  >    - Вместо этого выводится прямое сообщение:
+  >      - `#smartPhotoStatusTitle`: **`На Vivino не найдено — заполните поля сами`**
+  >      - `#smartStatusText`: **`Вино на Vivino не найдено. Введите название вина в строку поиска выше (или вставьте ссылку из Vivino) либо заполните поля карточки вручную.`**
+  >    - Если найдены только частичные совпадения без точного совпадения бренда, форма не перезаписывается автоматически — список вариантов открывается для ручного выбора с подсказкой **«Точного совпадения на Vivino не найдено — выберите из списка или заполните сами»**.
+  > 2. **Полное удаление всех захардкоженных дефолтов при сохранении и просмотре (`finishSave`, `enrichWineMetadata`, `selectWine`, `applyWorldRegionToForm`)**:
+  >    - Из `finishSave()` и `selectWine()` полностью убраны все скрытые подстановки при пустых полях формы (`"Франция · Бургундия"`, `"Известняк и мергель"`, `"13.0%"`, `"180 м"`, `"280 м"`, `"уклон 10–14%"`, `"ВЮВ 120°"`, `"Классический сбор"`, `"Классическая винификация"`, `"Окно 2025–2030"`, `"15–16 °C"`). Незаполненные поля остаются пустыми (`""` / `null`) и в паспорте вина отображаются как `"—"`.
+  >    - Из `enrichWineMetadata(w)` полностью отключено наследование энциклопедических параметров региона (`elevation`, `slope_pct`, `aspect_code`, `soil`, `vine_age`, `aging`, `drinking_window`, `serving_temp`) для всех пользовательских бутылок (`w.id > 19`), а также добавлена автоматическая очистка ранее сохранённых в `localStorage` синтетических строк (`producer: "1"`, `"Palm-wine music"`, `"Reserva 36+"`, `"Лозы 30–80 лет"`, `"Almaviva"`, фейковый `vivino_avg: "3.9"`).
+
