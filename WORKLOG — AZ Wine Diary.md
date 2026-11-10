@@ -2,9 +2,9 @@
 
 > **Anti-Compaction Ledger**: этот журнал защищает контекст диалога от потери при `/compact`. Записи только дописываются (`append-only`), никогда не удаляются. При продолжении работы или после `/compact` агент обязан сначала прочитать разделы 1–3 и последние записи раздела 5.
 
-- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#96`)
+- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#99`)
 - **Проект**: **[`🍷 Wine`](file:///G:/My%20Drive/az-AI/Wine)** ([Сводный WORKLOG проекта](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md) · [GEMINI.md](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md))
-- **Период**: `2026-10-30 18:25` → `2026-11-09 19:05` · **Зафиксировано запросов в реестре**: `96`
+- **Период**: `2026-10-30 18:25` → `2026-11-10 03:12` · **Зафиксировано запросов в реестре**: `99`
 - **Рабочая область**: `["file:///G:/My%20Drive/az-AI/Wine", "file:///home/antigravity/aezaigrin88/az-wine-selector"]`
 - **Продуктовая ссылка (GitHub Pages)**: [`https://aezaigrin88.github.io/az-wine-selector/`](https://aezaigrin88.github.io/az-wine-selector/)
 
@@ -1163,3 +1163,26 @@ Check out this wine. I scanned it with the @Vivino app: https://www.vivino.com/w
   > 4. Разбор антипрофиля (*Yann Durieux 0 SO₂* и др.).
   > 5. Полную сводную таблицу всех 30 винных позиций (32 артикулов) и 3 нормандских дижестивов *Domaine Dupont*, 3 готовых сета под заказ (`39 250 ₽`, `53 000 ₽`, `22 950 ₽`) и чек-лист вопросов менеджеру WINE BANK.
 
+---
+
+#### #99 [✓] `2026-11-10 03:12` — «/stop-slop почисти интерфейс от эмоджи и текста ии Есть же ещё розовое вино и добавь больше типов шампанского аналогично и классов»
+
+- **Точный запрос пользователя**: «/stop-slop почисти интерфейс от эмоджи и текста ии
+Есть же ещё розовое вино и добавь больше типов шампанского аналогично и классов»
+- **Статус черновика / промоушена**: `promoted` (synced to Google Drive `G:\My Drive\az-AI\Wine` and GitHub `aezaigrin88/az-wine-selector`)
+- **Замеры и проверки (`checks run`)**: `Node VM syntax check on index.html (0 syntax errors)`, `Regex emoji check across index.html (0 decorative emojis remaining)`, `12-case functional test of WINE_STYLE_SCHEMA + detectDetailedWineStyle + detectWineClassification (12/12 PASS)` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html), [`WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > 1. **Полная зачистка интерфейса по стандарту `/stop-slop` (`index.html`)**:
+  >    - Удалены все декоративные эмодзи и спецсимволы (`📷`, `🖼`, `📹`, `✏️`, `🔍`, `🌐`, `🍇`, `✓`) из кнопок, заголовков, динамических плашек, тостов и статусных сообщений.
+  >    - Убраны канцеляризмы, многословные AI-формулировки («Этап 1 — Добавление в 1 клик...», «Гео-ось с севера на юг», «Интегральный ориентир», «гастрономическая пара») и тире (`—`) в интерфейсных подписях, плейсхолдерах и блоке статистики оценок (`#tasteSummaryRecommendation`).
+  > 2. **Декларативная схема стилей вина (`WINE_STYLE_SCHEMA`): Розовое вино (`rose`, `rose_semi`), 11 типов Шампанского / игристых и расширенная палитра тихих вин**:
+  >    - В `#inStyle` и декларативную схему `WINE_STYLE_SCHEMA` добавлены две группы стилей:
+  >      - **Тихие вина**: `red` (`Красное сухое`), `red_semi` (`Красное полусухое / полусладкое`), `white` (`Белое сухое`), `white_semi` (`Белое полусухое / полусладкое`), `rose` (`Розовое сухое (Rosé)`), `rose_semi` (`Розовое полусухое (Rosé)`), `orange` (`Оранжевое / Амбер`), `sweet` (`Сладкое / Десертное / Креплёное`).
+  >      - **Шампанское и игристые**: `sparkling` (`Шампанское / Игристое Брют`), `sparkling_extra_brut` (`Экстра Брют`), `sparkling_brut_nature` (`Брют Натюр / Зеро Дозаж`), `sparkling_bdb` (`Блан де Блан / Blanc de Blancs`), `sparkling_bdn` (`Блан де Нуар / Blanc de Noirs`), `sparkling_rose` (`Розовое шампанское / Brut Rosé`), `sparkling_millesime` (`Миллезимное шампанское / Millésimé`), `sparkling_prestige` (`Престижное кюве / Cuvée de Prestige`), `sparkling_cremant` (`Креман / Кава / Корпиннат / Франчакорта`), `sparkling_prosecco` (`Просекко / Пет-нат / Асти`), `sparkling_demi_sec` (`Игристое Полусухое / Деми-Сек`).
+  >    - Добавлен CSS-бейдж `.badge-rose`, кнопки фильтрации **«Розовые»** на карте (`data-tier="style_rose"`), в каталоге (`data-filter-style="rose"`) и в дневнике дегустаций (`data-diary-filter="rose"`), счётчик `#legendRoseCount` в легенде карты и сводка в шапке (`updateHeaderSummary()`).
+  > 3. **Классы и категории вин и Шампани (`<select id="inClass">` + `detectWineClassification`)**:
+  >    - В форму добавления/редактирования бутылки добавлено поле **«Класс / Категория» (`#inClass`)** с двумя группами классификаций:
+  >      - **Классы Шампани и игристых**: `Grand Cru (Шампань 100%)`, `Premier Cru (Шампань 90–99%)`, `AOC Champagne`, `Cuvée de Prestige`, `Millésimé`, `Non-Vintage (N.V.)`, `Single Vineyard / Lieu-Dit`, `RM · Рекольтан-Манипулян`, `NM · Негоциант-Манипулян`, `CM · Кооператив-Манипулян`, `Crémant AOC`, `Corpinnat / Cava DO / Clàssic Penedès`, `Franciacorta DOCG / Trento DOC / Alta Langa DOCG`, `Prosecco Superiore DOCG / Prosecco DOC`, `Sekt b.A. / Winzersekt`.
+  >      - **Классы тихих вин**: `Grand Cru (Гран Крю)`, `Premier Cru / 1er Cru`, `Grand Cru Classé`, `Cru Bourgeois`, `Cru du Beaujolais`, `Village AOC / AOP`, `Региональный AOC / AOP`, `DOCG (Италия)`, `DOC / DO / DOCa`, `Gran Reserva`, `Reserva`, `Riserva / Superiore / Classico`, `Crianza / Joven`, `VDP.Grosse Lage / GG`, `VDP.Erste Lage / Ortswein`, `Prädikatswein`, `DAC / 1ÖTW Erste Lage`, `Vieilles Vignes / Old Vines`, `Wine of Origin / Estate / Reserve`, `IGP / IGT / Vin de France`, `ЗНМП / ЗГУ (Россия)`.
+  >    - Универсальные функции `detectDetailedWineStyle()` и `detectWineClassification()` автоматически определяют точный подтип вина/шампанского и его класс из ответов Vivino Algolia, OpenFoodFacts и OCR этикеток.
