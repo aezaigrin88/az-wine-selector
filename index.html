@@ -2480,6 +2480,29 @@
     .smart-search-input {
       border: 1px solid rgba(34, 30, 26, 0.18) !important;
     }
+    .diary-actions-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      justify-content: flex-end;
+    }
+    .diary-edit-btn {
+      height: 28px;
+      padding: 0 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(34, 30, 26, 0.18);
+      background: #FFFDF8;
+      color: var(--color-prussian-deep);
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .diary-edit-btn:hover {
+      background: rgba(28, 53, 70, 0.08);
+      border-color: var(--color-prussian-deep);
+    }
     .diary-delete-btn {
       width: 28px;
       height: 28px;
@@ -2707,7 +2730,7 @@
       }
       #tastingDiarySection .ledger-table tbody tr {
         display: grid;
-        grid-template-columns: 52px minmax(0, 1fr) 34px;
+        grid-template-columns: 52px minmax(0, 1fr) auto;
         grid-template-areas:
           "date date del"
           "thumb wine wine"
@@ -2857,7 +2880,7 @@
     <!-- Expandable Inline Drawer: Add New Bottle -->
     <section class="add-drawer" id="addBottleDrawer" aria-label="Добавление бутылки">
       <div class="qcard-header qcard-header-crimson">
-        <span>Добавить бутылку</span>
+        <span id="addDrawerTitle">Добавить бутылку</span>
         <button type="button" class="btn" id="closeAddDrawerBtn" style="padding:4px 10px;font-size:0.80rem;">Закрыть</button>
       </div>
 
@@ -3127,7 +3150,7 @@
         <div class="form-footer">
           <span></span>
           <div style="display:flex;gap:8px;">
-            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <button type="submit" class="btn btn-primary" id="saveBottleSubmitBtn">Сохранить</button>
           </div>
         </div>
       </form>
@@ -3506,8 +3529,9 @@
     <section class="atlas-card ledger-section" id="tastingDiarySection" aria-label="Дневник дегустаций">
       <div class="qcard-header qcard-header-crimson">
         <span>Дневник дегустаций</span>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <span class="num" id="diaryCountBadge" style="font-size:0.80rem;">Записей: 18</span>
+          <button type="button" class="btn" id="restoreDeletedWinesBtn" style="display:none;padding:5px 10px;font-size:0.78rem;">Вернуть базовые вина</button>
           <button type="button" class="btn btn-primary" id="diaryAddWineBtn" style="padding:5px 11px;">+ Добавить вино</button>
         </div>
       </div>
@@ -3538,7 +3562,7 @@
               <th style="width:92px;text-align:center;">Средняя</th>
               <th style="min-width:220px;">Заметка</th>
               <th style="min-width:165px;">Где куплено</th>
-              <th style="width:44px;text-align:center;" aria-label="Удалить"></th>
+              <th style="width:104px;text-align:right;">Действия</th>
             </tr>
           </thead>
           <tbody id="tastingDiaryTableBody"></tbody>
@@ -3608,25 +3632,39 @@
   <script src="vendor/zxing.min.js"></script>
   <script src="vendor/tesseract.min.js"></script>
   <script>
+    const CANONICAL_BACKUP_KEY = "az_canonical_wines_backup_v1";
+
     function loadCanonicalWinesCatalog() {
       try {
         const xhr = new XMLHttpRequest();
-        xhr.open("GET", "wines_data.json", false);
+        xhr.open("GET", "wines_data.json?v=20261111a", false);
         xhr.send(null);
         if ((xhr.status >= 200 && xhr.status < 300) || (xhr.status === 0 && xhr.responseText)) {
           const parsed = JSON.parse(xhr.responseText);
-          if (parsed && Array.isArray(parsed.wines)) return parsed;
+          if (parsed && Array.isArray(parsed.wines) && parsed.wines.length > 0) {
+            try { localStorage.setItem(CANONICAL_BACKUP_KEY, JSON.stringify(parsed)); } catch (_) {}
+            return parsed;
+          }
         }
       } catch (err) {
         console.warn("Could not synchronously fetch wines_data.json:", err);
       }
+      try {
+        const cachedRaw = localStorage.getItem(CANONICAL_BACKUP_KEY);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw);
+          if (cached && Array.isArray(cached.wines) && cached.wines.length > 0) {
+            return cached;
+          }
+        }
+      } catch (_) {}
       return {
         account: { user_id: 77968357, cellar_id: 6491870, name: "Artem Zaigrin", handle: "@artem_zaigrin" },
         wines: []
       };
     }
 
-    const INITIAL_DATA = loadCanonicalWinesCatalog();
+    let INITIAL_DATA = loadCanonicalWinesCatalog();
     const STORAGE_KEY = "wine_terroir_atlas_leaflet_v12";
 
     function computePairScore(w) {
@@ -3645,33 +3683,63 @@
       return w.rating;
     }
 
+    const PERSISTED_EDITABLE_WINE_KEYS = [
+      "producer", "name", "vintage", "style", "style_label", "wine_class", "appellation_rank",
+      "terroir_tier", "grapes", "abv", "vine_age", "aging", "country", "macro_region", "sub_region",
+      "commune", "lieu_dit", "lat", "lon", "soil", "geology_stage", "elevation", "elevation_m",
+      "aspect_deg", "aspect_code", "aspect", "domain_history", "climat_dossier",
+      "drinking_window", "serving_temp", "glassware", "food_pairing", "guide_source",
+      "rating_az", "rating_anya", "rating_az_parts", "rating_anya_parts", "taste_profile",
+      "tasted_date", "purchased_at", "wine_id", "vintage_id", "vivino_avg", "vivino_url",
+      "_userEdited"
+    ];
+
+    function mergeSavedOverlayIntoCanonicalWine(w, saved) {
+      if (!w || !saved) return;
+      if (saved._userEdited) {
+        PERSISTED_EDITABLE_WINE_KEYS.forEach(k => {
+          if (saved[k] !== undefined) w[k] = saved[k];
+        });
+        if (saved.notes !== undefined) w.notes = saved.notes;
+      } else {
+        if (saved.rating_az !== undefined) w.rating_az = saved.rating_az;
+        if (saved.rating_anya !== undefined) w.rating_anya = saved.rating_anya;
+        if (saved.rating_az_parts) w.rating_az_parts = saved.rating_az_parts;
+        if (saved.rating_anya_parts) w.rating_anya_parts = saved.rating_anya_parts;
+        if (saved.tasted_date) w.tasted_date = saved.tasted_date;
+        if (saved.purchased_at !== undefined && saved.purchased_at !== "") w.purchased_at = saved.purchased_at;
+        if (saved.taste_profile) w.taste_profile = saved.taste_profile;
+        if (saved.notes && !w.notes) w.notes = saved.notes;
+      }
+      if (Array.isArray(saved.photos) && saved.photos.length > 0) {
+        w.photos = saved.photos;
+        if (saved.bottle_studio) w.bottle_studio = saved.bottle_studio;
+      }
+    }
+
     function loadAtlasState() {
       const fresh = structuredClone(INITIAL_DATA);
+      fresh.deletedCanonicalIds = [];
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.deletedCanonicalIds)) {
+            fresh.deletedCanonicalIds = parsed.deletedCanonicalIds.map(Number).filter(Number.isFinite);
+          }
+          const deletedSet = new Set(fresh.deletedCanonicalIds);
+          if (deletedSet.size > 0) {
+            fresh.wines = fresh.wines.filter(w => !deletedSet.has(Number(w.id)));
+          }
           if (parsed && Array.isArray(parsed.wines)) {
             const byId = new Map(parsed.wines.map(item => [Number(item.id), item]));
             fresh.wines.forEach(w => {
               const saved = byId.get(Number(w.id));
-              if (saved) {
-                if (saved.rating_az !== undefined) w.rating_az = saved.rating_az;
-                if (saved.rating_anya !== undefined) w.rating_anya = saved.rating_anya;
-                if (saved.rating_az_parts) w.rating_az_parts = saved.rating_az_parts;
-                if (saved.rating_anya_parts) w.rating_anya_parts = saved.rating_anya_parts;
-                if (saved.tasted_date) w.tasted_date = saved.tasted_date;
-                if (saved.purchased_at) w.purchased_at = saved.purchased_at;
-                if (saved.taste_profile) w.taste_profile = saved.taste_profile;
-                if (saved.notes && !w.notes) w.notes = saved.notes;
-                if (Array.isArray(saved.photos) && saved.photos.length > 0) {
-                  w.photos = saved.photos;
-                  if (saved.bottle_studio) w.bottle_studio = saved.bottle_studio;
-                }
-              }
+              if (saved) mergeSavedOverlayIntoCanonicalWine(w, saved);
             });
             parsed.wines.forEach(saved => {
               if (!saved || typeof saved !== "object") return;
+              if (deletedSet.has(Number(saved.id))) return;
               if (!fresh.wines.some(w => Number(w.id) === Number(saved.id))) {
                 fresh.wines.unshift(saved);
               }
@@ -3692,6 +3760,28 @@
     let searchQuery = "";
     let currentCatalogView = "grid";
     let currentRegionPreset = "world";
+
+    async function ensureCanonicalWinesLoadedAsync() {
+      if (INITIAL_DATA && Array.isArray(INITIAL_DATA.wines) && INITIAL_DATA.wines.length > 0) return;
+      try {
+        const resp = await fetch("wines_data.json?v=20261111a", { cache: "no-cache" });
+        if (!resp.ok) return;
+        const parsed = await resp.json();
+        if (!parsed || !Array.isArray(parsed.wines) || parsed.wines.length === 0) return;
+        INITIAL_DATA = parsed;
+        try { localStorage.setItem(CANONICAL_BACKUP_KEY, JSON.stringify(parsed)); } catch (_) {}
+        atlasData = loadAtlasState();
+        if (typeof atlasData.wines !== "undefined") {
+          atlasData.wines.forEach(w => { if (typeof enrichWineMetadata === "function") enrichWineMetadata(w); });
+        }
+        if (!atlasData.wines.some(w => w.id === selectedWineId) && atlasData.wines[0]) {
+          selectedWineId = atlasData.wines[0].id;
+        }
+        if (typeof updateHeaderSummary === "function") updateHeaderSummary();
+        if (typeof buildDynamicRegionPills === "function") buildDynamicRegionPills();
+        if (typeof selectWine === "function") selectWine(selectedWineId, false);
+      } catch (_) {}
+    }
 
     function saveAtlasState() {
       try {
@@ -3791,38 +3881,51 @@
     }
 
     function detectDetailedWineStyle(rawText, baseFamilyHint = null) {
-      const t = String(rawText || "").toLowerCase();
-      const isSpark = baseFamilyHint === "sparkling" ||
-        /(?:^|[\s,.;:()\/-])(champagne|шампанск\w*|shampanskoe|cr[ée]mant|креман|cava|кава|corpinnat|корпиннат|franciacorta|франчакорта|prosecco|просекко|spumante|спуманте|sekt|зект|p[ée]t[-\s]*nat|пет[-\s]*нат|игрист\w*|igristoe|brut|брют|extra\s*brut|брют\s*натюр|zero\s*dosage|blanc\s+de\s+blancs|blanc\s+de\s+noirs)(?=$|[\s,.;:()\/-])/i.test(t);
+      const t = String(rawText || "").toLowerCase().replace(/красное\s+и\s+белое/gi, " ");
+      const hasExplicitSparkKeyword = /(?:^|[\s,.;:()\/-])(champagne|шампанск[а-яё]*|shampanskoe|cr[ée]mant|креман|cava|кава|corpinnat|корпиннат|franciacorta|франчакорта|prosecco|просекко|spumante|спуманте|sekt|зект|p[ée]t[-\s]*nat|пет[-\s]*нат|игрист[а-яё]*|igristoe|brut|брют|extra\s*brut|брют\s*натюр|zero\s*dosage|blanc\s+de\s+blancs|blanc\s+de\s+noirs)(?=$|[\s,.;:()\/-])/i.test(t);
+      const isSpark = baseFamilyHint === "sparkling" || (!baseFamilyHint && hasExplicitSparkKeyword);
 
       if (isSpark) {
-        if (/(?:^|[\s,.;:()\/-])(ros[ée]|rosado|rosato|розов\w*|розе|saign[ée]e)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_rose";
+        if (/(?:^|[\s,.;:()\/-])(ros[ée]|rosado|rosato|розов[а-яё]*|розе|saign[ée]e)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_rose";
         if (/(?:^|[\s,.;:()\/-])(blanc\s+de\s+blancs|блан\s+де\s+блан)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_bdb";
         if (/(?:^|[\s,.;:()\/-])(blanc\s+de\s+noirs|блан\s+де\s+нуар)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_bdn";
         if (/(?:^|[\s,.;:()\/-])(brut\s+nature|zero\s+dosage|pas\s+dos[ée]|брют\s+натюр|зеро\s+дозаж)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_brut_nature";
         if (/(?:^|[\s,.;:()\/-])(extra\s+brut|экстра\s+брют)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_extra_brut";
-        if (/(?:^|[\s,.;:()\/-])(demi[-\s]*sec|деми[-\s]*сек|полусух\w*|полуслад\w*)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_demi_sec";
+        if (/(?:^|[\s,.;:()\/-])(demi[-\s]*sec|деми[-\s]*сек|полусух[а-яё]*|полуслад[а-яё]*)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_demi_sec";
         if (/(?:^|[\s,.;:()\/-])(cr[ée]mant|креман|cava|кава|corpinnat|корпиннат|franciacorta|франчакорта|trento\s*doc|alta\s*langa)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_cremant";
         if (/(?:^|[\s,.;:()\/-])(prosecco|просекко|valdobbiadene|asolo|p[ée]t[-\s]*nat|пет[-\s]*нат|asti|асти|lambrusco|ламбруско)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_prosecco";
-        if (/(?:^|[\s,.;:()\/-])(cuv[ée]e\s+de\s+prestige|престижн\w+\s+кюве|cristal|krug\s+clos|salon\s+le\s+mesnil|comtes\s+de\s+champagne|la\s+grande\s+dame|belle\s+epoque|winston\s+churchill)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_prestige";
-        if (/(?:^|[\s,.;:()\/-])(mill[ée]sim[ée]|миллезим\w*|vintage\s+20\d{2}|dom\s+p[ée]rignon)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_millesime";
+        if (/(?:^|[\s,.;:()\/-])(cuv[ée]e\s+de\s+prestige|престижн[а-яё]+\s+кюве|cristal|krug\s+clos|salon\s+le\s+mesnil|comtes\s+de\s+champagne|la\s+grande\s+dame|belle\s+epoque|winston\s+churchill)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_prestige";
+        if (/(?:^|[\s,.;:()\/-])(mill[ée]sim[ée]|миллезим[а-яё]*|vintage\s+20\d{2}|dom\s+p[ée]rignon)(?=$|[\s,.;:()\/-])/i.test(t)) return "sparkling_millesime";
         return "sparkling";
       }
 
-      if (baseFamilyHint === "rose" || /(?:^|[\s,.;:()\/-])(ros[ée]|rosado|rosato|розов\w*|розе|clairet|tavel|c[ôo]tes\s+de\s+provence)(?=$|[\s,.;:()\/-])/i.test(t)) {
-        return /(?:^|[\s,.;:()\/-])(полусух\w*|полуслад\w*|demi[-\s]*sec|semi[-\s]*dry|off[-\s]*dry|anjou)(?=$|[\s,.;:()\/-])/i.test(t) ? "rose_semi" : "rose";
+      if (baseFamilyHint === "sweet") return "sweet";
+      if (baseFamilyHint === "orange") return "orange";
+      if (baseFamilyHint === "rose") {
+        return /(?:^|[\s,.;:()\/-])(полусух[а-яё]*|полуслад[а-яё]*|demi[-\s]*sec|semi[-\s]*dry|off[-\s]*dry|anjou)(?=$|[\s,.;:()\/-])/i.test(t) ? "rose_semi" : "rose";
       }
-      if (/(?:^|[\s,.;:()\/-])(orange\s+wine|amber\s+wine|оранжев\w*|амбер|янтарн\w*|квеври|qvevri|skin\s+contact|ramato)(?=$|[\s,.;:()\/-])/i.test(t)) {
+      if (baseFamilyHint === "white") {
+        if (/(?:^|[\s,.;:()\/-])(orange\s+wine|amber\s+wine|оранжев[а-яё]*|амбер|янтарн[а-яё]*|квеври|qvevri|skin\s+contact|ramato)(?=$|[\s,.;:()\/-])/i.test(t)) return "orange";
+        return /(?:^|[\s,.;:()\/-])(полусух[а-яё]*|полуслад[а-яё]*|halbtrocken|feinherb|lieblich|semi[-\s]*dry|off[-\s]*dry)(?=$|[\s,.;:()\/-])/i.test(t) ? "white_semi" : "white";
+      }
+      if (baseFamilyHint === "red") {
+        return /(?:^|[\s,.;:()\/-])(полусух[а-яё]*|полуслад[а-яё]*|semi[-\s]*dry|semi[-\s]*sweet)(?=$|[\s,.;:()\/-])/i.test(t) ? "red_semi" : "red";
+      }
+
+      if (/(?:^|[\s,.;:()\/-])(ros[ée]|rosado|rosato|розов[а-яё]*|розе|clairet|tavel)(?=$|[\s,.;:()\/-])/i.test(t)) {
+        return /(?:^|[\s,.;:()\/-])(полусух[а-яё]*|полуслад[а-яё]*|demi[-\s]*sec|semi[-\s]*dry|off[-\s]*dry|anjou)(?=$|[\s,.;:()\/-])/i.test(t) ? "rose_semi" : "rose";
+      }
+      if (/(?:^|[\s,.;:()\/-])(orange\s+wine|amber\s+wine|оранжев[а-яё]*|амбер|янтарн[а-яё]*|квеври|qvevri|skin\s+contact|ramato)(?=$|[\s,.;:()\/-])/i.test(t)) {
         return "orange";
       }
       if (/(?:^|[\s,.;:()\/-])(sauternes|сотерн|barsac|tokaji|токай|trockenbeerenauslese|beerenauslese|eiswein|айсвайн|icewine|port|порто|портвейн|sherry|херес|madeira|мадера|marsala|марсала|vin\s+doux\s+naturel|banyuls|maury|rivesaltes)(?=$|[\s,.;:()\/-])/i.test(t)) {
         return "sweet";
       }
-      if (baseFamilyHint === "white" || /(?:^|[\s,.;:()\/-])(blanc|white|blanco|bianco|weisswein|weißwein|branco|бел\w*|beloe|chablis|шабли|meursault|мерсо|puligny|пюлиньи|sancerre|сансер|pouilly[-\s]*fum[ée]|soave|соаве|gavi|гави)(?=$|[\s,.;:()\/-])/i.test(t)) {
-        return /(?:^|[\s,.;:()\/-])(полусух\w*|полуслад\w*|halbtrocken|feinherb|lieblich|semi[-\s]*dry|off[-\s]*dry)(?=$|[\s,.;:()\/-])/i.test(t) ? "white_semi" : "white";
+      if (/(?:^|[\s,.;:()\/-])(blanc|white|blanco|bianco|weisswein|weißwein|branco|бел[а-яё]*|beloe|chablis|шабли|meursault|мерсо|puligny|пюлиньи|sancerre|сансер|pouilly[-\s]*fum[ée]|soave|соаве|gavi|гави)(?=$|[\s,.;:()\/-])/i.test(t)) {
+        return /(?:^|[\s,.;:()\/-])(полусух[а-яё]*|полуслад[а-яё]*|halbtrocken|feinherb|lieblich|semi[-\s]*dry|off[-\s]*dry)(?=$|[\s,.;:()\/-])/i.test(t) ? "white_semi" : "white";
       }
-      if (baseFamilyHint === "red" || /(?:^|[\s,.;:()\/-])(rouge|red|tinto|rosso|rotwein|красн\w*|krasnoe)(?=$|[\s,.;:()\/-])/i.test(t)) {
-        return /(?:^|[\s,.;:()\/-])(полусух\w*|полуслад\w*|semi[-\s]*dry|semi[-\s]*sweet)(?=$|[\s,.;:()\/-])/i.test(t) ? "red_semi" : "red";
+      if (/(?:^|[\s,.;:()\/-])(rouge|red|tinto|rosso|rotwein|красн[а-яё]*|krasnoe)(?=$|[\s,.;:()\/-])/i.test(t)) {
+        return /(?:^|[\s,.;:()\/-])(полусух[а-яё]*|полуслад[а-яё]*|semi[-\s]*dry|semi[-\s]*sweet)(?=$|[\s,.;:()\/-])/i.test(t) ? "red_semi" : "red";
       }
       return baseFamilyHint || null;
     }
@@ -3830,9 +3933,9 @@
     function detectWineClassification(rawText, styleCode = "") {
       const t = String(rawText || "");
       if (!t) return "";
-      const isSpark = getStyleFamily(styleCode) === "sparkling" || /(?:^|[\s,.;:()\/-])(champagne|шампанск\w*|cr[ée]mant|креман|cava|corpinnat|franciacorta|prosecco)(?=$|[\s,.;:()\/-])/i.test(t);
+      const isSpark = getStyleFamily(styleCode) === "sparkling" || /(?:^|[\s,.;:()\/-])(champagne|шампанск[а-яё]*|cr[ée]mant|креман|cava|corpinnat|franciacorta|prosecco)(?=$|[\s,.;:()\/-])/i.test(t);
       if (isSpark) {
-        if (/(?:^|[\s,.;:()\/-])(cuv[ée]e\s+de\s+prestige|престижн\w+\s+кюве|cristal|krug\s+clos|salon\s+le\s+mesnil|comtes\s+de\s+champagne|la\s+grande\s+dame|belle\s+epoque|winston\s+churchill)(?=$|[\s,.;:()\/-])/i.test(t)) return "Cuvée de Prestige (Престижное кюве)";
+        if (/(?:^|[\s,.;:()\/-])(cuv[ée]e\s+de\s+prestige|престижн[а-яё]+\s+кюве|cristal|krug\s+clos|salon\s+le\s+mesnil|comtes\s+de\s+champagne|la\s+grande\s+dame|belle\s+epoque|winston\s+churchill)(?=$|[\s,.;:()\/-])/i.test(t)) return "Cuvée de Prestige (Престижное кюве)";
         if (/\bgrand\s+cru\b|гран\s+крю/i.test(t)) return "Grand Cru (Шампань 100%)";
         if (/\b(premier\s+cru|1er\s+cru)\b|премьер\s+крю/i.test(t)) return "Premier Cru (Шампань 90–99%)";
         if (/\bRM(?:[\s-]*\d{2,6})?\b|р[еэ]кольтан/i.test(t)) return "RM · Рекольтан-Манипулян (Виноградарь)";
@@ -3843,10 +3946,10 @@
         if (/(?:^|[\s,.;:()\/-])(franciacorta|франчакорта|trento\s*doc|alta\s*langa)(?=$|[\s,.;:()\/-])/i.test(t)) return "Franciacorta DOCG / Trento DOC / Alta Langa DOCG";
         if (/(?:^|[\s,.;:()\/-])(prosecco|просекко|valdobbiadene|conegliano)(?=$|[\s,.;:()\/-])/i.test(t)) return "Prosecco Superiore DOCG / Prosecco DOC";
         if (/(?:^|[\s,.;:()\/-])(sekt|winzersekt|зект)(?=$|[\s,.;:()\/-])/i.test(t)) return "Sekt b.A. / Winzersekt";
-        if (/(?:^|[\s,.;:()\/-])(mill[ée]sim[ée]|миллезим\w*|vintage\s+20\d{2})(?=$|[\s,.;:()\/-])/i.test(t)) return "Millésimé (Миллезимное / Винтажное)";
-        if (/(?:^|[\s,.;:()\/-])(non[-\s]*vintage|n\.?v\.?|невинтажн\w*)(?=$|[\s,.;:()\/-])/i.test(t)) return "Non-Vintage (N.V. · Невинтажный ассамбляж)";
+        if (/(?:^|[\s,.;:()\/-])(mill[ée]sim[ée]|миллезим[а-яё]*|vintage\s+20\d{2})(?=$|[\s,.;:()\/-])/i.test(t)) return "Millésimé (Миллезимное / Винтажное)";
+        if (/(?:^|[\s,.;:()\/-])(non[-\s]*vintage|n\.?v\.?|невинтажн[а-яё]*)(?=$|[\s,.;:()\/-])/i.test(t)) return "Non-Vintage (N.V. · Невинтажный ассамбляж)";
         if (/(?:^|[\s,.;:()\/-])(single\s+vineyard|lieu[-\s]*dit|clos\s+[a-zà-ÿ]+)(?=$|[\s,.;:()\/-])/i.test(t)) return "Single Vineyard / Lieu-Dit (Отдельный парцель)";
-        if (/(?:^|[\s,.;:()\/-])(champagne|шампанск\w*)(?=$|[\s,.;:()\/-])/i.test(t)) return "AOC Champagne (Базовый аппелласьон)";
+        if (/(?:^|[\s,.;:()\/-])(champagne|шампанск[а-яё]*)(?=$|[\s,.;:()\/-])/i.test(t)) return "AOC Champagne (Базовый аппелласьон)";
       }
       if (/grand\s+cru\s+class[ée]/i.test(t)) return "Grand Cru Classé (Бордо / Сент-Эмильон)";
       if (/\bcru\s+bourgeois\b/i.test(t)) return "Cru Bourgeois (Крю Буржуа)";
@@ -6572,6 +6675,18 @@
         badgeEl.textContent = `Записей: ${sortedByDate.length} · С оценкой: ${ratedCount}`;
       }
 
+      const restoreBtn = document.getElementById("restoreDeletedWinesBtn");
+      if (restoreBtn) {
+        const canonicalIds = new Set((INITIAL_DATA.wines || []).map(cw => Number(cw.id)));
+        const missingCount = [...canonicalIds].filter(cid => !atlasData.wines.some(w => Number(w.id) === cid)).length;
+        if (missingCount > 0) {
+          restoreBtn.style.display = "inline-flex";
+          restoreBtn.textContent = `Вернуть базовые вина (${missingCount})`;
+        } else {
+          restoreBtn.style.display = "none";
+        }
+      }
+
       diaryBody.innerHTML = sortedByDate.map(w => {
         const isSel = w.id === selectedWineId;
         const rawBot = w.bottle_studio || "img/labels/bottle_17.png"; const thumbSrc = rawBot.startsWith("data:") ? rawBot : (rawBot + "?v=20261101d");
@@ -6596,7 +6711,7 @@
             <td class="diary-td-wine" data-diary-select-id="${w.id}">
               <div class="wine-cell-main">${w.producer} · ${w.name} (<span class="num">${w.vintage}</span>)</div>
               <div class="wine-cell-sub">
-                <span class="atlas-badge ${styleClass}" style="padding:1px 6px;margin-right:4px;">${styleLbl}</span>
+                <span class="atlas-badge ${styleClass}" data-diary-edit-style-id="${w.id}" title="Нажмите, чтобы изменить стиль или карточку вина" style="padding:1px 6px;margin-right:4px;cursor:pointer;">${styleLbl}</span>
                 ${w.wine_class ? `<span class="atlas-badge" style="padding:1px 6px;margin-right:4px;background:rgba(28,53,70,0.08);color:var(--color-prussian-deep);">${escapeHtml(w.wine_class)}</span>` : ""}
                 ${terroirLine} · <span class="num">${w.elevation_m || 280} м</span>
               </div>
@@ -6630,7 +6745,10 @@
               <input type="text" class="diary-input-text" data-diary-purchased-id="${w.id}" value="${escapeAttr(w.purchased_at || '')}" placeholder="Где куплено..." aria-label="Где куплено ${escapeAttr(w.name)}" />
             </td>
             <td class="diary-td-del" style="text-align:center;">
-              <button type="button" class="diary-delete-btn" data-diary-delete-id="${w.id}" title="Удалить запись из дневника" aria-label="Удалить ${escapeAttr(w.name)}">×</button>
+              <div class="diary-actions-wrap">
+                <button type="button" class="diary-edit-btn" data-diary-edit-id="${w.id}" title="Редактировать карточку вина" aria-label="Редактировать ${escapeAttr(w.name)}">Править</button>
+                <button type="button" class="diary-delete-btn" data-diary-delete-id="${w.id}" title="Удалить запись из дневника" aria-label="Удалить ${escapeAttr(w.name)}">×</button>
+              </div>
             </td>
           </tr>
         `;
@@ -6640,6 +6758,22 @@
         cell.addEventListener("click", () => {
           const wid = Number(cell.getAttribute("data-diary-select-id"));
           selectWine(wid, true);
+        });
+      });
+
+      diaryBody.querySelectorAll("[data-diary-edit-id]").forEach(btn => {
+        btn.addEventListener("click", e => {
+          e.stopPropagation();
+          const wid = Number(btn.getAttribute("data-diary-edit-id"));
+          openEditWineDrawer(wid);
+        });
+      });
+
+      diaryBody.querySelectorAll("[data-diary-edit-style-id]").forEach(badge => {
+        badge.addEventListener("click", e => {
+          e.stopPropagation();
+          const wid = Number(badge.getAttribute("data-diary-edit-style-id"));
+          openEditWineDrawer(wid, { focusField: "inStyle" });
         });
       });
 
@@ -6714,6 +6848,7 @@
           const w = atlasData.wines.find(item => item.id === wid);
           if (!w) return;
           w.notes = e.target.value;
+          w._userEdited = true;
           saveAtlasState();
           if (w.id === selectedWineId) {
             document.getElementById("dossierNotesInput").value = w.notes;
@@ -6728,6 +6863,7 @@
           const w = atlasData.wines.find(item => item.id === wid);
           if (!w) return;
           w.purchased_at = e.target.value;
+          w._userEdited = true;
           saveAtlasState();
           if (w.id === selectedWineId) {
             document.getElementById("dossierPurchasedInput").value = w.purchased_at;
@@ -6753,6 +6889,12 @@
       }
       const ok = window.confirm(`Удалить вино «${target.producer} · ${target.name} (${target.vintage})» из дневника и с карты?`);
       if (!ok) return;
+      if ((INITIAL_DATA.wines || []).some(cw => Number(cw.id) === Number(wid))) {
+        if (!Array.isArray(atlasData.deletedCanonicalIds)) atlasData.deletedCanonicalIds = [];
+        if (!atlasData.deletedCanonicalIds.includes(Number(wid))) {
+          atlasData.deletedCanonicalIds.push(Number(wid));
+        }
+      }
       atlasData.wines = atlasData.wines.filter(item => Number(item.id) !== Number(wid));
       saveAtlasState();
       updateHeaderSummary();
@@ -6769,11 +6911,37 @@
       showToast(`Удалено: ${target.producer} · ${target.name}`);
     }
 
+    document.getElementById("restoreDeletedWinesBtn")?.addEventListener("click", async () => {
+      if (!INITIAL_DATA.wines || INITIAL_DATA.wines.length === 0) {
+        await ensureCanonicalWinesLoadedAsync();
+      }
+      atlasData.deletedCanonicalIds = [];
+      let restoredCount = 0;
+      (INITIAL_DATA.wines || []).forEach(cw => {
+        if (!atlasData.wines.some(w => Number(w.id) === Number(cw.id))) {
+          const copy = structuredClone(cw);
+          if (typeof enrichWineMetadata === "function") enrichWineMetadata(copy);
+          syncWinePairRating(copy);
+          atlasData.wines.push(copy);
+          restoredCount++;
+        }
+      });
+      saveAtlasState();
+      updateHeaderSummary();
+      buildDynamicRegionPills();
+      renderSemanticMapLayers();
+      renderLedgerTable();
+      renderTastingDiary();
+      renderTasteCompass();
+      showToast(`Восстановлено базовых вин: ${restoredCount}`);
+    });
+
     document.getElementById("deleteSelectedWineBtn")?.addEventListener("click", () => {
       deleteWineById(selectedWineId);
     });
 
     document.getElementById("diaryAddWineBtn")?.addEventListener("click", () => {
+      resetAddBottleFormForNew();
       const addDrawerEl = document.getElementById("addBottleDrawer");
       if (addDrawerEl) {
         addDrawerEl.classList.add("open");
@@ -6937,17 +7105,67 @@
       document.getElementById("closeLightboxBtn").focus();
     }
 
-    // Open the Add/Edit Drawer pre-filled with the currently selected bottle for supplementing or editing in-place
+    // Open the Add/Edit Drawer pre-filled with any bottle (from Diary or Passport) for editing in-place
     window.editingWineId = null;
-    function openEditSelectedWineDrawer() {
-      const w = atlasData.wines.find(item => item.id === selectedWineId);
+
+    function resetAddBottleFormForNew() {
+      const wasEditing = window.editingWineId !== null;
+      window.editingWineId = null;
+      window.accumulatedSmartOcrText = "";
+      window.lastEnrichedWebMeta = null;
+      const titleEl = document.getElementById("addDrawerTitle");
+      if (titleEl) titleEl.textContent = "Добавить бутылку";
+      const submitBtn = document.getElementById("saveBottleSubmitBtn");
+      if (submitBtn) submitBtn.textContent = "Сохранить";
+      const inStyleEl = document.getElementById("inStyle");
+      const inVintEl = document.getElementById("inVintage");
+      if (wasEditing) {
+        document.getElementById("addBottleForm")?.reset();
+        window.pendingSmartPhotos = [];
+        window.pendingSmartPhotoDataUrl = null;
+        document.getElementById("smartPhotoPreviewBar")?.classList.remove("visible");
+        if (typeof smartStatusText !== "undefined" && smartStatusText) {
+          smartStatusText.textContent = "Готово к распознаванию по фото, коду или названию";
+          smartStatusText.style.color = "var(--color-ink-secondary)";
+        }
+      }
+      if (inStyleEl) {
+        delete inStyleEl.dataset.userSet;
+        delete inStyleEl.dataset.styleResolved;
+      }
+      if (inVintEl) {
+        delete inVintEl.dataset.hasExplicitYear;
+      }
+    }
+
+    document.getElementById("inStyle")?.addEventListener("change", e => {
+      e.target.dataset.userSet = "1";
+    });
+
+    function openEditWineDrawer(targetWineId = selectedWineId, options = {}) {
+      const w = atlasData.wines.find(item => Number(item.id) === Number(targetWineId));
       if (!w) return;
+      if (Number(selectedWineId) !== Number(w.id)) {
+        selectWine(w.id, false);
+      }
       enrichWineMetadata(w);
       window.editingWineId = w.id;
+      const titleEl = document.getElementById("addDrawerTitle");
+      if (titleEl) titleEl.textContent = `Редактировать бутылку: ${w.producer}`;
+      const submitBtn = document.getElementById("saveBottleSubmitBtn");
+      if (submitBtn) submitBtn.textContent = "Сохранить изменения";
+
       document.getElementById("inProducer").value = w.producer || "";
       document.getElementById("inName").value = w.name || "";
-      document.getElementById("inVintage").value = w.vintage || "2023";
-      document.getElementById("inStyle").value = w.style || "red";
+      const inVintEl = document.getElementById("inVintage");
+      inVintEl.value = w.vintage || "2023";
+      inVintEl.dataset.hasExplicitYear = "1";
+
+      const inStyleEl = document.getElementById("inStyle");
+      inStyleEl.value = w.style || "red";
+      inStyleEl.dataset.userSet = "1";
+      inStyleEl.dataset.styleResolved = "1";
+
       if (document.getElementById("inClass")) {
         document.getElementById("inClass").value = w.wine_class || detectWineClassification(`${w.appellation_rank || ""} ${w.name || ""}`, w.style) || "";
       }
@@ -6982,17 +7200,24 @@
       const existingPhotos = getWinePhotosList(w);
       window.pendingSmartPhotos = existingPhotos.map((u, idx) => ({ dataUrl: u, name: `Фото ${idx + 1}` }));
       renderPendingSmartPhotosUI();
-      document.getElementById("smartPhotoStatusTitle").textContent = `Режим дополнения: ${w.producer} · ${w.name}`;
-      document.getElementById("smartPhotoStatusSub").textContent = "Прикрепите фото контрэтикетки («+ Ещё фото») или уточните поля и нажмите «Сохранить в атлас»";
-      smartStatusText.textContent = `Дополнение карточки #${w.id}: ${w.producer} · ${w.name}. Прикрепите ещё фото или измените сорт / выдержку / терруар.`;
+      document.getElementById("smartPhotoStatusTitle").textContent = `Редактирование карточки: ${w.producer} · ${w.name}`;
+      document.getElementById("smartPhotoStatusSub").textContent = "Измените стиль, класс, сорт, оценки или терруар и нажмите «Сохранить изменения»";
+      smartStatusText.textContent = `Редактирование записи #${w.id}: ${w.producer} · ${w.name}. Все изменения сохраняются в дневнике и на карте.`;
       smartStatusText.style.color = "var(--color-prussian-deep)";
 
       const addDrawerEl = document.getElementById("addBottleDrawer");
       if (addDrawerEl) {
         addDrawerEl.classList.add("open");
         addDrawerEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (options.focusField) {
+          setTimeout(() => document.getElementById(options.focusField)?.focus(), 260);
+        }
       }
-      showToast(`Открыто дополнение карточки: ${w.producer} · ${w.name}`);
+      showToast(`Редактирование: ${w.producer} · ${w.name}`);
+    }
+
+    function openEditSelectedWineDrawer() {
+      openEditWineDrawer(selectedWineId);
     }
 
     document.getElementById("editSelectedWineBtn")?.addEventListener("click", openEditSelectedWineDrawer);
@@ -7035,6 +7260,7 @@
           } catch (_) {}
         }
       }
+      w._userEdited = true;
       enrichWineMetadata(w);
       saveAtlasState();
       selectWine(w.id, false);
@@ -7078,6 +7304,7 @@
       const w = atlasData.wines.find(item => item.id === selectedWineId);
       if (!w) return;
       w.tasted_date = e.target.value;
+      w._userEdited = true;
       saveAtlasState();
       renderTastingDiary();
       document.getElementById("saveNoteStatus").textContent = "Сохранено в браузере";
@@ -7087,6 +7314,7 @@
       const w = atlasData.wines.find(item => item.id === selectedWineId);
       if (!w) return;
       w.purchased_at = e.target.value;
+      w._userEdited = true;
       saveAtlasState();
       renderTastingDiary();
       document.getElementById("saveNoteStatus").textContent = "Сохранено в браузере";
@@ -7096,6 +7324,7 @@
       const w = atlasData.wines.find(item => item.id === selectedWineId);
       if (!w) return;
       w.notes = e.target.value;
+      w._userEdited = true;
       saveAtlasState();
       renderLedgerTable();
       renderTastingDiary();
@@ -7138,18 +7367,23 @@
       renderTasteCompass();
     });
     document.getElementById("toggleAddDrawerBtn").addEventListener("click", () => {
-      window.editingWineId = null;
-      window.accumulatedSmartOcrText = "";
-      addDrawer.classList.toggle("open");
+      if (!addDrawer.classList.contains("open")) {
+        resetAddBottleFormForNew();
+        addDrawer.classList.add("open");
+      } else if (window.editingWineId !== null) {
+        resetAddBottleFormForNew();
+      } else {
+        addDrawer.classList.remove("open");
+      }
     });
     document.getElementById("closeAddDrawerBtn").addEventListener("click", () => {
-      window.editingWineId = null;
+      resetAddBottleFormForNew();
       addDrawer.classList.remove("open");
     });
 
     document.getElementById("addBottleForm").addEventListener("submit", async e => {
       e.preventDefault();
-      const styleVal = document.getElementById("inStyle").value || "red";
+      const inStyleEl = document.getElementById("inStyle");
       const inClassVal = (document.getElementById("inClass")?.value || "").trim();
       const fileInput = document.getElementById("inPhoto");
 
@@ -7172,6 +7406,24 @@
         document.getElementById("inName").value = document.getElementById("inProducer").value.trim();
       }
 
+      // If style was not manually selected or resolved from Vivino/OCR, infer from entered grape/title/region instead of blindly staying "red"
+      if (inStyleEl && !window.editingWineId && !inStyleEl.dataset.userSet && !inStyleEl.dataset.styleResolved) {
+        const manualContext = [
+          document.getElementById("inProducer").value,
+          document.getElementById("inName").value,
+          document.getElementById("inGrapes")?.value || "",
+          document.getElementById("inRegion")?.value || "",
+          document.getElementById("inCommune")?.value || "",
+          window.accumulatedSmartOcrText || ""
+        ].join(" ");
+        const gManual = extractGrapesFromText(manualContext);
+        const inferredManualStyle = detectDetailedWineStyle(manualContext, gManual ? gManual.style : null) || (gManual ? gManual.style : null);
+        if (inferredManualStyle) {
+          inStyleEl.value = inferredManualStyle;
+        }
+      }
+      const styleVal = (inStyleEl && inStyleEl.value) || "red";
+
       const finishSave = uploadedPhotosArray => {
         const validPhotos = (Array.isArray(uploadedPhotosArray) ? uploadedPhotosArray : (uploadedPhotosArray ? [uploadedPhotosArray] : [])).filter(Boolean);
         const existingTarget = window.editingWineId
@@ -7179,7 +7431,8 @@
           : null;
         const newId = existingTarget ? existingTarget.id : (Math.max(0, ...atlasData.wines.map(w => w.id)) + 1);
         const schemaBottle = WINE_STYLE_SCHEMA[styleVal]?.bottle || "img/labels/bottle_17.png";
-        const botUrl = validPhotos[0] || (existingTarget && existingTarget.bottle_studio) || schemaBottle;
+        const isOldGenericBottle = existingTarget && /^img\/labels\/bottle_(02|05|17)\.png/.test(String(existingTarget.bottle_studio || "")) && getStyleFamily(existingTarget.style) !== getStyleFamily(styleVal);
+        const botUrl = validPhotos[0] || (!isOldGenericBottle && existingTarget && existingTarget.bottle_studio) || schemaBottle;
         const allPhotos = validPhotos.length > 0 ? validPhotos : [botUrl];
         let inLatVal = parseFloat(String(document.getElementById("inLat").value).replace(",", ".")) || 46.9935;
         let inLonVal = parseFloat(String(document.getElementById("inLon").value).replace(",", ".")) || 4.7562;
@@ -7266,6 +7519,7 @@
         const wineRecord = {
           ...(existingTarget || {}),
           id: newId,
+          _userEdited: true,
           geo_order: existingTarget ? existingTarget.geo_order : (atlasData.wines.length + 1),
           terroir_tier: existingTarget?.terroir_tier || (/grand\s*cru|1er\s*cru|premier\s*cru|grosse\s*lage/i.test(resolvedWineClass) ? "grand_cru_cru" : "village_cotedor"),
           aspect_deg: existingTarget?.aspect_deg || null,
@@ -7356,11 +7610,12 @@
         selectWine(wineRecord.id, true);
         addDrawer.classList.remove("open");
         e.target.reset();
+        resetAddBottleFormForNew();
         window.pendingSmartPhotos = [];
         window.pendingSmartPhotoDataUrl = null;
         document.getElementById("smartPhotoPreviewBar").classList.remove("visible");
         showToast(existingTarget
-          ? `Паспорт бутылки обновлён: ${wineRecord.producer} · ${wineRecord.name} (${allPhotos.length} фото)`
+          ? `Изменения сохранены: ${wineRecord.producer} · ${wineRecord.name}`
           : `Вино добавлено в дневник: ${wineRecord.producer} · ${wineRecord.name} (${allPhotos.length} фото)`);
       };
 
@@ -7634,9 +7889,10 @@
       if (customSoil) {
         document.getElementById("inSoil").value = stripShowcaseWineriesFromRegionalSoil(customSoil);
       }
-      // Do NOT copy regional textbook elevation / aspect / soil / grapes / ABV / vine_age / aging into an individual bottle's form fields
-      if (reg.default_style && !document.getElementById("inStyle").dataset.userSet) {
-        document.getElementById("inStyle").value = reg.default_style;
+      // Never overwrite bottle style with a macro-region's default_style ("red"), because every wine region produces white, rosé, and sparkling wines too; only default Champagne to sparkling when unresolved
+      const inStyleEl = document.getElementById("inStyle");
+      if (inStyleEl && reg.id === "champagne" && !inStyleEl.dataset.userSet && !inStyleEl.dataset.styleResolved && getStyleFamily(inStyleEl.value) !== "sparkling") {
+        inStyleEl.value = "sparkling";
       }
       if (typeof map !== "undefined" && map) {
         map.flyTo([reg.lat, reg.lon], Math.max(reg.zoom || 11, 11), { duration: 0.65 });
@@ -7668,8 +7924,9 @@
       document.getElementById("inLat").value = item.lat.toFixed(4);
       document.getElementById("inLon").value = item.lon.toFixed(4);
       document.getElementById("inSoil").value = item.soil || `${tierLabelMap[item.tier] || "Кадастровый парцель"} · Кадастр INAO (${item.commune})`;
-      if (item.region === "Champagne" || /шампан/i.test(regionTitle)) {
-        document.getElementById("inStyle").value = "sparkling";
+      const inStyleEl = document.getElementById("inStyle");
+      if (inStyleEl && (item.region === "Champagne" || /шампан/i.test(regionTitle)) && !inStyleEl.dataset.userSet && getStyleFamily(inStyleEl.value) !== "sparkling") {
+        inStyleEl.value = "sparkling";
       }
       smartStatusText.textContent = `Подставлен кадастровый парцель: ${item.commune} · ${item.name} (${item.lat.toFixed(4)}° N, ${item.lon.toFixed(4)}° E)`;
       smartStatusText.style.color = "var(--color-verdigris)";
@@ -7696,7 +7953,10 @@
           if (kb.producer) document.getElementById("inProducer").value = kb.producer;
           if (kb.name && !isPureGrapeVarietyName(kb.name)) document.getElementById("inName").value = kb.name;
           if (kb.vintage) document.getElementById("inVintage").value = kb.vintage;
-          if (kb.style) document.getElementById("inStyle").value = kb.style;
+          if (kb.style && !document.getElementById("inStyle").dataset.userSet) {
+            document.getElementById("inStyle").value = kb.style;
+            document.getElementById("inStyle").dataset.styleResolved = "1";
+          }
           if (kb.wine_class && document.getElementById("inClass")) document.getElementById("inClass").value = kb.wine_class;
           if (kb.grapes && document.getElementById("inGrapes")) {
             document.getElementById("inGrapes").value = kb.grapes;
@@ -8158,10 +8418,11 @@
       const regionName = String(rawHit.region?.name_en || rawHit.region?.name || "").trim();
       const countryCode = String(rawHit.region?.country || "").toUpperCase();
       const countryRu = VIVINO_COUNTRY_MAP_RU[countryCode] || countryCode || "";
-      const typeId = Number(rawHit.type_id || 1);
-      const baseStyle = typeId === 3 ? "sparkling" : (typeId === 4 ? "rose" : ((typeId === 7 || typeId === 24) ? "sweet" : (typeId === 2 ? "white" : "red")));
+      const typeId = rawHit.type_id ? Number(rawHit.type_id) : null;
+      const grapeFromHit = extractGrapesFromText(`${wineName} ${seoName.replace(/-/g, " ")}`);
+      const baseStyle = typeId === 3 ? "sparkling" : (typeId === 4 ? "rose" : ((typeId === 7 || typeId === 24) ? "sweet" : (typeId === 2 ? "white" : (typeId === 1 ? "red" : (grapeFromHit ? grapeFromHit.style : null)))));
       const fullContextText = `${wineryName} ${wineName} ${regionName} ${seoName.replace(/-/g, " ")}`.trim();
-      const style = detectDetailedWineStyle(fullContextText, baseStyle) || baseStyle;
+      const style = detectDetailedWineStyle(fullContextText, baseStyle) || baseStyle || "red";
       const wineClass = detectWineClassification(fullContextText, style) || "";
       const vintages = Array.isArray(rawHit.vintages) ? rawHit.vintages : [];
 
@@ -8362,8 +8623,9 @@
       }
 
       // 2. Style, Classification & Vintage
-      if (hit.style) {
+      if (hit.style && (!inStyleEl.dataset.userSet || options.chosenByUser)) {
         inStyleEl.value = hit.style;
+        inStyleEl.dataset.styleResolved = "1";
       }
       const detectedCls = hit.wineClass || detectWineClassification(`${hit.wineryName} ${hit.wineName} ${effectiveRegionName || ""}`, hit.style);
       if (inClassEl && detectedCls) {
@@ -8476,14 +8738,16 @@
       const existingRegionVal = document.getElementById("inRegion")?.value.trim() || "";
       const existingStyleVal = document.getElementById("inStyle")?.value || "";
       const hasAttachedPhotos = Boolean((window.pendingSmartPhotos && window.pendingSmartPhotos.length > 0) || window.accumulatedSmartOcrText);
-      const combinedLower = `${rawTitle} ${urlPathContext} ${window.accumulatedSmartOcrText || ""}`.toLowerCase();
+      const combinedLower = `${rawTitle} ${urlPathContext} ${window.accumulatedSmartOcrText || ""}`
+        .toLowerCase()
+        .replace(/красное\s+и\s+белое/gi, " ");
 
-      // Detect Russian & European store color/style tokens before stripping them
+      // Detect Russian & European store color/style tokens before stripping them (using Cyrillic-safe word boundaries)
       let colorHint = null;
-      if (/\b(rg|rouge|red|tinto|rosso|rotwein|tinto|красн|кpасное|krasnoe|suhoe\s+krasnoe)\b/i.test(combinedLower)) colorHint = "red";
-      if (/\b(bl|blanc|white|blanco|bianco|weisswein|weißwein|branco|бел|белое|beloe|suhoe\s+beloe)\b/i.test(combinedLower)) colorHint = "white";
-      if (/\b(rs|ros[ée]|rosado|rosato|розов|розовое|rozovoe|suhoe\s+rozovoe)\b/i.test(combinedLower)) colorHint = "rose";
-      if (/\b(brut|брют|champagne|шампанск|shampanskoe|cremant|креман|cava|кава|corpinnat|prosecco|просекко|spumante|franciacorta|sekt|игрист|igristoe|epernay|reims)\b/i.test(combinedLower)) colorHint = "sparkling";
+      if (/(?:^|[^а-яёa-z0-9])(rg|rouge|red|tinto|rosso|rotwein|красн[а-яё]*|кpасное|krasnoe|suhoe\s+krasnoe)(?=$|[^а-яёa-z0-9])/i.test(combinedLower)) colorHint = "red";
+      if (/(?:^|[^а-яёa-z0-9])(bl|blanc|white|blanco|bianco|weisswein|weißwein|branco|бел[а-яё]*|beloe|suhoe\s+beloe)(?=$|[^а-яёa-z0-9])/i.test(combinedLower)) colorHint = "white";
+      if (/(?:^|[^а-яёa-z0-9])(rs|ros[ée]|rosado|rosato|розов[а-яё]*|розе|rozovoe|suhoe\s+rozovoe)(?=$|[^а-яёa-z0-9])/i.test(combinedLower)) colorHint = "rose";
+      if (/(?:^|[^а-яёa-z0-9])(brut|брют|champagne|шампанск[а-яё]*|shampanskoe|cr[ée]mant|креман|cava|кава|corpinnat|prosecco|просекко|spumante|franciacorta|sekt|игрист[а-яё]*|igristoe|epernay|reims)(?=$|[^а-яёa-z0-9])/i.test(combinedLower)) colorHint = "sparkling";
 
       let t = String(rawTitle)
         .replace(WINE_STORE_NAMES_RE, "")
@@ -8512,8 +8776,10 @@
       }
 
       const detectedDetailedStyle = detectDetailedWineStyle(combinedLower, colorHint || (gFromTitle ? gFromTitle.style : null));
-      if (detectedDetailedStyle) {
-        document.getElementById("inStyle").value = detectedDetailedStyle;
+      const inStyleEl = document.getElementById("inStyle");
+      if (detectedDetailedStyle && inStyleEl && !inStyleEl.dataset.userSet) {
+        inStyleEl.value = detectedDetailedStyle;
+        inStyleEl.dataset.styleResolved = "1";
       }
       const detectedCls = detectWineClassification(combinedLower, document.getElementById("inStyle").value);
       if (detectedCls && document.getElementById("inClass")) {
@@ -8683,10 +8949,19 @@
         inVintageEl.value = "N.V.";
       }
 
-      const preDetectedGrape = extractGrapesFromText(`${curGrapes} ${rawNameInput} ${ocrRaw}`) || ocrFacts.grapeInfo;
+      const preDetectedGrape = extractGrapesFromText(`${curGrapes} ${rawNameInput} ${quickVal} ${ocrRaw}`) || ocrFacts.grapeInfo;
 
-      // Populate OCR-verified Grapes/ABV/Vines/Notes if actually read from the label
+      // Populate OCR-verified Grapes/ABV/Vines/Notes/Style if read from label or search query (even when Vivino won't find the bottle!)
       const detectedGrapes = preDetectedGrape || extractGrapesFromText(`${inGrapesEl?.value || ""} ${inNameEl?.value || ""} ${ocrRaw}`);
+      if (inStyleEl && !inStyleEl.dataset.userSet && !inStyleEl.dataset.styleResolved) {
+        const inferredStage3Style = ocrFacts.detectedStyle
+          || detectDetailedWineStyle(`${curProd} ${curName} ${quickVal} ${curGrapes}`, detectedGrapes ? detectedGrapes.style : null)
+          || (detectedGrapes ? detectedGrapes.style : null);
+        if (inferredStage3Style) {
+          inStyleEl.value = inferredStage3Style;
+          inStyleEl.dataset.styleResolved = "1";
+        }
+      }
       const formAbvMatch = (inGrapesEl?.value || "").match(/\b(\d{1,2}[.,]\d)\s*%/);
       const finalAbv = ocrFacts.abvStr || (formAbvMatch ? `${formAbvMatch[1].replace(",", ".")}% об.` : "");
       const finalSugar = ocrFacts.sugarStr || (getStyleFamily(inStyleEl.value) === "sparkling" ? "брют" : "сухое");
@@ -9450,18 +9725,19 @@
       }
 
       // 4. Detect Detailed Wine Style & Classification (Sparkling subtypes, Rosé, Orange, Sweet, White, Red)
+      const cleanedStyleText = text.replace(/красное\s+и\s+белое/gi, " ");
       let baseStyleHint = grapeInfo ? grapeInfo.style : null;
-      if (/игрист|шампанск|брют|экстра\s*брют|cr[ée]mant|champagne|prosecco|cava|corpinnat|spumante|sekt|franciacorta|blanc\s+de\s+blancs|blanc\s+de\s+noirs|\bnm-\d{2,4}|\brm-\d{2,4}|\b51200\b|\b51100\b/i.test(text)) {
+      if (/игрист|шампанск|брют|экстра\s*брют|cr[ée]mant|champagne|prosecco|cava|corpinnat|spumante|sekt|franciacorta|blanc\s+de\s+blancs|blanc\s+de\s+noirs|\bnm-\d{2,4}|\brm-\d{2,4}|\b51200\b|\b51100\b/i.test(cleanedStyleText)) {
         baseStyleHint = "sparkling";
-      } else if (/\b(ros[ée]|rosado|rosato|розов|розовое)\b/i.test(text)) {
+      } else if (/(?:^|[^а-яёa-z0-9])(ros[ée]|rosado|rosato|розов[а-яё]*|розе)(?=$|[^а-яёa-z0-9])/i.test(cleanedStyleText)) {
         baseStyleHint = "rose";
-      } else if (/сухое\s*белое|белое\s*сухое|полусухое\s*белое|blanc|bianco|weisswein|weißwein|white\s*wine|vino\s*blanco|vinho\s*branco|chenin/i.test(text)) {
+      } else if (/(?:^|[^а-яёa-z0-9])(сухое\s*белое|белое\s*сухое|полусухое\s*белое|белое\s*полусухое|белое|blanc|bianco|weisswein|weißwein|white\s*wine|vino\s*blanco|vinho\s*branco|chenin)(?=$|[^а-яёa-z0-9])/i.test(cleanedStyleText)) {
         baseStyleHint = "white";
-      } else if (/сухое\s*красное|красное\s*сухое|полусухое\s*красное|rouge|rosso|tinto|rotwein|red\s*wine|vino\s*tinto|vinho\s*tinto/i.test(text)) {
+      } else if (/(?:^|[^а-яёa-z0-9])(сухое\s*красное|красное\s*сухое|полусухое\s*красное|красное\s*полусухое|красное|rouge|rosso|tinto|rotwein|red\s*wine|vino\s*tinto|vinho\s*tinto)(?=$|[^а-яёa-z0-9])/i.test(cleanedStyleText)) {
         baseStyleHint = "red";
       }
-      const detectedStyle = detectDetailedWineStyle(text, baseStyleHint) || baseStyleHint;
-      const detectedWineClass = detectWineClassification(text, detectedStyle);
+      const detectedStyle = detectDetailedWineStyle(cleanedStyleText, baseStyleHint) || baseStyleHint;
+      const detectedWineClass = detectWineClassification(cleanedStyleText, detectedStyle);
 
       // 5. Extract Harvest Year / Vintage (1980–2026), filtering out GOST/TR TS standards, postal codes, and dd.mm.yyyy bottling dates, plus curved-edge "225 Alc" -> 2025
       const cleanedForYear = text
@@ -9832,8 +10108,10 @@
       }
 
       // 5. Apply Style, Classification & Vintage
-      if (facts.detectedStyle) {
-        document.getElementById("inStyle").value = facts.detectedStyle;
+      const inStyleOcrEl = document.getElementById("inStyle");
+      if (facts.detectedStyle && inStyleOcrEl && !inStyleOcrEl.dataset.userSet) {
+        inStyleOcrEl.value = facts.detectedStyle;
+        inStyleOcrEl.dataset.styleResolved = "1";
       }
       if (facts.detectedWineClass && document.getElementById("inClass")) {
         document.getElementById("inClass").value = facts.detectedWineClass;
@@ -10081,8 +10359,10 @@
             if (parsed.vintage) document.getElementById("inVintage").value = String(parsed.vintage);
             const combinedGeminiText = [parsed.producer, parsed.name, parsed.classification, parsed.region, parsed.commune, parsed.climat, parsed.grapes, parsed.notes_ru].filter(Boolean).join(" ");
             const detailedGeminiStyle = detectDetailedWineStyle(combinedGeminiText, parsed.style || "");
-            if (detailedGeminiStyle) {
-              document.getElementById("inStyle").value = detailedGeminiStyle;
+            const inStyleGemEl = document.getElementById("inStyle");
+            if (detailedGeminiStyle && inStyleGemEl && !inStyleGemEl.dataset.userSet) {
+              inStyleGemEl.value = detailedGeminiStyle;
+              inStyleGemEl.dataset.styleResolved = "1";
             }
             const detectedGeminiClass = parsed.classification || detectWineClassification(combinedGeminiText, detailedGeminiStyle || parsed.style);
             if (detectedGeminiClass && document.getElementById("inClass")) {
@@ -10451,7 +10731,7 @@
 
     document.getElementById("stopBarcodeScanBtn").addEventListener("click", stopLiveBarcodeScanner);
 
-    // Initial boot: select the latest diary bottle in passport and center map on its terroir
+    // Initial boot: select the latest diary bottle in passport, center map on its terroir, and trigger async catalog fallback if needed
     updateHeaderSummary();
     buildDynamicRegionPills();
     selectWine(selectedWineId, false);
@@ -10461,6 +10741,7 @@
     } else {
       renderSemanticMapLayers();
     }
+    ensureCanonicalWinesLoadedAsync();
   </script>
 </body>
 </html>

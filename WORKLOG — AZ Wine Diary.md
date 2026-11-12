@@ -2,9 +2,9 @@
 
 > **Anti-Compaction Ledger**: этот журнал защищает контекст диалога от потери при `/compact`. Записи только дописываются (`append-only`), никогда не удаляются. При продолжении работы или после `/compact` агент обязан сначала прочитать разделы 1–3 и последние записи раздела 5.
 
-- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#99`)
+- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#100`)
 - **Проект**: **[`🍷 Wine`](file:///G:/My%20Drive/az-AI/Wine)** ([Сводный WORKLOG проекта](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md) · [GEMINI.md](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md))
-- **Период**: `2026-10-30 18:25` → `2026-11-10 03:12` · **Зафиксировано запросов в реестре**: `99`
+- **Период**: `2026-10-30 18:25` → `2026-11-12 07:08` · **Зафиксировано запросов в реестре**: `100`
 - **Рабочая область**: `["file:///G:/My%20Drive/az-AI/Wine", "file:///home/antigravity/aezaigrin88/az-wine-selector"]`
 - **Продуктовая ссылка (GitHub Pages)**: [`https://aezaigrin88.github.io/az-wine-selector/`](https://aezaigrin88.github.io/az-wine-selector/)
 
@@ -1186,3 +1186,28 @@ Check out this wine. I scanned it with the @Vivino app: https://www.vivino.com/w
   >      - **Классы Шампани и игристых**: `Grand Cru (Шампань 100%)`, `Premier Cru (Шампань 90–99%)`, `AOC Champagne`, `Cuvée de Prestige`, `Millésimé`, `Non-Vintage (N.V.)`, `Single Vineyard / Lieu-Dit`, `RM · Рекольтан-Манипулян`, `NM · Негоциант-Манипулян`, `CM · Кооператив-Манипулян`, `Crémant AOC`, `Corpinnat / Cava DO / Clàssic Penedès`, `Franciacorta DOCG / Trento DOC / Alta Langa DOCG`, `Prosecco Superiore DOCG / Prosecco DOC`, `Sekt b.A. / Winzersekt`.
   >      - **Классы тихих вин**: `Grand Cru (Гран Крю)`, `Premier Cru / 1er Cru`, `Grand Cru Classé`, `Cru Bourgeois`, `Cru du Beaujolais`, `Village AOC / AOP`, `Региональный AOC / AOP`, `DOCG (Италия)`, `DOC / DO / DOCa`, `Gran Reserva`, `Reserva`, `Riserva / Superiore / Classico`, `Crianza / Joven`, `VDP.Grosse Lage / GG`, `VDP.Erste Lage / Ortswein`, `Prädikatswein`, `DAC / 1ÖTW Erste Lage`, `Vieilles Vignes / Old Vines`, `Wine of Origin / Estate / Reserve`, `IGP / IGT / Vin de France`, `ЗНМП / ЗГУ (Россия)`.
   >    - Универсальные функции `detectDetailedWineStyle()` и `detectWineClassification()` автоматически определяют точный подтип вина/шампанского и его класс из ответов Vivino Algolia, OpenFoodFacts и OCR этикеток.
+
+---
+
+### 📅 2026-11-12
+
+#### #100 [✓] `2026-11-12 07:08` — «Почему вино определилось как красное? Нужно иметь возможность не только удалять, но и делать правки в дневнике? Скалистый берег из базы удалился?»
+
+- **Точный запрос пользователя**: «Почему вино определилось как красное? Нужно иметь возможность не только удалять, но и делать правки в дневнике?
+Скалистый берег из базы удалился?»
+- **Статус черновика / промоушена**: `promoted` (synced to Google Drive `G:\My Drive\az-AI\Wine` and GitHub `aezaigrin88/az-wine-selector`)
+- **Замеры и проверки (`checks run`)**: `Node VM syntax check on index.html (0 errors)`, `Zero Cyrillic ASCII-word-boundary (\b / \w) bugs across index.html`, `12-assertion functional test suite (detectDetailedWineStyle Cyrillic rosé/white/sparkling, applyWorldRegionToForm preserving white/rose against default_style=red, applyClimatMatchToForm preserving sparkling_bdb, mergeSavedOverlayIntoCanonicalWine persisting edits on id:19 Скалистый берег) — 12/12 PASS`, `Verified wines_data.json (all 18 canonical wines intact including id:19 Скалистый берег)` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html), [`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json), [`WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > 1. **Почему белое / розовое / игристое вино определялось как «Красное сухое» (`red`) — найдены и устранены 3 системные причины**:
+  >    - **Перезапись стиля макрорегионом (`applyWorldRegionToForm`)**: после того как Vivino, OCR или парсер названия выставлял `#inStyle.value = "white"` или `"rose"`, функция `applyWorldRegionToForm(reg)` проверяла только `!inStyle.dataset.userSet` и затирала тип вина дефолтом региона `reg.default_style = "red"` (ЮАР, Бургундия, Бордо, Долина Роны, Тоскана, Риоха, Мендоса, Кубань, Крым и др.). Исправлено: макрорегион больше никогда не перезаписывает `#inStyle` на `"red"`, а все этапы автораспознавания помечают `inStyle.dataset.styleResolved = "1"`. Также исправлен `normalizeVivinoAlgoliaHit` (отсутствующий `type_id` больше не подменяется на `1` / `red`) и `applyClimatMatchToForm` (детальные стили Шампани `sparkling_bdb` / `sparkling_rose` не сбрасываются до базового `sparkling`).
+  >    - **ASCII-границы `\w*` и `\b` в регулярных выражениях для кириллицы**: в JavaScript `\w` и `\b` работают только для латиницы `[A-Za-z0-9_]`, поэтому шаблоны `бел\w*`, `розов\w*`, `шампанск\w*`, `игрист\w*` и `\bрозовое\b` не срабатывали на русских словах `белое`, `розовое`, `шампанское`, `игристое` с контрэтикеток и витрин, оставляя первый пункт списка (`red`). Все кириллические корни в `detectDetailedWineStyle`, `detectWineClassification`, `applyParsedWineTitleToForm` и `extractStructuredWineFacts` переведены на `[а-яё]*` с кириллическими границами `(?:^|[^а-яёa-z0-9])...(?=$|[^а-яёa-z0-9])`.
+  >    - **Автовывод типа вина по сорту винограда при ручном вводе**: если на Vivino бутылка не найдена и пользователь не менял `#inStyle` вручную, перед сохранением `finishSave()` выводит тип вина из указанного сорта (`GRAPE_VARIETY_DICTIONARY`, например `Шенен Блан` / `Шардоне` → `white`) и текста карточки.
+  > 2. **Полноценное редактирование любой бутылки прямо из «Дневника дегустаций» (`#tastingDiarySection`) с сохранением всех полей**:
+  >    - В каждую строку таблицы Дневника дегустаций добавлена кнопка **«Править»** (`[data-diary-edit-id]`, рядом с `×`) и кликабельный бейдж типа вина (`[data-diary-edit-style-id]`, сразу фокусирующий выбор типа вина `#inStyle`).
+  >    - Универсальная функция `openEditWineDrawer(wid, options)` открывает карточку редактирования для любой бутылки (как добавленной пользователем, так и базовой `#1..#19`), подгружает все поля (включая оценки Артёма и Ани по 4 критериям, заметки, сорт, крепость, лозы/выдержку, тип и класс вина, фото) и сохраняет правки на месте с флагом `_userEdited: true`.
+  >    - В `loadAtlasState()` добавлена `mergeSavedOverlayIntoCanonicalWine(w, saved)` по списку `PERSISTED_EDITABLE_WINE_KEYS`, чтобы правки типа, класса, сорта, региона и названия не сбрасывались после перезагрузки страницы.
+  > 3. **Проверка «Скалистого берега» (`id: 19`) и защита базового каталога от исчезновения в мобильном Safari**:
+  >    - В [`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json) запись `id: 19` (**`Скалистый берег (Côte Rocheuse)` — `Каберне Фран · ЗГУ «Кубань» 2023`**) полностью сохранена (все 18 базовых вин на месте).
+  >    - Чтобы базовые вина никогда не пропадали на iPhone при сбое синхронного `XMLHttpRequest("wines_data.json", false)` после сна вкладки или при случайном нажатии `×`, добавлены: (а) резервный кэш `CANONICAL_BACKUP_KEY` в `localStorage` + асинхронный `ensureCanonicalWinesLoadedAsync()` (`fetch` с автоподгрузкой при старте); (б) учёт скрытых базовых вин в `deletedCanonicalIds` и кнопка **«Вернуть базовые вина (N)»** (`#restoreDeletedWinesBtn`) в шапке Дневника дегустаций.
+
