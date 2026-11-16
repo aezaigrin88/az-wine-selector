@@ -4,7 +4,11 @@
     "cellar_id": 6491870,
     "name": "Artem Zaigrin",
     "handle": "@artem_zaigrin",
-    "last_synced": "2026-10-31"
+    "last_synced": "2026-11-16",
+    "deleted_canonical_ids": [],
+    "deleted_wine_map": {},
+    "deleted_vintage_ids": [],
+    "updated_at_ms": 1794816765317
   },
   "wines": [
     {
@@ -69,7 +73,22 @@
       },
       "osm_way_id": 397137274,
       "parcel_label": "Скалистый берег (Côte Rocheuse) · Каберне Фран · Хребет Семисам (Варваровка)",
-      "parcel_tier": "Grand Cru"
+      "parcel_tier": "Grand Cru",
+      "rating_az_parts": {
+        "aroma": null,
+        "balance": null,
+        "finish": null,
+        "complexity": null
+      },
+      "rating_anya_parts": {
+        "aroma": null,
+        "balance": null,
+        "finish": null,
+        "complexity": null
+      },
+      "photos": [
+        "img/labels/bottle_19.jpg"
+      ]
     },
     {
       "id": 17,
@@ -255,7 +274,7 @@
       "rating_az": null,
       "rating_anya": null,
       "taste_profile": {
-        "body": 3.0,
+        "body": 3,
         "tannins": 2.8,
         "acidity": 4.3,
         "minerality": 3.9,
@@ -776,7 +795,7 @@
       "rating_anya": null,
       "taste_profile": {
         "body": 3.3,
-        "tannins": 3.0,
+        "tannins": 3,
         "acidity": 4.1,
         "minerality": 3.8,
         "sweetness": 1.3
@@ -843,7 +862,7 @@
         "body": 3.6,
         "tannins": 3.4,
         "acidity": 3.9,
-        "minerality": 4.0,
+        "minerality": 4,
         "sweetness": 1.3
       },
       "commune_code": "71378",
@@ -1039,7 +1058,7 @@
         "tannins": 4.3,
         "acidity": 4.6,
         "minerality": 4.5,
-        "sweetness": 1.0
+        "sweetness": 1
       },
       "osm_way_id": 1188475169,
       "parcel_label": "Can Nadal de la Bogadella · Corpinnat (Finca Nadal)",
