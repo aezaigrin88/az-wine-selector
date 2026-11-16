@@ -2834,6 +2834,43 @@
       }
     }
 
+    .cloud-sync-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #8A795D;
+      flex-shrink: 0;
+    }
+    .cloud-sync-dot.synced {
+      background: #2E7D5B;
+    }
+    .cloud-sync-dot.pending {
+      background: #C47F17;
+    }
+    .cloud-sync-dot.error {
+      background: #A82024;
+    }
+    .cloud-sync-sec {
+      padding: 12px 14px;
+      border: 1px solid rgba(34, 30, 26, 0.16);
+      border-radius: 8px;
+      background: rgba(255, 251, 242, 0.85);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .cloud-sync-sec-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--color-ink);
+    }
+    .cloud-sync-hint {
+      font-size: 0.78rem;
+      line-height: 1.42;
+      color: var(--color-ink-secondary);
+    }
+
   </style>
 </head>
 <body>
@@ -2862,11 +2899,9 @@
           </svg>
           Добавить вино
         </button>
-        <button type="button" class="btn" id="exportJsonBtn" title="Скачать обновлённый файл wines_data.json для синхронизации с Vivino">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Экспорт JSON
+        <button type="button" class="btn" id="cloudSyncBtn" title="Облачная синхронизация дневника между телефоном и ноутбуком (GitHub + Vivino)">
+          <span class="cloud-sync-dot" id="cloudSyncStatusDot" aria-hidden="true"></span>
+          <span id="cloudSyncBtnLabel">Облако</span>
         </button>
         <button type="button" class="btn" id="lockPinBtn" title="Заблокировать экран или сменить PIN-код">
           PIN
@@ -3591,6 +3626,70 @@
     </div>
   </div>
 
+  <!-- Cloud Sync & Vivino Modal -->
+  <div class="lightbox-backdrop" id="cloudSyncModal" role="dialog" aria-modal="true" aria-labelledby="cloudSyncModalTitle">
+    <div class="lightbox-panel" style="max-width:620px;width:94vw;">
+      <div class="qcard-header qcard-header-crimson">
+        <span id="cloudSyncModalTitle">Облачная синхронизация дневника</span>
+        <button type="button" class="btn" id="closeCloudSyncModalBtn" style="padding:4px 10px;font-size:0.80rem;">Закрыть</button>
+      </div>
+      <div class="lightbox-body" style="align-items:stretch;text-align:left;gap:12px;max-height:80vh;overflow-y:auto;padding:16px;">
+        <div class="cloud-sync-sec" id="cloudSyncStatusBanner">
+          <div class="cloud-sync-sec-title" id="cloudSyncStateTitle">Проверка статуса синхронизации...</div>
+          <div class="cloud-sync-hint" id="cloudSyncStateDetail">Новые бутылки и правки из этого браузера можно сохранять напрямую в общий репозиторий aezaigrin88/az-wine-selector.</div>
+        </div>
+
+        <div class="cloud-sync-sec">
+          <div class="cloud-sync-sec-title">1. Прямая запись в GitHub (телефон и ноутбук)</div>
+          <div class="cloud-sync-hint">
+            Создайте <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer" style="color:var(--color-crimson);font-weight:700;text-decoration:underline;">Fine-Grained Token на GitHub</a> для репозитория <code>aezaigrin88/az-wine-selector</code> с правом <b>Contents: Read and write</b> (и при желании <b>Actions: Read and write</b> для запуска Vivino). Ключ хранится только в вашем браузере.
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <input id="githubTokenInput" type="password" class="form-input" style="flex:1;min-width:210px;" placeholder="github_pat_... или ghp_..." autocomplete="off" />
+            <button type="button" class="btn" id="toggleShowGhTokenBtn" style="padding:6px 10px;">Показать</button>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.80rem;color:var(--color-ink);cursor:pointer;">
+            <input type="checkbox" id="githubAutoSyncCheck" checked />
+            <span>Автоматически сохранять все новые вина, фото и оценки в GitHub</span>
+          </label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">
+            <button type="button" class="btn btn-primary" id="saveTokenAndSyncBtn">Подключить и синхронизировать</button>
+            <button type="button" class="btn" id="pushCloudNowBtn">Отправить локальные вина в GitHub</button>
+            <button type="button" class="btn" id="pullCloudNowBtn">Загрузить базу из GitHub</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">
+            <button type="button" class="btn" id="copyDeviceSyncLinkBtn" title="Скопировать персональную ссылку для быстрого подключения телефона в 1 касание">Скопировать ссылку для второго устройства</button>
+            <button type="button" class="btn" id="clearGithubTokenBtn" style="color:var(--color-crimson);">Отключить ключ</button>
+          </div>
+          <div class="cloud-sync-hint" style="font-size:0.74rem;">
+            Ссылку для второго устройства пересылайте только себе (например, в Избранное или через AirDrop): при открытии на телефоне она автоматически сохранит ключ и сразу отправит добавленные на телефоне бутылки в общую базу.
+          </div>
+        </div>
+
+        <div class="cloud-sync-sec">
+          <div class="cloud-sync-sec-title">2. Импорт новых сканов из аккаунта Vivino</div>
+          <div class="cloud-sync-hint">
+            Ежедневная синхронизация на GitHub подтягивает новые вина из профиля <code>@artem_zaigrin</code> (если в Settings -> Secrets репозитория заданы <code>VIVINO_EMAIL</code> и <code>VIVINO_PASSWORD</code> или <code>VIVINO_COOKIE</code>). Также можно в любой момент загрузить CSV-выгрузку из настроек приложения Vivino (<code>full_wine_list.csv</code>).
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="btn" id="triggerVivinoWorkflowBtn">Запустить синхронизацию Vivino на GitHub</button>
+            <label for="importVivinoCsvInput" class="btn" style="cursor:pointer;">Импорт CSV из Vivino</label>
+            <input id="importVivinoCsvInput" type="file" accept=".csv,text/csv" style="display:none;" />
+          </div>
+        </div>
+
+        <div class="cloud-sync-sec">
+          <div class="cloud-sync-sec-title">3. Ручной перенос файлом JSON</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="btn" id="exportJsonBtn">Скачать wines_data.json</button>
+            <label for="importJsonFileInput" class="btn" style="cursor:pointer;">Загрузить wines_data.json</label>
+            <input id="importJsonFileInput" type="file" accept=".json,application/json" style="display:none;" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 4-Digit PIN Lock Gate Modal -->
   <div class="pin-gate-backdrop" id="pinGateModal" role="dialog" aria-modal="true" aria-labelledby="pinGateTitle">
     <div class="pin-gate-card">
@@ -3690,12 +3789,44 @@
       "aspect_deg", "aspect_code", "aspect", "domain_history", "climat_dossier",
       "drinking_window", "serving_temp", "glassware", "food_pairing", "guide_source",
       "rating_az", "rating_anya", "rating_az_parts", "rating_anya_parts", "taste_profile",
-      "tasted_date", "purchased_at", "wine_id", "vintage_id", "vivino_avg", "vivino_url",
-      "_userEdited"
+      "tasted_date", "purchased_at", "wine_id", "vintage_id", "user_vintage_id", "vivino_avg", "vivino_url",
+      "_userEdited", "_updatedAt", "_uid"
     ];
+
+    function touchWineEdit(w) {
+      if (!w || typeof w !== "object") return;
+      w._userEdited = true;
+      w._updatedAt = Date.now();
+      if (!w._uid) {
+        w._uid = Number(w.id) <= 19
+          ? `canonical_${w.id}`
+          : `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+      }
+    }
+
+    function isSameWineIdentity(a, b) {
+      if (!a || !b) return false;
+      if (Number(a.id) <= 19 && Number(b.id) <= 19 && Number(a.id) === Number(b.id)) return true;
+      if (a._uid && b._uid) return a._uid === b._uid;
+      if (a.vintage_id && b.vintage_id && Number(a.vintage_id) === Number(b.vintage_id)) return true;
+      const keyA = `${String(a.producer || "").trim().toLowerCase()}|${String(a.name || "").trim().toLowerCase()}|${String(a.vintage || "").trim().toLowerCase()}`;
+      const keyB = `${String(b.producer || "").trim().toLowerCase()}|${String(b.name || "").trim().toLowerCase()}|${String(b.vintage || "").trim().toLowerCase()}`;
+      return keyA !== "||" && keyA === keyB;
+    }
 
     function mergeSavedOverlayIntoCanonicalWine(w, saved) {
       if (!w || !saved) return;
+      const remoteTs = Number(w._updatedAt || 0);
+      const localTs = Number(saved._updatedAt || 0);
+      if (remoteTs > 0 && localTs > 0 && remoteTs > localTs) {
+        return;
+      }
+      if (remoteTs > 0 && localTs === 0) {
+        if ((w.rating_az === null || w.rating_az === undefined) && saved.rating_az !== null && saved.rating_az !== undefined) w.rating_az = saved.rating_az;
+        if ((w.rating_anya === null || w.rating_anya === undefined) && saved.rating_anya !== null && saved.rating_anya !== undefined) w.rating_anya = saved.rating_anya;
+        if (!w.notes && saved.notes) w.notes = saved.notes;
+        return;
+      }
       if (saved._userEdited) {
         PERSISTED_EDITABLE_WINE_KEYS.forEach(k => {
           if (saved[k] !== undefined) w[k] = saved[k];
@@ -3712,37 +3843,79 @@
         if (saved.notes && !w.notes) w.notes = saved.notes;
       }
       if (Array.isArray(saved.photos) && saved.photos.length > 0) {
-        w.photos = saved.photos;
-        if (saved.bottle_studio) w.bottle_studio = saved.bottle_studio;
+        const isGenericOnly = saved.photos.length === 1 && /^img\/labels\/bottle_(02|05|17)\.png/.test(String(saved.photos[0] || ""));
+        if (!isGenericOnly || !w.bottle_studio) {
+          w.photos = saved.photos;
+          if (saved.bottle_studio) w.bottle_studio = saved.bottle_studio;
+        }
       }
     }
 
     function loadAtlasState() {
       const fresh = structuredClone(INITIAL_DATA);
-      fresh.deletedCanonicalIds = [];
+      if (!fresh.account || typeof fresh.account !== "object") {
+        fresh.account = { user_id: 77968357, cellar_id: 6491870, name: "Artem Zaigrin", handle: "@artem_zaigrin" };
+      }
+      fresh.deletedCanonicalIds = Array.isArray(fresh.account.deleted_canonical_ids)
+        ? fresh.account.deleted_canonical_ids.map(Number).filter(Number.isFinite)
+        : [];
+      fresh.deletedWineIds = (fresh.account.deleted_wine_map && typeof fresh.account.deleted_wine_map === "object")
+        ? { ...fresh.account.deleted_wine_map }
+        : {};
+      fresh.deletedVintageIds = Array.isArray(fresh.account.deleted_vintage_ids)
+        ? [...fresh.account.deleted_vintage_ids]
+        : [];
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && Array.isArray(parsed.deletedCanonicalIds)) {
-            fresh.deletedCanonicalIds = parsed.deletedCanonicalIds.map(Number).filter(Number.isFinite);
-          }
-          const deletedSet = new Set(fresh.deletedCanonicalIds);
-          if (deletedSet.size > 0) {
-            fresh.wines = fresh.wines.filter(w => !deletedSet.has(Number(w.id)));
-          }
-          if (parsed && Array.isArray(parsed.wines)) {
-            const byId = new Map(parsed.wines.map(item => [Number(item.id), item]));
-            fresh.wines.forEach(w => {
-              const saved = byId.get(Number(w.id));
-              if (saved) mergeSavedOverlayIntoCanonicalWine(w, saved);
+            parsed.deletedCanonicalIds.map(Number).filter(Number.isFinite).forEach(cid => {
+              if (!fresh.deletedCanonicalIds.includes(cid)) fresh.deletedCanonicalIds.push(cid);
             });
-            parsed.wines.forEach(saved => {
-              if (!saved || typeof saved !== "object") return;
-              if (deletedSet.has(Number(saved.id))) return;
-              if (!fresh.wines.some(w => Number(w.id) === Number(saved.id))) {
-                fresh.wines.unshift(saved);
+          }
+          if (parsed && parsed.deletedWineIds && typeof parsed.deletedWineIds === "object") {
+            Object.entries(parsed.deletedWineIds).forEach(([k, ts]) => {
+              fresh.deletedWineIds[k] = Math.max(Number(fresh.deletedWineIds[k] || 0), Number(ts || 0));
+            });
+          }
+          if (parsed && Array.isArray(parsed.deletedVintageIds)) {
+            parsed.deletedVintageIds.forEach(vid => {
+              if (vid && !fresh.deletedVintageIds.includes(vid)) fresh.deletedVintageIds.push(vid);
+            });
+          }
+          const isDeletedWine = wObj => {
+            if (!wObj) return true;
+            const wid = Number(wObj.id);
+            if (fresh.deletedCanonicalIds.includes(wid)) return true;
+            const delTs = Number(fresh.deletedWineIds[String(wid)] || 0);
+            if (delTs > 0 && delTs >= Number(wObj._updatedAt || 0)) return true;
+            return false;
+          };
+          fresh.wines = (fresh.wines || []).filter(w => !isDeletedWine(w));
+
+          if (parsed && Array.isArray(parsed.wines)) {
+            const consumedLocalIdx = new Set();
+            fresh.wines.forEach(w => {
+              const matchIdx = parsed.wines.findIndex((item, idx) => !consumedLocalIdx.has(idx) && isSameWineIdentity(w, item));
+              if (matchIdx !== -1) {
+                consumedLocalIdx.add(matchIdx);
+                mergeSavedOverlayIntoCanonicalWine(w, parsed.wines[matchIdx]);
               }
+            });
+            let maxId = Math.max(19, ...fresh.wines.map(w => Number(w.id) || 0));
+            parsed.wines.forEach((saved, idx) => {
+              if (consumedLocalIdx.has(idx)) return;
+              if (!saved || typeof saved !== "object") return;
+              if (isDeletedWine(saved)) return;
+              const copy = structuredClone(saved);
+              if (fresh.wines.some(w => Number(w.id) === Number(copy.id))) {
+                maxId += 1;
+                copy.id = maxId;
+              } else {
+                maxId = Math.max(maxId, Number(copy.id) || 0);
+              }
+              fresh.wines.unshift(copy);
             });
           }
         }
@@ -3764,7 +3937,7 @@
     async function ensureCanonicalWinesLoadedAsync() {
       if (INITIAL_DATA && Array.isArray(INITIAL_DATA.wines) && INITIAL_DATA.wines.length > 0) return;
       try {
-        const resp = await fetch("wines_data.json?v=20261111a", { cache: "no-cache" });
+        const resp = await fetch("wines_data.json?t=" + Date.now(), { cache: "no-store" });
         if (!resp.ok) return;
         const parsed = await resp.json();
         if (!parsed || !Array.isArray(parsed.wines) || parsed.wines.length === 0) return;
@@ -3783,11 +3956,14 @@
       } catch (_) {}
     }
 
-    function saveAtlasState() {
+    function saveAtlasState(options = {}) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(atlasData));
       } catch (err) {
         console.warn("Could not save state:", err);
+      }
+      if (!options.skipCloud && typeof window.notifyAtlasStateChangedForCloud === "function") {
+        window.notifyAtlasStateChangedForCloud(Boolean(options.immediateCloud));
       }
     }
 
@@ -4977,7 +5153,7 @@
     // Immediately sanitize all loaded wines in atlasData (repairs any existing localStorage records)
     if (atlasData && Array.isArray(atlasData.wines)) {
       atlasData.wines.forEach(w => enrichWineMetadata(w));
-      try { saveAtlasState(); } catch (_) {}
+      try { saveAtlasState({ skipCloud: true }); } catch (_) {}
     }
 
     function getFilteredWinesForMap() {
@@ -5693,6 +5869,7 @@
           const key = track.getAttribute("data-taste-bar-key");
           const p = getWineTasteProfile(w);
           p[key] = newVal;
+          touchWineEdit(w);
           saveAtlasState();
           renderWineTasteBars(w);
           renderTastingDiary();
@@ -5832,7 +6009,8 @@
             list.splice(idx, 1);
             w.photos = list;
             w.bottle_studio = list[0];
-            saveAtlasState();
+            touchWineEdit(w);
+            saveAtlasState({ immediateCloud: true });
             renderWinePhotoStrips(w, Math.min(safeIdx, list.length - 1));
             renderLedgerTable();
             renderTastingDiary();
@@ -6070,6 +6248,7 @@
           STRUCTURAL_CRITERIA.forEach(c => { parts[c.key] = newScore; });
         }
         syncWinePairRating(w);
+        touchWineEdit(w);
         saveAtlasState();
         updateHeaderSummary();
         renderStarWidget(w.rating);
@@ -6193,6 +6372,7 @@
             parts[cKey] = newVal;
           }
           recomputePersonScoreFromParts(w, pKey);
+          touchWineEdit(w);
           saveAtlasState();
           updateHeaderSummary();
           renderStarWidget();
@@ -6210,6 +6390,7 @@
           const num = raw ? Number(raw) : NaN;
           parts[cKey] = Number.isFinite(num) ? Math.max(1, Math.min(5, num)) : null;
           recomputePersonScoreFromParts(w, pKey);
+          touchWineEdit(w);
           saveAtlasState();
           updateHeaderSummary();
           renderStarWidget();
@@ -6783,6 +6964,7 @@
           const w = atlasData.wines.find(item => item.id === wid);
           if (!w) return;
           w.tasted_date = e.target.value;
+          touchWineEdit(w);
           saveAtlasState();
           if (w.id === selectedWineId) {
             document.getElementById("dossierDateInput").value = w.tasted_date;
@@ -6807,6 +6989,7 @@
             w.rating_az_parts = { aroma: null, balance: null, finish: null, complexity: null };
           }
           syncWinePairRating(w);
+          touchWineEdit(w);
           saveAtlasState();
           updateHeaderSummary();
           if (w.id === selectedWineId) renderStarWidget();
@@ -6832,6 +7015,7 @@
             w.rating_anya_parts = { aroma: null, balance: null, finish: null, complexity: null };
           }
           syncWinePairRating(w);
+          touchWineEdit(w);
           saveAtlasState();
           updateHeaderSummary();
           if (w.id === selectedWineId) renderStarWidget();
@@ -6848,7 +7032,7 @@
           const w = atlasData.wines.find(item => item.id === wid);
           if (!w) return;
           w.notes = e.target.value;
-          w._userEdited = true;
+          touchWineEdit(w);
           saveAtlasState();
           if (w.id === selectedWineId) {
             document.getElementById("dossierNotesInput").value = w.notes;
@@ -6863,7 +7047,7 @@
           const w = atlasData.wines.find(item => item.id === wid);
           if (!w) return;
           w.purchased_at = e.target.value;
-          w._userEdited = true;
+          touchWineEdit(w);
           saveAtlasState();
           if (w.id === selectedWineId) {
             document.getElementById("dossierPurchasedInput").value = w.purchased_at;
@@ -6889,14 +7073,24 @@
       }
       const ok = window.confirm(`Удалить вино «${target.producer} · ${target.name} (${target.vintage})» из дневника и с карты?`);
       if (!ok) return;
-      if ((INITIAL_DATA.wines || []).some(cw => Number(cw.id) === Number(wid))) {
+      if (Number(wid) <= 19 || (INITIAL_DATA.wines || []).some(cw => Number(cw.id) === Number(wid) && Number(cw.id) <= 19)) {
         if (!Array.isArray(atlasData.deletedCanonicalIds)) atlasData.deletedCanonicalIds = [];
         if (!atlasData.deletedCanonicalIds.includes(Number(wid))) {
           atlasData.deletedCanonicalIds.push(Number(wid));
         }
       }
+      if (!atlasData.deletedWineIds || typeof atlasData.deletedWineIds !== "object") {
+        atlasData.deletedWineIds = {};
+      }
+      atlasData.deletedWineIds[String(wid)] = Date.now();
+      if (target.vintage_id && Number(wid) > 19) {
+        if (!Array.isArray(atlasData.deletedVintageIds)) atlasData.deletedVintageIds = [];
+        if (!atlasData.deletedVintageIds.includes(target.vintage_id)) {
+          atlasData.deletedVintageIds.push(target.vintage_id);
+        }
+      }
       atlasData.wines = atlasData.wines.filter(item => Number(item.id) !== Number(wid));
-      saveAtlasState();
+      saveAtlasState({ immediateCloud: true });
       updateHeaderSummary();
       buildDynamicRegionPills();
       if (Number(selectedWineId) === Number(wid)) {
@@ -6915,10 +7109,15 @@
       if (!INITIAL_DATA.wines || INITIAL_DATA.wines.length === 0) {
         await ensureCanonicalWinesLoadedAsync();
       }
+      const idsToRestore = Array.isArray(atlasData.deletedCanonicalIds) ? [...atlasData.deletedCanonicalIds] : [];
       atlasData.deletedCanonicalIds = [];
+      if (atlasData.deletedWineIds && typeof atlasData.deletedWineIds === "object") {
+        idsToRestore.forEach(cid => { delete atlasData.deletedWineIds[String(cid)]; });
+        for (let cid = 1; cid <= 19; cid++) delete atlasData.deletedWineIds[String(cid)];
+      }
       let restoredCount = 0;
       (INITIAL_DATA.wines || []).forEach(cw => {
-        if (!atlasData.wines.some(w => Number(w.id) === Number(cw.id))) {
+        if (Number(cw.id) <= 19 && !atlasData.wines.some(w => Number(w.id) === Number(cw.id))) {
           const copy = structuredClone(cw);
           if (typeof enrichWineMetadata === "function") enrichWineMetadata(copy);
           syncWinePairRating(copy);
@@ -6926,7 +7125,7 @@
           restoredCount++;
         }
       });
-      saveAtlasState();
+      saveAtlasState({ immediateCloud: true });
       updateHeaderSummary();
       buildDynamicRegionPills();
       renderSemanticMapLayers();
@@ -7260,9 +7459,9 @@
           } catch (_) {}
         }
       }
-      w._userEdited = true;
+      touchWineEdit(w);
       enrichWineMetadata(w);
-      saveAtlasState();
+      saveAtlasState({ immediateCloud: true });
       selectWine(w.id, false);
     });
 
@@ -7304,31 +7503,31 @@
       const w = atlasData.wines.find(item => item.id === selectedWineId);
       if (!w) return;
       w.tasted_date = e.target.value;
-      w._userEdited = true;
+      touchWineEdit(w);
       saveAtlasState();
       renderTastingDiary();
-      document.getElementById("saveNoteStatus").textContent = "Сохранено в браузере";
+      document.getElementById("saveNoteStatus").textContent = "Сохранено";
     });
 
     document.getElementById("dossierPurchasedInput").addEventListener("input", e => {
       const w = atlasData.wines.find(item => item.id === selectedWineId);
       if (!w) return;
       w.purchased_at = e.target.value;
-      w._userEdited = true;
+      touchWineEdit(w);
       saveAtlasState();
       renderTastingDiary();
-      document.getElementById("saveNoteStatus").textContent = "Сохранено в браузере";
+      document.getElementById("saveNoteStatus").textContent = "Сохранено";
     });
 
     document.getElementById("dossierNotesInput").addEventListener("input", e => {
       const w = atlasData.wines.find(item => item.id === selectedWineId);
       if (!w) return;
       w.notes = e.target.value;
-      w._userEdited = true;
+      touchWineEdit(w);
       saveAtlasState();
       renderLedgerTable();
       renderTastingDiary();
-      document.getElementById("saveNoteStatus").textContent = "Сохранено в браузере";
+      document.getElementById("saveNoteStatus").textContent = "Сохранено";
     });
 
     document.querySelectorAll("[data-filter-style]").forEach(btn => {
@@ -7519,6 +7718,8 @@
         const wineRecord = {
           ...(existingTarget || {}),
           id: newId,
+          _uid: existingTarget?._uid || (Number(newId) <= 19 ? `canonical_${newId}` : `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`),
+          _updatedAt: Date.now(),
           _userEdited: true,
           geo_order: existingTarget ? existingTarget.geo_order : (atlasData.wines.length + 1),
           terroir_tier: existingTarget?.terroir_tier || (/grand\s*cru|1er\s*cru|premier\s*cru|grosse\s*lage/i.test(resolvedWineClass) ? "grand_cru_cru" : "village_cotedor"),
@@ -7590,6 +7791,13 @@
         recomputePersonScoreFromParts(wineRecord, "anya");
         syncWinePairRating(wineRecord);
 
+        if (atlasData.deletedWineIds && atlasData.deletedWineIds[String(wineRecord.id)]) {
+          delete atlasData.deletedWineIds[String(wineRecord.id)];
+        }
+        if (Array.isArray(atlasData.deletedCanonicalIds)) {
+          atlasData.deletedCanonicalIds = atlasData.deletedCanonicalIds.filter(cid => Number(cid) !== Number(wineRecord.id));
+        }
+
         if (existingTarget) {
           const idx = atlasData.wines.findIndex(w => w.id === existingTarget.id);
           if (idx !== -1) atlasData.wines[idx] = wineRecord;
@@ -7604,7 +7812,7 @@
         window.editingWineId = null;
         window.accumulatedSmartOcrText = "";
         window.lastEnrichedWebMeta = null;
-        saveAtlasState();
+        saveAtlasState({ immediateCloud: true });
         updateHeaderSummary();
         buildDynamicRegionPills();
         selectWine(wineRecord.id, true);
@@ -7635,7 +7843,8 @@
     });
 
     document.getElementById("exportJsonBtn").addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify(atlasData, null, 2)], { type: "application/json;charset=utf-8" });
+      const payload = buildSerializableCatalogPayload(atlasData);
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -7646,6 +7855,760 @@
       URL.revokeObjectURL(url);
       showToast("Файл wines_data.json экспортирован");
     });
+
+    // =========================================================================
+    // 0. CLOUD SYNC ENGINE (GitHub Repository wines_data.json + Vivino Import)
+    // =========================================================================
+    const GITHUB_REPO_SLUG = "aezaigrin88/az-wine-selector";
+    const GITHUB_REPO_BRANCH = "main";
+    const GITHUB_TOKEN_STORAGE_KEY = "az_wine_github_token_v1";
+    const GITHUB_SYNC_META_KEY = "az_wine_github_sync_meta_v1";
+
+    let cloudSyncDebounceTimer = null;
+    let cloudSyncInFlight = false;
+    let cloudSyncQueuedAfterFlight = false;
+
+    // Instant fallback to raw.githubusercontent.com for newly committed bottle photos while GitHub Pages rebuilds (~20s)
+    window.addEventListener("error", ev => {
+      const el = ev && ev.target;
+      if (!el || el.tagName !== "IMG" || el.dataset.rawGhFallbackTried === "1") return;
+      const rawSrc = el.getAttribute("src") || "";
+      const relMatch = rawSrc.match(/(?:^|\/)(img\/(?:wines|labels)\/[^?#]+)/);
+      if (relMatch) {
+        el.dataset.rawGhFallbackTried = "1";
+        el.src = `https://raw.githubusercontent.com/${GITHUB_REPO_SLUG}/${GITHUB_REPO_BRANCH}/${relMatch[1]}?t=${Date.now()}`;
+      }
+    }, true);
+
+    function utf8ToBase64(str) {
+      const bytes = new TextEncoder().encode(String(str));
+      let bin = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+      }
+      return btoa(bin);
+    }
+
+    function getCloudSyncMeta() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(GITHUB_SYNC_META_KEY) || "{}");
+        return {
+          autoSync: parsed.autoSync !== false,
+          dirty: Boolean(parsed.dirty),
+          lastSyncedAt: parsed.lastSyncedAt || "",
+          lastError: parsed.lastError || ""
+        };
+      } catch (_) {
+        return { autoSync: true, dirty: false, lastSyncedAt: "", lastError: "" };
+      }
+    }
+
+    function saveCloudSyncMeta(patch) {
+      const next = { ...getCloudSyncMeta(), ...patch };
+      try {
+        localStorage.setItem(GITHUB_SYNC_META_KEY, JSON.stringify(next));
+      } catch (_) {}
+      updateCloudSyncUI();
+      return next;
+    }
+
+    function getSavedGitHubToken() {
+      return (localStorage.getItem(GITHUB_TOKEN_STORAGE_KEY) || "").trim();
+    }
+
+    function countUnsyncedLocalBottles() {
+      const baseIds = new Set((INITIAL_DATA.wines || []).map(w => Number(w.id)));
+      return (atlasData.wines || []).filter(w => !baseIds.has(Number(w.id))).length;
+    }
+
+    function updateCloudSyncUI(statusOverride = "") {
+      const dot = document.getElementById("cloudSyncStatusDot");
+      const btnLabel = document.getElementById("cloudSyncBtnLabel");
+      const titleEl = document.getElementById("cloudSyncStateTitle");
+      const detailEl = document.getElementById("cloudSyncStateDetail");
+      const autoCheck = document.getElementById("githubAutoSyncCheck");
+      const token = getSavedGitHubToken();
+      const meta = getCloudSyncMeta();
+      const unsyncedCount = countUnsyncedLocalBottles();
+
+      if (autoCheck) autoCheck.checked = meta.autoSync !== false;
+
+      if (dot) {
+        dot.classList.remove("synced", "pending", "error");
+        if (statusOverride === "syncing" || cloudSyncInFlight) {
+          dot.classList.add("pending");
+        } else if (meta.lastError) {
+          dot.classList.add("error");
+        } else if (token && !meta.dirty && unsyncedCount === 0) {
+          dot.classList.add("synced");
+        } else if (meta.dirty || unsyncedCount > 0) {
+          dot.classList.add("pending");
+        }
+      }
+      if (btnLabel) {
+        if (statusOverride === "syncing" || cloudSyncInFlight) {
+          btnLabel.textContent = "Синхронизация...";
+        } else if (!token && unsyncedCount > 0) {
+          btnLabel.textContent = `Облако (+${unsyncedCount})`;
+        } else {
+          btnLabel.textContent = "Облако";
+        }
+      }
+      if (titleEl && detailEl) {
+        if (statusOverride === "syncing" || cloudSyncInFlight) {
+          titleEl.textContent = "Идёт обмен данными с GitHub...";
+          detailEl.textContent = `Репозиторий ${GITHUB_REPO_SLUG} · всего бутылок в дневнике: ${(atlasData.wines || []).length}`;
+        } else if (meta.lastError) {
+          titleEl.textContent = "Ошибка облачной синхронизации";
+          detailEl.textContent = meta.lastError;
+        } else if (token) {
+          const syncTimeStr = meta.lastSyncedAt
+            ? `Последняя синхронизация: ${new Date(meta.lastSyncedAt).toLocaleString("ru-RU")}.`
+            : "Ключ подключён.";
+          titleEl.textContent = (meta.dirty || unsyncedCount > 0)
+            ? "Подключено к GitHub (есть неотправленные локальные изменения)"
+            : "Синхронизировано с GitHub (единая база на всех устройствах)";
+          detailEl.textContent = `${syncTimeStr} Записей в дневнике: ${(atlasData.wines || []).length}.`;
+        } else {
+          titleEl.textContent = unsyncedCount > 0
+            ? `Локальный режим: ${unsyncedCount} новых бутылок пока хранятся только в этом браузере`
+            : "Локальный режим (чтение из общей базы, запись только в этот браузер)";
+          detailEl.textContent = "Введите GitHub Token ниже (достаточно один раз), чтобы все добавленные бутылки, фото и правки автоматически сохранялись в общий wines_data.json и открывались на телефоне и ноутбуке.";
+        }
+      }
+    }
+
+    function buildSerializableCatalogPayload(sourceAtlas) {
+      const baseAcc = (sourceAtlas && sourceAtlas.account) || (INITIAL_DATA && INITIAL_DATA.account) || {
+        user_id: 77968357,
+        cellar_id: 6491870,
+        name: "Artem Zaigrin",
+        handle: "@artem_zaigrin"
+      };
+      return {
+        account: {
+          ...baseAcc,
+          deleted_canonical_ids: Array.isArray(sourceAtlas.deletedCanonicalIds) ? sourceAtlas.deletedCanonicalIds : [],
+          deleted_wine_map: (sourceAtlas.deletedWineIds && typeof sourceAtlas.deletedWineIds === "object") ? sourceAtlas.deletedWineIds : {},
+          deleted_vintage_ids: Array.isArray(sourceAtlas.deletedVintageIds) ? sourceAtlas.deletedVintageIds : []
+        },
+        wines: Array.isArray(sourceAtlas.wines) ? sourceAtlas.wines : []
+      };
+    }
+
+    function mergeRemoteAndLocalForCloud(remoteRaw, localState) {
+      const remoteClone = structuredClone(remoteRaw || { account: {}, wines: [] });
+      const prevInit = INITIAL_DATA;
+      INITIAL_DATA = remoteClone;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localState));
+      } catch (_) {}
+      const merged = loadAtlasState();
+      INITIAL_DATA = prevInit;
+      merged.wines.forEach(w => {
+        if (typeof enrichWineMetadata === "function") enrichWineMetadata(w);
+        syncWinePairRating(w);
+      });
+      return merged;
+    }
+
+    function refreshAllViewsAfterCloudMerge() {
+      if (!atlasData.wines.some(w => Number(w.id) === Number(selectedWineId)) && atlasData.wines[0]) {
+        selectedWineId = atlasData.wines[0].id;
+      }
+      updateHeaderSummary();
+      buildDynamicRegionPills();
+      selectWine(selectedWineId, false);
+      renderSemanticMapLayers();
+      renderLedgerTable();
+      renderTastingDiary();
+      renderTasteCompass();
+      updateCloudSyncUI();
+    }
+
+    async function githubApiFetch(path, options = {}, tokenOverride = "") {
+      const token = (tokenOverride || getSavedGitHubToken()).trim();
+      const headers = {
+        "Accept": options.raw ? "application/vnd.github.raw+json" : "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        ...(options.headers || {})
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (options.body && !headers["Content-Type"]) {
+        headers["Content-Type"] = "application/json";
+      }
+      const resp = await fetch(`https://api.github.com${path}`, {
+        method: options.method || "GET",
+        headers,
+        body: options.body ? (typeof options.body === "string" ? options.body : JSON.stringify(options.body)) : undefined,
+        cache: "no-store"
+      });
+      if (!resp.ok) {
+        let errDetail = `HTTP ${resp.status}`;
+        try {
+          const j = await resp.json();
+          if (j && j.message) errDetail = `${j.message} (HTTP ${resp.status})`;
+        } catch (_) {}
+        const err = new Error(errDetail);
+        err.status = resp.status;
+        throw err;
+      }
+      return options.raw ? resp.text() : (resp.status === 204 ? null : resp.json());
+    }
+
+    async function fetchLatestRemoteCatalogJson(tokenOverride = "") {
+      const token = (tokenOverride || getSavedGitHubToken()).trim();
+      if (token) {
+        const rawText = await githubApiFetch(
+          `/repos/${GITHUB_REPO_SLUG}/contents/wines_data.json?ref=${GITHUB_REPO_BRANCH}`,
+          { raw: true },
+          token
+        );
+        return JSON.parse(rawText);
+      }
+      // Without token: race cache-busted local/Pages URL and raw.githubusercontent.com, picking the freshest updated_at_ms
+      const ts = Date.now();
+      const candidates = await Promise.allSettled([
+        fetch(`https://raw.githubusercontent.com/${GITHUB_REPO_SLUG}/${GITHUB_REPO_BRANCH}/wines_data.json?t=${ts}`, { cache: "no-store" }).then(r => r.ok ? r.json() : null),
+        fetch(`wines_data.json?t=${ts}`, { cache: "no-store" }).then(r => r.ok ? r.json() : null)
+      ]);
+      const valid = candidates
+        .map(c => (c.status === "fulfilled" && c.value && Array.isArray(c.value.wines)) ? c.value : null)
+        .filter(Boolean);
+      if (valid.length === 0) return null;
+      valid.sort((a, b) => {
+        const ta = Number(a.account?.updated_at_ms || 0);
+        const tb = Number(b.account?.updated_at_ms || 0);
+        if (tb !== ta) return tb - ta;
+        return (b.wines?.length || 0) - (a.wines?.length || 0);
+      });
+      return valid[0];
+    }
+
+    async function pullLatestCatalogFromCloud(options = {}) {
+      try {
+        if (options.interactive) updateCloudSyncUI("syncing");
+        const remoteParsed = await fetchLatestRemoteCatalogJson();
+        if (!remoteParsed || !Array.isArray(remoteParsed.wines) || remoteParsed.wines.length === 0) {
+          if (options.interactive) showToast("Не удалось загрузить базу с GitHub");
+          updateCloudSyncUI();
+          return false;
+        }
+        const merged = mergeRemoteAndLocalForCloud(remoteParsed, atlasData);
+        INITIAL_DATA = remoteParsed;
+        try { localStorage.setItem(CANONICAL_BACKUP_KEY, JSON.stringify(remoteParsed)); } catch (_) {}
+        atlasData = merged;
+        saveAtlasState({ skipCloud: true });
+        refreshAllViewsAfterCloudMerge();
+        if (options.interactive) {
+          showToast(`Загружена актуальная база (${atlasData.wines.length} вин)`);
+        }
+        return true;
+      } catch (err) {
+        if (options.interactive) {
+          saveCloudSyncMeta({ lastError: `Не удалось прочитать базу из GitHub: ${err.message}` });
+          showToast(`Ошибка чтения GitHub: ${err.message}`);
+        }
+        return false;
+      }
+    }
+
+    function canonicalizeForDiff(payload) {
+      const clone = structuredClone(payload);
+      if (clone.account) {
+        delete clone.account.last_synced;
+        delete clone.account.updated_at_ms;
+      }
+      return JSON.stringify(clone);
+    }
+
+    async function pushAtlasStateToGitHub(options = {}) {
+      const token = getSavedGitHubToken();
+      if (!token) {
+        if (options.interactive) {
+          showToast("Сначала введите GitHub Token в поле выше");
+        }
+        updateCloudSyncUI();
+        return false;
+      }
+      if (cloudSyncInFlight) {
+        cloudSyncQueuedAfterFlight = true;
+        return false;
+      }
+      cloudSyncInFlight = true;
+      updateCloudSyncUI("syncing");
+
+      const attemptCommitOnce = async () => {
+        const refData = await githubApiFetch(`/repos/${GITHUB_REPO_SLUG}/git/ref/heads/${GITHUB_REPO_BRANCH}`, {}, token);
+        const headSha = refData.object.sha;
+        const commitData = await githubApiFetch(`/repos/${GITHUB_REPO_SLUG}/git/commits/${headSha}`, {}, token);
+        const baseTreeSha = commitData.tree.sha;
+        const remoteText = await githubApiFetch(
+          `/repos/${GITHUB_REPO_SLUG}/contents/wines_data.json?ref=${headSha}`,
+          { raw: true },
+          token
+        );
+        const remoteData = JSON.parse(remoteText);
+        const mergedState = mergeRemoteAndLocalForCloud(remoteData, atlasData);
+
+        // Upload any base64 data:image/... photos into img/wines/ as binary Git blobs so wines_data.json stays compact
+        const treeEntries = [];
+        const uploadedDataUrlMap = new Map();
+        for (const w of mergedState.wines) {
+          const list = Array.isArray(w.photos) && w.photos.length > 0
+            ? [...w.photos]
+            : (w.bottle_studio ? [w.bottle_studio] : []);
+          let changedPhotos = false;
+          for (let i = 0; i < list.length; i++) {
+            const p = String(list[i] || "");
+            const m = p.match(/^data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=\s]+)$/i);
+            if (!m) continue;
+            const ext = m[1].toLowerCase() === "jpeg" ? "jpg" : m[1].toLowerCase();
+            const b64Clean = m[2].replace(/\s+/g, "");
+            let repoRelPath = uploadedDataUrlMap.get(b64Clean);
+            if (!repoRelPath) {
+              const digest = await sha256Hex(`${b64Clean.slice(0, 2048)}:${b64Clean.length}`);
+              const shortHash = digest.slice(0, 10);
+              repoRelPath = `img/wines/user_bottle_${w.id}_${i + 1}_${shortHash}.${ext}`;
+              const blobRes = await githubApiFetch(
+                `/repos/${GITHUB_REPO_SLUG}/git/blobs`,
+                { method: "POST", body: { content: b64Clean, encoding: "base64" } },
+                token
+              );
+              treeEntries.push({
+                path: repoRelPath,
+                mode: "100644",
+                type: "blob",
+                sha: blobRes.sha
+              });
+              uploadedDataUrlMap.set(b64Clean, repoRelPath);
+            }
+            list[i] = repoRelPath;
+            changedPhotos = true;
+          }
+          if (changedPhotos) {
+            w.photos = list;
+            w.bottle_studio = list[0];
+          }
+        }
+
+        const nextPayload = buildSerializableCatalogPayload(mergedState);
+        const hasDiff = treeEntries.length > 0 || canonicalizeForDiff(nextPayload) !== canonicalizeForDiff(remoteData);
+
+        if (!hasDiff && !options.forceCommitEvenIfSame) {
+          INITIAL_DATA = nextPayload;
+          try { localStorage.setItem(CANONICAL_BACKUP_KEY, JSON.stringify(nextPayload)); } catch (_) {}
+          atlasData = mergedState;
+          saveAtlasState({ skipCloud: true });
+          saveCloudSyncMeta({ dirty: false, lastSyncedAt: new Date().toISOString(), lastError: "" });
+          refreshAllViewsAfterCloudMerge();
+          if (options.interactive) showToast("Все данные уже синхронизированы с GitHub");
+          return true;
+        }
+
+        nextPayload.account.last_synced = new Date().toISOString().slice(0, 10);
+        nextPayload.account.updated_at_ms = Date.now();
+
+        const jsonContentStr = JSON.stringify(nextPayload, null, 2) + "\n";
+        const jsonBlobRes = await githubApiFetch(
+          `/repos/${GITHUB_REPO_SLUG}/git/blobs`,
+          { method: "POST", body: { content: utf8ToBase64(jsonContentStr), encoding: "base64" } },
+          token
+        );
+        treeEntries.push({
+          path: "wines_data.json",
+          mode: "100644",
+          type: "blob",
+          sha: jsonBlobRes.sha
+        });
+
+        const newTree = await githubApiFetch(
+          `/repos/${GITHUB_REPO_SLUG}/git/trees`,
+          { method: "POST", body: { base_tree: baseTreeSha, tree: treeEntries } },
+          token
+        );
+        const newCommit = await githubApiFetch(
+          `/repos/${GITHUB_REPO_SLUG}/git/commits`,
+          {
+            method: "POST",
+            body: {
+              message: `chore(diary): cloud sync wines_data.json (${nextPayload.wines.length} wines)`,
+              tree: newTree.sha,
+              parents: [headSha]
+            }
+          },
+          token
+        );
+        await githubApiFetch(
+          `/repos/${GITHUB_REPO_SLUG}/git/refs/heads/${GITHUB_REPO_BRANCH}`,
+          { method: "PATCH", body: { sha: newCommit.sha, force: false } },
+          token
+        );
+
+        INITIAL_DATA = nextPayload;
+        try { localStorage.setItem(CANONICAL_BACKUP_KEY, JSON.stringify(nextPayload)); } catch (_) {}
+        atlasData = mergedState;
+        saveAtlasState({ skipCloud: true });
+        saveCloudSyncMeta({ dirty: false, lastSyncedAt: new Date().toISOString(), lastError: "" });
+        const noteStatusEl = document.getElementById("saveNoteStatus");
+        if (noteStatusEl) noteStatusEl.textContent = "Сохранено в GitHub";
+        refreshAllViewsAfterCloudMerge();
+        if (options.interactive) {
+          showToast(`Сохранено в GitHub (${nextPayload.wines.length} вин)`);
+        }
+        return true;
+      };
+
+      try {
+        try {
+          return await attemptCommitOnce();
+        } catch (firstErr) {
+          if (firstErr && firstErr.status === 422) {
+            return await attemptCommitOnce();
+          }
+          throw firstErr;
+        }
+      } catch (err) {
+        saveCloudSyncMeta({
+          dirty: true,
+          lastError: `Не удалось записать в GitHub (${err.message}). Проверьте право Contents: Read and write у токена.`
+        });
+        if (options.interactive) {
+          showToast(`Ошибка записи в GitHub: ${err.message}`);
+        }
+        return false;
+      } finally {
+        cloudSyncInFlight = false;
+        updateCloudSyncUI();
+        if (cloudSyncQueuedAfterFlight) {
+          cloudSyncQueuedAfterFlight = false;
+          scheduleCloudAutoSync(900);
+        }
+      }
+    }
+
+    function scheduleCloudAutoSync(delayMs = 3000) {
+      const token = getSavedGitHubToken();
+      const meta = getCloudSyncMeta();
+      if (!token || meta.autoSync === false) return;
+      clearTimeout(cloudSyncDebounceTimer);
+      cloudSyncDebounceTimer = setTimeout(() => {
+        pushAtlasStateToGitHub({ interactive: false });
+      }, delayMs);
+    }
+
+    window.notifyAtlasStateChangedForCloud = function(immediate = false) {
+      saveCloudSyncMeta({ dirty: true, lastError: "" });
+      scheduleCloudAutoSync(immediate ? 450 : 3000);
+    };
+
+    function parseCsvMatrix(csvText) {
+      const rows = [];
+      let row = [];
+      let field = "";
+      let inQuotes = false;
+      for (let i = 0; i < csvText.length; i++) {
+        const ch = csvText[i];
+        const next = csvText[i + 1];
+        if (inQuotes) {
+          if (ch === '"' && next === '"') {
+            field += '"';
+            i++;
+          } else if (ch === '"') {
+            inQuotes = false;
+          } else {
+            field += ch;
+          }
+        } else if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ",") {
+          row.push(field);
+          field = "";
+        } else if (ch === "\r" && next === "\n") {
+          row.push(field);
+          rows.push(row);
+          row = [];
+          field = "";
+          i++;
+        } else if (ch === "\n" || ch === "\r") {
+          row.push(field);
+          rows.push(row);
+          row = [];
+          field = "";
+        } else {
+          field += ch;
+        }
+      }
+      if (field.length > 0 || row.length > 0) {
+        row.push(field);
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    async function handleVivinoCsvImportFile(file) {
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const matrix = parseCsvMatrix(text.replace(/^\uFEFF/, ""));
+        if (matrix.length < 2) {
+          showToast("Файл CSV пуст или не содержит строк");
+          return;
+        }
+        const headers = matrix[0].map(h => h.trim().toLowerCase());
+        const colIdx = names => headers.findIndex(h => names.includes(h));
+        const iProducer = colIdx(["winery", "producer", "винодельня"]);
+        const iName = colIdx(["wine name", "wine", "название"]);
+        const iVintage = colIdx(["vintage", "year", "винтаж", "год"]);
+        const iRegion = colIdx(["region", "регион"]);
+        const iCountry = colIdx(["country", "страна"]);
+        const iRegStyle = colIdx(["regional wine style", "wine type", "style"]);
+        const iAvg = colIdx(["average rating", "vivino rating"]);
+        const iUserRating = colIdx(["your rating", "user rating", "rating"]);
+        const iNote = colIdx(["your review", "personal note", "note", "review"]);
+        const iDate = colIdx(["scan date", "date", "created at"]);
+        const iLink = colIdx(["link to wine", "url", "link"]);
+
+        let addedCount = 0;
+        let maxId = Math.max(19, ...(atlasData.wines || []).map(w => Number(w.id) || 0));
+
+        for (let r = 1; r < matrix.length; r++) {
+          const cols = matrix[r];
+          const producer = (iProducer >= 0 ? cols[iProducer] : "").trim();
+          const name = (iName >= 0 ? cols[iName] : "").trim();
+          if (!producer && !name) continue;
+          const vintageRaw = (iVintage >= 0 ? cols[iVintage] : "").trim();
+          const vintage = (!vintageRaw || vintageRaw === "0" || /^u\.?v\.?$/i.test(vintageRaw)) ? "N.V." : vintageRaw;
+          const link = (iLink >= 0 ? cols[iLink] : "").trim();
+          const vidMatch = link.match(/\/wines\/(\d+)/);
+          const vid = vidMatch ? Number(vidMatch[1]) : null;
+
+          const candidateProbe = { id: maxId + 1, vintage_id: vid, producer: producer || name, name: name || producer, vintage };
+          if ((atlasData.wines || []).some(existing => isSameWineIdentity(existing, candidateProbe))) {
+            continue;
+          }
+
+          maxId += 1;
+          const regionStr = (iRegion >= 0 ? cols[iRegion] : "").trim();
+          const countryStr = (iCountry >= 0 ? cols[iCountry] : "").trim();
+          const regStyleStr = (iRegStyle >= 0 ? cols[iRegStyle] : "").trim();
+          const textContext = `${producer} ${name} ${regionStr} ${regStyleStr}`;
+          const gMatch = typeof extractGrapesFromText === "function" ? extractGrapesFromText(textContext) : null;
+          const detStyle = detectDetailedWineStyle(textContext, gMatch ? gMatch.style : null) || (gMatch ? gMatch.style : "red");
+          const detClass = detectWineClassification(textContext, detStyle);
+
+          const matchedReg = findMatchingWorldTerroirRegion({
+            country: countryStr,
+            macro_region: regionStr,
+            commune: regionStr,
+            name: name || producer,
+            producer: producer || name
+          });
+          const rawUserRating = iUserRating >= 0 ? parseFloat(String(cols[iUserRating] || "").replace(",", ".")) : NaN;
+          const userRating = (Number.isFinite(rawUserRating) && rawUserRating > 0) ? Math.min(5, Math.max(1, +rawUserRating.toFixed(2))) : null;
+          const rawAvg = iAvg >= 0 ? parseFloat(String(cols[iAvg] || "").replace(",", ".")) : NaN;
+          const vivAvg = (Number.isFinite(rawAvg) && rawAvg > 0) ? +rawAvg.toFixed(1) : null;
+          const rawDate = (iDate >= 0 ? cols[iDate] : "").trim();
+          const tastedDate = /^\d{4}-\d{2}-\d{2}/.test(rawDate) ? rawDate.slice(0, 10) : new Date().toISOString().slice(0, 10);
+          const defBottle = WINE_STYLE_SCHEMA[detStyle]?.bottle || "img/labels/bottle_17.png";
+
+          const newWine = {
+            id: maxId,
+            _uid: `csv_${vid || maxId}_${Date.now().toString(36)}`,
+            _updatedAt: Date.now(),
+            _userEdited: true,
+            wine_id: null,
+            vintage_id: vid,
+            user_vintage_id: null,
+            producer: producer || name,
+            name: name || producer,
+            vintage,
+            style: detStyle,
+            style_label: getStyleLabel(detStyle),
+            wine_class: detClass,
+            grapes: gMatch ? gMatch.grapesStr : "",
+            abv: "",
+            country: (matchedReg && (matchedReg.country_label || matchedReg.country)) || countryStr,
+            macro_region: regionStr,
+            sub_region: regionStr,
+            commune: regionStr,
+            lieu_dit: "",
+            lat: matchedReg ? Number(matchedReg.lat) : 46.9935,
+            lon: matchedReg ? Number(matchedReg.lon) : 4.7562,
+            soil: "",
+            elevation: "",
+            elevation_m: null,
+            vine_age: "",
+            aging: "",
+            rating_az: userRating,
+            rating_anya: null,
+            rating: userRating,
+            vivino_avg: vivAvg,
+            notes: (iNote >= 0 ? cols[iNote] : "").trim(),
+            tasted_date: tastedDate,
+            purchased_at: "",
+            bottle_studio: defBottle,
+            photos: [defBottle],
+            appellation_rank: deduplicateDotParts([detClass, regionStr]),
+            vivino_url: link || (vid ? `https://www.vivino.com/wines/${vid}` : null),
+            guide_source: "Импорт CSV из Vivino"
+          };
+          enrichWineMetadata(newWine);
+          syncWinePairRating(newWine);
+          atlasData.wines.unshift(newWine);
+          addedCount++;
+        }
+
+        if (addedCount > 0) {
+          saveAtlasState({ immediateCloud: true });
+          refreshAllViewsAfterCloudMerge();
+          showToast(`Импортировано новых вин из CSV Vivino: ${addedCount}`);
+        } else {
+          showToast("Все позиции из CSV уже есть в дневнике");
+        }
+      } catch (err) {
+        showToast(`Ошибка чтения CSV: ${err.message}`);
+      }
+    }
+
+    // Wire up Cloud Sync Modal & Actions
+    const cloudSyncModalEl = document.getElementById("cloudSyncModal");
+    document.getElementById("cloudSyncBtn")?.addEventListener("click", () => {
+      const tokInp = document.getElementById("githubTokenInput");
+      if (tokInp) tokInp.value = getSavedGitHubToken();
+      updateCloudSyncUI();
+      cloudSyncModalEl.classList.add("open");
+    });
+    document.getElementById("closeCloudSyncModalBtn")?.addEventListener("click", () => {
+      cloudSyncModalEl.classList.remove("open");
+    });
+    cloudSyncModalEl?.addEventListener("click", e => {
+      if (e.target === cloudSyncModalEl) cloudSyncModalEl.classList.remove("open");
+    });
+    document.getElementById("toggleShowGhTokenBtn")?.addEventListener("click", e => {
+      const inp = document.getElementById("githubTokenInput");
+      if (!inp) return;
+      const isPwd = inp.type === "password";
+      inp.type = isPwd ? "text" : "password";
+      e.currentTarget.textContent = isPwd ? "Скрыть" : "Показать";
+    });
+    document.getElementById("githubAutoSyncCheck")?.addEventListener("change", e => {
+      saveCloudSyncMeta({ autoSync: Boolean(e.target.checked) });
+    });
+    document.getElementById("saveTokenAndSyncBtn")?.addEventListener("click", async () => {
+      const rawTok = (document.getElementById("githubTokenInput")?.value || "").trim();
+      if (!rawTok) {
+        showToast("Вставьте GitHub Token в поле ввода");
+        return;
+      }
+      try {
+        updateCloudSyncUI("syncing");
+        await githubApiFetch(`/repos/${GITHUB_REPO_SLUG}`, {}, rawTok);
+        localStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, rawTok);
+        saveCloudSyncMeta({ lastError: "" });
+        await pushAtlasStateToGitHub({ interactive: true });
+      } catch (err) {
+        saveCloudSyncMeta({ lastError: `Токен не подошёл к ${GITHUB_REPO_SLUG}: ${err.message}` });
+        showToast(`Ошибка проверки токена: ${err.message}`);
+      }
+    });
+    document.getElementById("pushCloudNowBtn")?.addEventListener("click", () => {
+      pushAtlasStateToGitHub({ interactive: true });
+    });
+    document.getElementById("pullCloudNowBtn")?.addEventListener("click", () => {
+      pullLatestCatalogFromCloud({ interactive: true });
+    });
+    document.getElementById("copyDeviceSyncLinkBtn")?.addEventListener("click", async () => {
+      const tok = (document.getElementById("githubTokenInput")?.value || getSavedGitHubToken()).trim();
+      if (!tok) {
+        showToast("Сначала введите и сохраните GitHub Token");
+        return;
+      }
+      const pairUrl = `${window.location.origin}${window.location.pathname}#gh_token=${encodeURIComponent(tok)}`;
+      try {
+        await navigator.clipboard.writeText(pairUrl);
+        showToast("Ссылка для подключения второго устройства скопирована");
+      } catch (_) {
+        window.prompt("Скопируйте ссылку для открытия на втором устройстве:", pairUrl);
+      }
+    });
+    document.getElementById("clearGithubTokenBtn")?.addEventListener("click", () => {
+      localStorage.removeItem(GITHUB_TOKEN_STORAGE_KEY);
+      const inp = document.getElementById("githubTokenInput");
+      if (inp) inp.value = "";
+      saveCloudSyncMeta({ lastError: "" });
+      showToast("GitHub Token удалён из этого браузера");
+    });
+    document.getElementById("triggerVivinoWorkflowBtn")?.addEventListener("click", async () => {
+      const tok = getSavedGitHubToken();
+      if (!tok) {
+        showToast("Для запуска воркфлоу подключите GitHub Token выше");
+        return;
+      }
+      try {
+        await githubApiFetch(
+          `/repos/${GITHUB_REPO_SLUG}/actions/workflows/sync_vivino.yml/dispatches`,
+          { method: "POST", body: { ref: GITHUB_REPO_BRANCH } },
+          tok
+        );
+        showToast("Синхронизация с Vivino запущена на GitHub (обновление через ~20 сек)");
+        setTimeout(() => pullLatestCatalogFromCloud({ interactive: true }), 22000);
+      } catch (err) {
+        showToast(`Не удалось запустить Action (${err.message}). Добавьте право Actions: Read and write у токена.`);
+      }
+    });
+    document.getElementById("importVivinoCsvInput")?.addEventListener("change", async e => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      await handleVivinoCsvImportFile(file);
+    });
+    document.getElementById("importJsonFileInput")?.addEventListener("change", async e => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!file) return;
+      try {
+        const parsed = JSON.parse(await file.text());
+        if (!parsed || !Array.isArray(parsed.wines)) {
+          showToast("Некорректный формат файла JSON");
+          return;
+        }
+        atlasData = mergeRemoteAndLocalForCloud(parsed, atlasData);
+        saveAtlasState({ immediateCloud: true });
+        refreshAllViewsAfterCloudMerge();
+        showToast(`База объединена (${atlasData.wines.length} вин)`);
+      } catch (err) {
+        showToast(`Ошибка импорта JSON: ${err.message}`);
+      }
+    });
+
+    async function initCloudSyncOnBoot() {
+      // 1. Check 1-tap pairing link #gh_token=... and immediately scrub URL bar
+      const hash = window.location.hash || "";
+      const tokMatch = hash.match(/(?:^|[#&])gh_token=([^&]+)/);
+      if (tokMatch) {
+        const incomingToken = decodeURIComponent(tokMatch[1]).trim();
+        try {
+          history.replaceState(null, "", window.location.pathname + window.location.search);
+        } catch (_) {}
+        if (incomingToken) {
+          localStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, incomingToken);
+          saveCloudSyncMeta({ autoSync: true, lastError: "" });
+          updateCloudSyncUI("syncing");
+          await pushAtlasStateToGitHub({ interactive: true });
+          return;
+        }
+      }
+      updateCloudSyncUI();
+      // 2. Always pull the latest cloud catalog on boot (even without token, bypasses stale browser cache)
+      const hasToken = Boolean(getSavedGitHubToken());
+      const meta = getCloudSyncMeta();
+      if (hasToken && (meta.dirty || countUnsyncedLocalBottles() > 0) && meta.autoSync !== false) {
+        await pushAtlasStateToGitHub({ interactive: false });
+      } else {
+        await pullLatestCatalogFromCloud({ interactive: false });
+      }
+    }
 
 
     // =========================================================================
@@ -10742,6 +11705,7 @@
       renderSemanticMapLayers();
     }
     ensureCanonicalWinesLoadedAsync();
+    initCloudSyncOnBoot();
   </script>
 </body>
 </html>

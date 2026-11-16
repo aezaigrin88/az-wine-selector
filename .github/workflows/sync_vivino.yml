@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -23,12 +25,20 @@ jobs:
       - name: Install requests
         run: pip install requests
 
-      - name: Run Vivino sync
-        run: python sync_vivino.py || true
+      - name: Run bidirectional Vivino sync
+        env:
+          VIVINO_EMAIL: ${{ secrets.VIVINO_EMAIL }}
+          VIVINO_PASSWORD: ${{ secrets.VIVINO_PASSWORD }}
+          VIVINO_COOKIE: ${{ secrets.VIVINO_COOKIE }}
+        run: python sync_vivino.py --bidirectional
 
       - name: Commit updated wines_data.json if changed
         run: |
           git config user.name "AZ Wine Selector Bot"
           git config user.email "ae.zaigrin@gmail.com"
-          git add wines_data.json index.html
-          git diff --staged --quiet || (git commit -m "chore: sync Vivino cellar #6491870" && git push)
+          git add wines_data.json img/
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(vivino): sync cellar #6491870 with wines_data.json"
+            git pull --rebase origin main
+            git push origin main
+          fi

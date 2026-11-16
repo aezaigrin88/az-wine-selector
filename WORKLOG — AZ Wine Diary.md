@@ -2,9 +2,9 @@
 
 > **Anti-Compaction Ledger**: этот журнал защищает контекст диалога от потери при `/compact`. Записи только дописываются (`append-only`), никогда не удаляются. При продолжении работы или после `/compact` агент обязан сначала прочитать разделы 1–3 и последние записи раздела 5.
 
-- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#100`)
+- **Диалог в Antigravity (`☁️` Cloud)**: **[📱 AZ Wine Diary (`Wine Diary 9.11.26`)](conversation://25294bfa-955e-4143-880c-259fc24d2648)** (продолжение архивированного чата [`ed23f531-6679-4a98-b5fa-3646b89b5a5f`](conversation://ed23f531-6679-4a98-b5fa-3646b89b5a5f), сквозной реестр `#1..#102`)
 - **Проект**: **[`🍷 Wine`](file:///G:/My%20Drive/az-AI/Wine)** ([Сводный WORKLOG проекта](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md) · [GEMINI.md](file:///G:/My%20Drive/az-AI/Wine/GEMINI.md))
-- **Период**: `2026-10-30 18:25` → `2026-11-12 07:08` · **Зафиксировано запросов в реестре**: `100`
+- **Период**: `2026-10-30 18:25` → `2026-11-16 10:30` · **Зафиксировано запросов в реестре**: `102`
 - **Рабочая область**: `["file:///G:/My%20Drive/az-AI/Wine", "file:///home/antigravity/aezaigrin88/az-wine-selector"]`
 - **Продуктовая ссылка (GitHub Pages)**: [`https://aezaigrin88.github.io/az-wine-selector/`](https://aezaigrin88.github.io/az-wine-selector/)
 
@@ -1210,4 +1210,41 @@ Check out this wine. I scanned it with the @Vivino app: https://www.vivino.com/w
   > 3. **Проверка «Скалистого берега» (`id: 19`) и защита базового каталога от исчезновения в мобильном Safari**:
   >    - В [`wines_data.json`](file:///G:/My%20Drive/az-AI/Wine/wines_data.json) запись `id: 19` (**`Скалистый берег (Côte Rocheuse)` — `Каберне Фран · ЗГУ «Кубань» 2023`**) полностью сохранена (все 18 базовых вин на месте).
   >    - Чтобы базовые вина никогда не пропадали на iPhone при сбое синхронного `XMLHttpRequest("wines_data.json", false)` после сна вкладки или при случайном нажатии `×`, добавлены: (а) резервный кэш `CANONICAL_BACKUP_KEY` в `localStorage` + асинхронный `ensureCanonicalWinesLoadedAsync()` (`fetch` с автоподгрузкой при старте); (б) учёт скрытых базовых вин в `deletedCanonicalIds` и кнопка **«Вернуть базовые вина (N)»** (`#restoreDeletedWinesBtn`) в шапке Дневника дегустаций.
+
+---
+
+### 📅 2026-11-16
+
+#### #101 [✓] `2026-11-16 10:06` — «почему я захожу через сайт и не вижу, что добавлены новые вина и тд»
+
+- **Точный запрос пользователя**: «почему я захожу через сайт и не вижу, что добавлены новые вина и тд»
+- **Статус черновика / промоушена**: `decision / analysis`
+- **Замеры и проверки (`checks run`)**: `Inspected GitHub Pages build status (commit 93b101b built), inspected GitHub Actions run #43687758137 logs (RuntimeError: /home/runner/.env missing), verified localStorage isolation across devices/browsers` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html), [`sync_vivino.py`](file:///G:/My%20Drive/az-AI/Wine/sync_vivino.py), [`.github/workflows/sync_vivino.yml`](file:///home/antigravity/aezaigrin88/az-wine-selector/.github/workflows/sync_vivino.yml)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > Выявлены три причины отсутствия новых вин при входе на сайт с другого устройства или браузера:
+  > 1. Статический сайт на GitHub Pages сохранял все добавленные через «Добавить вино» бутылки и правки только в `localStorage` конкретного браузерного контейнера (`wine_terroir_atlas_leaflet_v12`), не записывая их обратно в общий `wines_data.json` в репозитории.
+  > 2. Воркфлоу `sync_vivino.yml` в GitHub Actions падал при чтении отсутствующего `/home/runner/.env` (ошибка скрывалась за `|| true`), а сам `sync_vivino.py` работал только на отправку существующих 18 вин в Vivino, без импорта новых сканов из профиля `@artem_zaigrin`.
+  > 3. Предложены оба механизма сквозной облачной синхронизации (прямая запись из браузера в GitHub `wines_data.json` + двусторонний импорт/экспорт с Vivino).
+
+---
+
+#### #102 [✓] `2026-11-16 10:30` — «даЭ сделать оба механизма пож-ста» (`{436BB333-2F86-40A9-981E-F6186695E020}.png`)
+
+- **Точный запрос пользователя**: «даЭ сделать оба механизма пож-ста» (приложен скриншот десктопного дневника [`{436BB333-2F86-40A9-981E-F6186695E020}.png`](file:///home/antigravity/%7B436BB333-2F86-40A9-981E-F6186695E020%7D.png))
+- **Статус черновика / промоушена**: `promoted` (synced to Google Drive `G:\My Drive\az-AI\Wine` and GitHub `aezaigrin88/az-wine-selector`)
+- **Замеры и проверки (`checks run`)**: `python3 -m py_compile sync_vivino.py & refine_wine_style assertions (PASS)`, `Node VM syntax check on index.html (0 errors, 0 decorative emojis)`, `End-to-end cloud merge test suite (UTF-8 Base64, _updatedAt conflict resolution across Phone/Laptop, offline id:20 collision preservation via _uid, cross-device deletion propagation, CSV parser) — ALL PASS` → `✓`
+- **Затронутые файлы и свидетельства (`evidence`)**: [`index.html`](file:///G:/My%20Drive/az-AI/Wine/index.html), [`sync_vivino.py`](file:///G:/My%20Drive/az-AI/Wine/sync_vivino.py), [`.github/workflows/sync_vivino.yml`](file:///home/antigravity/aezaigrin88/az-wine-selector/.github/workflows/sync_vivino.yml), [`WORKLOG.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG.md), [`WORKLOG — AZ Wine Diary.md`](file:///G:/My%20Drive/az-AI/Wine/WORKLOG%20—%20AZ%20Wine%20Diary.md)
+- **Что выяснено и решено (`cause → fix → check result`)**:
+  > Реализованы оба механизма единой облачной базы для телефона и ноутбука:
+  > 1. **Механизм 1 — Прямая облачная синхронизация дневника через GitHub (`index.html` <-> `aezaigrin88/az-wine-selector`)**:
+  >    - В шапку добавлена кнопка **«Облако»** (`#cloudSyncBtn`) с цветовым индикатором статуса и модальным окном `#cloudSyncModal`.
+  >    - **Атомарная запись в репозиторий (`pushAtlasStateToGitHub`)**: через GitHub Git Data API (`blobs` -> `trees` -> `commits` -> `refs/heads/main`) автоматически выгружает все локальные фотографии `data:image/...` как отдельные файлы `img/wines/user_bottle_<id>_<idx>_<hash>.jpg` (чтобы `wines_data.json` оставался лёгким) и одним атомарным коммитом сохраняет объединённый `wines_data.json` (с автоповтором при `422` и мгновенным fallback-отображением свежих фото через `raw.githubusercontent.com`, не дожидаясь 20-секундной пересборки GitHub Pages).
+  >    - **Бесконфликтное слияние (`isSameWineIdentity` + `_updatedAt` + `_uid` + `deletedWineIds`)**: при одновременной работе с телефона и ноутбука побеждает более свежая правка по `_updatedAt`; две разные бутылки, добавленные офлайн с одинаковым `id: 20`, автоматически разводятся на `id: 20` и `id: 21` без потери данных; удаления синхронизируются между устройствами.
+  >    - **Мгновенное чтение свежей базы при открытии сайта (`initCloudSyncOnBoot` + `fetchLatestRemoteCatalogJson`)**: даже на устройстве без введённого токена сайт при открытии запрашивает `raw.githubusercontent.com/.../wines_data.json?t=...` (`cache: "no-store"`), обходя старый кэш браузера, а кнопка **«Скопировать ссылку для второго устройства»** (`#gh_token=...` с немедленной очисткой URL через `history.replaceState`) позволяет подключить iPhone в 1 касание и сразу выгрузить ранее сохранённые в `localStorage` телефона бутылки в общую базу.
+  > 2. **Механизм 2 — Двусторонняя синхронизация с аккаунтом Vivino (`sync_vivino.py` + `.github/workflows/sync_vivino.yml` + браузерный импорт CSV)**:
+  >    - [`sync_vivino.py`](file:///G:/My%20Drive/az-AI/Wine/sync_vivino.py) переписан на поддержку переменных окружения GitHub Secrets (`VIVINO_EMAIL`, `VIVINO_PASSWORD`, `VIVINO_COOKIE`) с fallback на локальный `~/.env`, без аварийного падения при отсутствии `~/.env`.
+  >    - Добавлен автоматический импорт новых сканов и оценок из профиля и погреба Vivino (`user_id=77968357`, `cellar_id=6491870`) в `wines_data.json` с обогащением через Vivino Algolia и геокодированием через Nominatim (`--bidirectional`), а также обратная выгрузка новых бутылок из дневника в Vivino и поддержка `--import-csv`.
+  >    - Воркфлоу [`sync_vivino.yml`](file:///home/antigravity/aezaigrin88/az-wine-selector/.github/workflows/sync_vivino.yml) обновлён на передачу GitHub Secrets и `git pull --rebase origin main` перед `git push`. В окно «Облако» на сайте добавлены кнопки запуска воркфлоу Vivino в 1 клик и прямого импорта `full_wine_list.csv` из Vivino.
+
 
